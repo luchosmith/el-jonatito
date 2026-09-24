@@ -1,0 +1,232 @@
+{
+  "schema": "people (see Jonatito_Tech_Spec.md §4)",
+  "version": 2,
+  "updated": "2026-09-23",
+  "note": "Seed list of known persons. Import into the PocketBase 'people' collection; avatar files go to its photo field and the 'images' history.",
+  "people": [
+    {
+      "id": "jonatito",
+      "display_name": "Jonatito",
+      "short_label": "Me",
+      "relation": "self",
+      "relation_label": {
+        "en": "Me",
+        "es": "Yo"
+      },
+      "photo": "avatars/jonatito.jpg",
+      "order": 0,
+      "role": "child",
+      "is_self": true,
+      "is_visible": true,
+      "placement": "dock bottom-left ('Me' button)",
+      "channels": {
+        "push": null,
+        "whatsapp": null,
+        "phone": null
+      },
+      "photo_source": {
+        "file": "jonatito_portrait.jpg",
+        "position_in_photo": "center",
+        "crop": "square 512x512, face-centered"
+      },
+      "notes": "",
+      "kind": "person"
+    },
+    {
+      "id": "mommy_joyce",
+      "display_name": "Mommy Joyce",
+      "short_label": "Mommy Joyce",
+      "relation": "mother",
+      "relation_label": {
+        "en": "Mommy",
+        "es": "Mamá"
+      },
+      "photo": "avatars/mommy_joyce.jpg",
+      "order": 1,
+      "role": "caretaker",
+      "is_visible": true,
+      "channels": {
+        "push": null,
+        "whatsapp": null,
+        "phone": null
+      },
+      "photo_source": {
+        "file": "family_photo_riverside.jpg",
+        "position_in_photo": "left",
+        "crop": "square 512x512, face-centered"
+      },
+      "notes": "",
+      "is_self": false,
+      "kind": "person"
+    },
+    {
+      "id": "lucho",
+      "display_name": "Lucho",
+      "short_label": "Abuelo Lucho",
+      "relation": "grandfather",
+      "relation_label": {
+        "en": "Grandpa",
+        "es": "Abuelo"
+      },
+      "photo": "avatars/lucho.jpg",
+      "order": 2,
+      "role": "caretaker",
+      "is_visible": true,
+      "channels": {
+        "push": null,
+        "whatsapp": null,
+        "phone": null
+      },
+      "photo_source": {
+        "file": "family_photo_riverside.jpg",
+        "position_in_photo": "middle",
+        "crop": "square 512x512, face-centered"
+      },
+      "notes": "",
+      "is_self": false,
+      "kind": "person"
+    },
+    {
+      "id": "pilar",
+      "display_name": "Pilar",
+      "short_label": "Abuela Pilar",
+      "relation": "grandmother",
+      "relation_label": {
+        "en": "Grandma",
+        "es": "Abuela"
+      },
+      "photo": "avatars/pilar.jpg",
+      "order": 3,
+      "role": "friend",
+      "is_visible": true,
+      "channels": {
+        "push": null,
+        "whatsapp": null,
+        "phone": null
+      },
+      "photo_source": {
+        "file": "family_photo_riverside.jpg",
+        "position_in_photo": "right",
+        "crop": "square 512x512, face-centered"
+      },
+      "notes": "",
+      "is_self": false,
+      "kind": "person"
+    },
+    {
+      "id": "larry",
+      "kind": "person",
+      "display_name": "Larry",
+      "short_label": "Larry",
+      "relation": "father",
+      "relation_label": {
+        "en": "Papi",
+        "es": "Papi"
+      },
+      "photo": "avatars/larry.jpg",
+      "order": 4,
+      "role": "caretaker",
+      "is_self": false,
+      "is_visible": true,
+      "channels": {
+        "push": null,
+        "whatsapp": null,
+        "phone": null
+      },
+      "notes": "",
+      "photo_source": {
+        "file": "larry_park_bench.jpg",
+        "position_in_photo": "left",
+        "crop": "square 512x512, face-centered"
+      }
+    },
+    {
+      "id": "tintin",
+      "kind": "person",
+      "display_name": "Justin",
+      "short_label": "TinTin",
+      "nickname": "TinTin",
+      "relation": null,
+      "relation_label": {
+        "en": null,
+        "es": null
+      },
+      "photo": "avatars/tintin.jpg",
+      "order": 5,
+      "role": "friend",
+      "is_self": false,
+      "is_visible": true,
+      "channels": {
+        "push": null,
+        "whatsapp": null,
+        "phone": null
+      },
+      "photo_source": {
+        "file": "autism_walk_group.jpg",
+        "position_in_photo": "second from left",
+        "crop": "square 512x512, face-centered"
+      },
+      "notes": "Relation to confirm"
+    },
+    {
+      "id": "lexi",
+      "kind": "pet",
+      "display_name": "Lexi",
+      "short_label": "Lexi",
+      "species": "dog",
+      "breed": "poodle",
+      "relation": "pet",
+      "relation_label": {
+        "en": "my pet",
+        "es": "mi mascota"
+      },
+      "photo": null,
+      "placeholder_emoji": "🐩",
+      "order": 10,
+      "role": null,
+      "is_self": false,
+      "is_visible": true,
+      "notes": "Photo to add"
+    },
+    {
+      "id": "loki",
+      "kind": "pet",
+      "display_name": "Loki",
+      "short_label": "Loki",
+      "species": "cat",
+      "breed": "calico",
+      "relation": "pet",
+      "relation_label": {
+        "en": "my pet",
+        "es": "mi mascota"
+      },
+      "photo": null,
+      "placeholder_emoji": "🐈",
+      "order": 11,
+      "role": null,
+      "is_self": false,
+      "is_visible": true,
+      "notes": "Photo to add"
+    },
+    {
+      "id": "logan",
+      "kind": "pet",
+      "display_name": "Logan",
+      "short_label": "Logan",
+      "species": "cat",
+      "breed": "grey long-haired",
+      "relation": "pet",
+      "relation_label": {
+        "en": "my pet",
+        "es": "mi mascota"
+      },
+      "photo": null,
+      "placeholder_emoji": "🐈",
+      "order": 12,
+      "role": null,
+      "is_self": false,
+      "is_visible": true,
+      "notes": "Photo to add"
+    }
+  ]
+}

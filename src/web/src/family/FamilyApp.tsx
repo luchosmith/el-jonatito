@@ -1,0 +1,74 @@
+// Family phones (friend + caretaker), and parent mode on the tablet (elevated caretaker).
+import { useCallback, useEffect, useState } from 'react';
+import { api } from '../api.ts';
+import { useEvents } from '../common/hooks.ts';
+import type { Board } from '../common/board.ts';
+import type { Message, User } from '../../../shared/types.ts';
+import { Inbox } from './Inbox.tsx';
+import { StatusPanel } from './StatusPanel.tsx';
+import { QuickLog } from './QuickLog.tsx';
+import { PeopleAdmin } from './PeopleAdmin.tsx';
+import { WordsAdmin } from './WordsAdmin.tsx';
+import { SettingsPanel } from './SettingsPanel.tsx';
+
+type Tab = 'inbox' | 'status' | 'log' | 'people' | 'words' | 'settings';
+
+export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?: boolean; onLogout: () => void }) {
+  const isCaretaker = user.role === 'caretaker';
+  const [tab, setTab] = useState<Tab>(elevated ? 'log' : 'inbox');
+  const [board, setBoard] = useState<Board | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+
+  const loadBoard = useCallback(() => api.get<Board>('/api/board').then(setBoard), []);
+  const loadInbox = useCallback(() => api.get<Message[]>('/api/messages').then(setMessages), []);
+
+  useEffect(() => {
+    void loadBoard();
+    void loadInbox();
+    if (!elevated) return;
+    // Parent mode on the tablet listens on the child's event stream, so poll the inbox instead.
+    const t = setInterval(() => void loadInbox(), 5000);
+    return () => clearInterval(t);
+  }, [loadBoard, loadInbox, elevated]);
+
+  useEvents((e) => {
+    if (e.type === 'message') setMessages((ms) => [e.message, ...ms.filter((m) => m.id !== e.message.id)]);
+    if (e.type === 'reply') setMessages((ms) => ms.map((m) => (m.id === e.message_id ? { ...m, replies: [...m.replies.filter((r) => r.id !== e.reply.id), e.reply] } : m)));
+    if (e.type === 'people' || e.type === 'symbols' || e.type === 'availability') void loadBoard();
+  });
+
+  const tabs: [Tab, string][] = [
+    ['inbox', '📨 Inbox'],
+    ['status', '🟢 My status'],
+    ...(isCaretaker ? ([['log', '📝 Log'], ['people', '👪 People'], ['words', '🧩 Words']] as [Tab, string][]) : []),
+    ...(elevated ? ([['settings', '⚙️ Tablet']] as [Tab, string][]) : []),
+  ];
+  const me = board?.people.find((p) => p.id === user.person_id);
+
+  return (
+    <div className={`family ${elevated ? 'elevated' : ''}`} data-testid={elevated ? 'parent-mode' : 'family-app'} data-role={user.role}>
+      <header className="fam-top">
+        <div className="fam-me">
+          {me?.photo_url && <img src={me.photo_url} alt="" />}
+          <b data-testid="family-name">{elevated ? '🔒 ' : ''}{user.display_name}</b>
+        </div>
+        <button className="link" data-testid={elevated ? 'exit-parent' : 'logout'} onClick={onLogout}>
+          {elevated ? 'Exit to Jonatito' : 'Sign out'}
+        </button>
+      </header>
+      <nav className="fam-tabs">
+        {tabs.map(([id, label]) => (
+          <button key={id} className={tab === id ? 'on' : ''} data-testid={`tab-${id}`} onClick={() => setTab(id)}>{label}</button>
+        ))}
+      </nav>
+      <main className="fam-body">
+        {board && tab === 'inbox' && <Inbox messages={messages} board={board} userId={user.id} onChange={loadInbox} />}
+        {board && tab === 'status' && <StatusPanel board={board} user={user} />}
+        {board && tab === 'log' && isCaretaker && <QuickLog board={board} />}
+        {board && tab === 'people' && isCaretaker && <PeopleAdmin board={board} onChange={loadBoard} />}
+        {board && tab === 'words' && isCaretaker && <WordsAdmin board={board} onChange={loadBoard} />}
+        {tab === 'settings' && elevated && <SettingsPanel />}
+      </main>
+    </div>
+  );
+}

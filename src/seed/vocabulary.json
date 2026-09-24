@@ -1,0 +1,583 @@
+{
+  "note": "Board pages besides food. Positions are fixed (motor planning): never move a symbol, hide it instead.",
+  "pages": [
+    {
+      "id": "food",
+      "emoji": "🍽️",
+      "label": {
+        "en": "Food",
+        "es": "Comida"
+      }
+    },
+    {
+      "id": "drink",
+      "emoji": "🥤",
+      "label": {
+        "en": "Drinks",
+        "es": "Bebidas"
+      }
+    },
+    {
+      "id": "action",
+      "emoji": "🏃",
+      "label": {
+        "en": "Actions",
+        "es": "Acciones"
+      }
+    },
+    {
+      "id": "place",
+      "emoji": "📍",
+      "label": {
+        "en": "Places",
+        "es": "Lugares"
+      }
+    },
+    {
+      "id": "feel",
+      "emoji": "😊",
+      "label": {
+        "en": "Feelings",
+        "es": "Sentimientos"
+      }
+    },
+    {
+      "id": "play",
+      "emoji": "🧸",
+      "label": {
+        "en": "Play",
+        "es": "Jugar"
+      }
+    }
+  ],
+  "symbols": [
+    {
+      "id": "eat_f",
+      "page": "food",
+      "row": 2,
+      "col": 0,
+      "kind": "action",
+      "emoji": "😋",
+      "en": "eat",
+      "es": "comer",
+      "alias_of": "eat"
+    },
+    {
+      "id": "drink_f",
+      "page": "food",
+      "row": 2,
+      "col": 1,
+      "kind": "action",
+      "emoji": "🫗",
+      "en": "drink",
+      "es": "tomar",
+      "alias_of": "drink"
+    },
+    {
+      "id": "more",
+      "page": "food",
+      "row": 2,
+      "col": 2,
+      "kind": "desc",
+      "emoji": "➕",
+      "en": "more",
+      "es": "más"
+    },
+    {
+      "id": "finished",
+      "page": "food",
+      "row": 2,
+      "col": 3,
+      "kind": "desc",
+      "emoji": "✅",
+      "en": "finished",
+      "es": "terminé"
+    },
+    {
+      "id": "water_d",
+      "page": "drink",
+      "row": 0,
+      "col": 0,
+      "kind": "thing",
+      "emoji": "💧",
+      "en": "water",
+      "es": "agua",
+      "log": true,
+      "alias_of": "water"
+    },
+    {
+      "id": "smoothie_d",
+      "page": "drink",
+      "row": 0,
+      "col": 1,
+      "kind": "thing",
+      "emoji": "🥤",
+      "en": "smoothie",
+      "es": "batido",
+      "log": true,
+      "alias_of": "smoothie"
+    },
+    {
+      "id": "drink_d",
+      "page": "drink",
+      "row": 2,
+      "col": 0,
+      "kind": "action",
+      "emoji": "🫗",
+      "en": "drink",
+      "es": "tomar",
+      "alias_of": "drink"
+    },
+    {
+      "id": "more_d",
+      "page": "drink",
+      "row": 2,
+      "col": 1,
+      "kind": "desc",
+      "emoji": "➕",
+      "en": "more",
+      "es": "más",
+      "alias_of": "more"
+    },
+    {
+      "id": "hot",
+      "page": "drink",
+      "row": 2,
+      "col": 2,
+      "kind": "desc",
+      "emoji": "🔥",
+      "en": "hot",
+      "es": "caliente"
+    },
+    {
+      "id": "cold",
+      "page": "drink",
+      "row": 2,
+      "col": 3,
+      "kind": "desc",
+      "emoji": "❄️",
+      "en": "cold",
+      "es": "frío"
+    },
+    {
+      "id": "eat",
+      "page": "action",
+      "row": 0,
+      "col": 0,
+      "kind": "action",
+      "emoji": "😋",
+      "en": "eat",
+      "es": "comer"
+    },
+    {
+      "id": "drink",
+      "page": "action",
+      "row": 0,
+      "col": 1,
+      "kind": "action",
+      "emoji": "🫗",
+      "en": "drink",
+      "es": "tomar"
+    },
+    {
+      "id": "play",
+      "page": "action",
+      "row": 0,
+      "col": 2,
+      "kind": "action",
+      "emoji": "🎮",
+      "en": "play",
+      "es": "jugar"
+    },
+    {
+      "id": "go",
+      "page": "action",
+      "row": 0,
+      "col": 3,
+      "kind": "action",
+      "emoji": "🚶",
+      "en": "go",
+      "es": "ir"
+    },
+    {
+      "id": "sleep",
+      "page": "action",
+      "row": 0,
+      "col": 4,
+      "kind": "action",
+      "emoji": "😴",
+      "en": "sleep",
+      "es": "dormir"
+    },
+    {
+      "id": "bath",
+      "page": "action",
+      "row": 0,
+      "col": 5,
+      "kind": "action",
+      "emoji": "🛁",
+      "en": "take a bath",
+      "es": "bañarme"
+    },
+    {
+      "id": "hug",
+      "page": "action",
+      "row": 1,
+      "col": 0,
+      "kind": "action",
+      "emoji": "🤗",
+      "en": "hug",
+      "es": "abrazar"
+    },
+    {
+      "id": "look",
+      "page": "action",
+      "row": 1,
+      "col": 1,
+      "kind": "action",
+      "emoji": "👀",
+      "en": "look",
+      "es": "mirar"
+    },
+    {
+      "id": "listen",
+      "page": "action",
+      "row": 1,
+      "col": 2,
+      "kind": "action",
+      "emoji": "🎵",
+      "en": "listen",
+      "es": "escuchar"
+    },
+    {
+      "id": "toilet",
+      "page": "action",
+      "row": 1,
+      "col": 3,
+      "kind": "action",
+      "emoji": "🚽",
+      "en": "go to the toilet",
+      "es": "ir al baño"
+    },
+    {
+      "id": "watch",
+      "page": "action",
+      "row": 1,
+      "col": 4,
+      "kind": "action",
+      "emoji": "📺",
+      "en": "watch",
+      "es": "ver"
+    },
+    {
+      "id": "walk",
+      "page": "action",
+      "row": 1,
+      "col": 5,
+      "kind": "action",
+      "emoji": "🦮",
+      "en": "walk",
+      "es": "pasear"
+    },
+    {
+      "id": "home",
+      "page": "place",
+      "row": 0,
+      "col": 0,
+      "kind": "thing",
+      "emoji": "🏠",
+      "en": "home",
+      "es": "casa"
+    },
+    {
+      "id": "park",
+      "page": "place",
+      "row": 0,
+      "col": 1,
+      "kind": "thing",
+      "emoji": "🌳",
+      "en": "the park",
+      "es": "el parque"
+    },
+    {
+      "id": "school",
+      "page": "place",
+      "row": 0,
+      "col": 2,
+      "kind": "thing",
+      "emoji": "🏫",
+      "en": "school",
+      "es": "la escuela"
+    },
+    {
+      "id": "car",
+      "page": "place",
+      "row": 0,
+      "col": 3,
+      "kind": "thing",
+      "emoji": "🚗",
+      "en": "the car",
+      "es": "el carro"
+    },
+    {
+      "id": "bed",
+      "page": "place",
+      "row": 0,
+      "col": 4,
+      "kind": "thing",
+      "emoji": "🛏️",
+      "en": "bed",
+      "es": "la cama"
+    },
+    {
+      "id": "abuelas",
+      "page": "place",
+      "row": 0,
+      "col": 5,
+      "kind": "thing",
+      "emoji": "🏡",
+      "en": "Abuela Pilar's house",
+      "es": "la casa de Abuela Pilar"
+    },
+    {
+      "id": "store",
+      "page": "place",
+      "row": 1,
+      "col": 0,
+      "kind": "thing",
+      "emoji": "🛒",
+      "en": "the store",
+      "es": "la tienda"
+    },
+    {
+      "id": "pool",
+      "page": "place",
+      "row": 1,
+      "col": 1,
+      "kind": "thing",
+      "emoji": "🏊",
+      "en": "the pool",
+      "es": "la piscina"
+    },
+    {
+      "id": "happy",
+      "page": "feel",
+      "row": 0,
+      "col": 0,
+      "kind": "social",
+      "emoji": "😊",
+      "en": "I'm happy",
+      "es": "estoy feliz"
+    },
+    {
+      "id": "sad",
+      "page": "feel",
+      "row": 0,
+      "col": 1,
+      "kind": "social",
+      "emoji": "😢",
+      "en": "I'm sad",
+      "es": "estoy triste"
+    },
+    {
+      "id": "angry",
+      "page": "feel",
+      "row": 0,
+      "col": 2,
+      "kind": "social",
+      "emoji": "😠",
+      "en": "I'm angry",
+      "es": "estoy enojado"
+    },
+    {
+      "id": "scared",
+      "page": "feel",
+      "row": 0,
+      "col": 3,
+      "kind": "social",
+      "emoji": "😨",
+      "en": "I'm scared",
+      "es": "tengo miedo"
+    },
+    {
+      "id": "tired",
+      "page": "feel",
+      "row": 0,
+      "col": 4,
+      "kind": "social",
+      "emoji": "🥱",
+      "en": "I'm tired",
+      "es": "estoy cansado"
+    },
+    {
+      "id": "too_loud",
+      "page": "feel",
+      "row": 0,
+      "col": 5,
+      "kind": "social",
+      "emoji": "🔊",
+      "en": "too loud",
+      "es": "muy fuerte"
+    },
+    {
+      "id": "sick",
+      "page": "feel",
+      "row": 1,
+      "col": 0,
+      "kind": "social",
+      "emoji": "🤒",
+      "en": "I feel sick",
+      "es": "me siento mal"
+    },
+    {
+      "id": "break",
+      "page": "feel",
+      "row": 1,
+      "col": 1,
+      "kind": "social",
+      "emoji": "🧘",
+      "en": "I need a break",
+      "es": "necesito un descanso"
+    },
+    {
+      "id": "train",
+      "page": "play",
+      "row": 0,
+      "col": 0,
+      "kind": "thing",
+      "emoji": "🚂",
+      "en": "train",
+      "es": "tren"
+    },
+    {
+      "id": "blocks",
+      "page": "play",
+      "row": 0,
+      "col": 1,
+      "kind": "thing",
+      "emoji": "🧱",
+      "en": "blocks",
+      "es": "bloques"
+    },
+    {
+      "id": "ball",
+      "page": "play",
+      "row": 0,
+      "col": 2,
+      "kind": "thing",
+      "emoji": "⚽",
+      "en": "ball",
+      "es": "pelota"
+    },
+    {
+      "id": "drums",
+      "page": "play",
+      "row": 0,
+      "col": 3,
+      "kind": "thing",
+      "emoji": "🥁",
+      "en": "drums",
+      "es": "tambor"
+    },
+    {
+      "id": "bubbles",
+      "page": "play",
+      "row": 0,
+      "col": 4,
+      "kind": "thing",
+      "emoji": "🫧",
+      "en": "bubbles",
+      "es": "burbujas"
+    },
+    {
+      "id": "book",
+      "page": "play",
+      "row": 0,
+      "col": 5,
+      "kind": "thing",
+      "emoji": "📖",
+      "en": "book",
+      "es": "libro"
+    },
+    {
+      "id": "yes",
+      "page": "core",
+      "row": 0,
+      "col": 0,
+      "kind": "social",
+      "emoji": "👍",
+      "en": "yes",
+      "es": "sí"
+    },
+    {
+      "id": "no",
+      "page": "core",
+      "row": 1,
+      "col": 0,
+      "kind": "social",
+      "emoji": "👎",
+      "en": "no",
+      "es": "no"
+    },
+    {
+      "id": "stop",
+      "page": "core",
+      "row": 2,
+      "col": 0,
+      "kind": "urgent",
+      "emoji": "✋",
+      "en": "stop",
+      "es": "para"
+    },
+    {
+      "id": "help",
+      "page": "core",
+      "row": 3,
+      "col": 0,
+      "kind": "urgent",
+      "emoji": "🆘",
+      "en": "help",
+      "es": "ayuda"
+    },
+    {
+      "id": "hurt",
+      "page": "core",
+      "row": 4,
+      "col": 0,
+      "kind": "urgent",
+      "emoji": "🤕",
+      "en": "I hurt",
+      "es": "me duele"
+    },
+    {
+      "id": "come_see",
+      "page": "face",
+      "row": 0,
+      "col": 0,
+      "kind": "social",
+      "emoji": "👀",
+      "en": "come see",
+      "es": "ven a ver"
+    },
+    {
+      "id": "help_me",
+      "page": "face",
+      "row": 0,
+      "col": 1,
+      "kind": "social",
+      "emoji": "✋",
+      "en": "help me",
+      "es": "ayúdame"
+    },
+    {
+      "id": "love",
+      "page": "face",
+      "row": 0,
+      "col": 2,
+      "kind": "social",
+      "emoji": "❤️",
+      "en": "I love you",
+      "es": "te quiero"
+    }
+  ]
+}

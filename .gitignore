@@ -1,0 +1,20 @@
+# dependencies & build output
+node_modules/
+src/web/dist/
+
+# runtime data (database, uploaded photos and voice notes: private family data)
+src/data/
+src/.e2e-data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# test output
+src/test-results/
+src/playwright-report/
+
+# secrets & OS files
+.env
+.env.*
+.DS_Store
+Thumbs.db

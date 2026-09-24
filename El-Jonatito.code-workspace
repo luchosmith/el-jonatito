@@ -1,0 +1,218 @@
+{
+  "folders": [
+    {
+      "name": "app",
+      "path": "src"
+    },
+    {
+      "name": "docs",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "editor.tabSize": 2,
+    "files.eol": "\n",
+    "files.exclude": {
+      "**/node_modules": true
+    },
+    "search.exclude": {
+      "web/dist": true,
+      "data": true,
+      ".e2e-data": true,
+      "test-results": true,
+      "playwright-report": true
+    },
+    "files.watcherExclude": {
+      "**/data/**": true,
+      "**/.e2e-data/**": true
+    },
+    "playwright.reuseBrowser": true,
+    "playwright.showTrace": false
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Server (dev)",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:app}",
+        "runtimeArgs": [
+          "--import",
+          "tsx"
+        ],
+        "program": "${workspaceFolder:app}/server/index.ts",
+        "env": {
+          "TOKEN_SECRET": "dev-only-change-me",
+          "PORT": "8080",
+          "DATA_DIR": "data",
+          "TZ": "America/New_York"
+        },
+        "preLaunchTask": "build:web",
+        "console": "integratedTerminal",
+        "skipFiles": [
+          "<node_internals>/**"
+        ]
+      },
+      {
+        "name": "Server (test mode, frozen-clock routes on)",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:app}",
+        "runtimeArgs": [
+          "--import",
+          "tsx"
+        ],
+        "program": "${workspaceFolder:app}/server/index.ts",
+        "env": {
+          "TEST_MODE": "1",
+          "PORT": "4173",
+          "DATA_DIR": ".e2e-data",
+          "TZ": "America/New_York"
+        },
+        "preLaunchTask": "build:web",
+        "console": "integratedTerminal",
+        "skipFiles": [
+          "<node_internals>/**"
+        ]
+      },
+      {
+        "name": "Tablet in Chrome (child mode, 1280x800)",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:8080",
+        "webRoot": "${workspaceFolder:app}/web/src",
+        "sourceMaps": true,
+        "runtimeArgs": [
+          "--window-size=1280,860",
+          "--use-fake-ui-for-media-stream"
+        ]
+      },
+      {
+        "name": "Unit tests",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:app}",
+        "runtimeArgs": [
+          "--import",
+          "tsx",
+          "--test",
+          "test/grammar.test.ts",
+          "test/time.test.ts",
+          "test/dispatcher.test.ts"
+        ],
+        "console": "integratedTerminal",
+        "skipFiles": [
+          "<node_internals>/**"
+        ]
+      },
+      {
+        "name": "Current unit test file",
+        "type": "node",
+        "request": "launch",
+        "cwd": "${workspaceFolder:app}",
+        "runtimeArgs": [
+          "--import",
+          "tsx",
+          "--test",
+          "${file}"
+        ],
+        "console": "integratedTerminal",
+        "skipFiles": [
+          "<node_internals>/**"
+        ]
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Full stack: server + tablet",
+        "configurations": [
+          "Server (dev)",
+          "Tablet in Chrome (child mode, 1280x800)"
+        ],
+        "stopAll": true
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build:web",
+        "type": "npm",
+        "script": "build:web",
+        "group": "build",
+        "problemMatcher": [],
+        "path": "",
+        "options": {
+          "cwd": "${workspaceFolder:app}"
+        }
+      },
+      {
+        "label": "dev:web (watch)",
+        "type": "npm",
+        "script": "dev:web",
+        "isBackground": true,
+        "problemMatcher": [],
+        "path": "",
+        "options": {
+          "cwd": "${workspaceFolder:app}"
+        }
+      },
+      {
+        "label": "typecheck",
+        "type": "npm",
+        "script": "typecheck",
+        "group": "build",
+        "problemMatcher": "$tsc",
+        "path": "",
+        "options": {
+          "cwd": "${workspaceFolder:app}"
+        }
+      },
+      {
+        "label": "test:unit",
+        "type": "npm",
+        "script": "test:unit",
+        "group": "test",
+        "problemMatcher": [],
+        "path": "",
+        "options": {
+          "cwd": "${workspaceFolder:app}"
+        }
+      },
+      {
+        "label": "test:e2e",
+        "type": "npm",
+        "script": "test:e2e",
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        },
+        "problemMatcher": [],
+        "path": "",
+        "options": {
+          "cwd": "${workspaceFolder:app}"
+        }
+      },
+      {
+        "label": "seed:reset (wipe dev database)",
+        "type": "npm",
+        "script": "seed:reset",
+        "problemMatcher": [],
+        "path": "",
+        "options": {
+          "cwd": "${workspaceFolder:app}"
+        }
+      }
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-playwright.playwright",
+      "qwtel.sqlite-viewer",
+      "anthropic.claude-code"
+    ]
+  }
+}

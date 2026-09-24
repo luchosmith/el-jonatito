@@ -1,0 +1,36 @@
+{
+  "name": "el-jonatito",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Picture-based communication and daily-structure app for Jonatito and his family.",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "dev:web": "node scripts/build-web.mjs --watch",
+    "start": "npm run build:web && tsx server/index.ts",
+    "dev": "tsx watch server/index.ts",
+    "seed:reset": "tsx server/reset.ts",
+    "set-pin": "tsx server/set-pin.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:unit": "tsx --test test/*.test.ts",
+    "e2e:server": "node scripts/build-web.mjs && tsx server/index.ts",
+    "test:e2e": "playwright test -c e2e/playwright.config.ts",
+    "test": "npm run test:unit && npm run test:e2e"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.25.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

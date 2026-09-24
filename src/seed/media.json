@@ -1,0 +1,25 @@
+{
+  "policy": { "session_max_min": 15, "sleep_start": "20:30", "sleep_end": "07:00" },
+  "items": [
+    { "title": "Trains",          "kind": "movie",   "emoji": "🚂" },
+    { "title": "Favorite songs",  "kind": "song",    "emoji": "🎵" },
+    { "title": "Spotty dog",      "kind": "movie",   "cover": "covers/spotty_dog.svg" },
+    { "title": "Family photos",   "kind": "photos",  "emoji": "📸" },
+    { "title": "Story: Dentist",  "kind": "story",   "emoji": "🦷" },
+    { "title": "Story: Party",    "kind": "story",   "emoji": "🎂" },
+    { "title": "Calm rain",       "kind": "sensory", "emoji": "🌧️", "bedtime_ok": true },
+    { "title": "Purple puppet",   "kind": "movie",   "cover": "covers/purple_puppet.svg" }
+  ],
+  "routine": [
+    { "emoji": "🌅", "label": "wake",      "at": "07:00" },
+    { "emoji": "🥞", "label": "breakfast", "at": "07:30", "symbol": "pancakes" },
+    { "emoji": "🏫", "label": "school",    "at": "08:30" },
+    { "emoji": "🍝", "label": "lunch",     "at": "12:30" },
+    { "emoji": "🌳", "label": "park",      "at": "13:30" },
+    { "emoji": "🍇", "label": "snack",     "at": "15:00" },
+    { "emoji": "📺", "label": "media",     "at": "16:00" },
+    { "emoji": "🍲", "label": "dinner",    "at": "18:30", "symbol": "chicken_soup" },
+    { "emoji": "🛁", "label": "bath",      "at": "19:30" },
+    { "emoji": "🛏️", "label": "sleep",     "at": "20:30" }
+  ]
+}

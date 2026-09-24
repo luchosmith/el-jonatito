@@ -1,0 +1,11 @@
+{
+  "note": "Development PINs only. Change them before real use: npm run set-pin -- <username> <new-pin>",
+  "users": [
+    { "username": "jonatito", "pin": "1000", "role": "child",     "person_id": "jonatito" },
+    { "username": "joyce",    "pin": "1234", "role": "caretaker", "person_id": "mommy_joyce" },
+    { "username": "lucho",    "pin": "1111", "role": "caretaker", "person_id": "lucho" },
+    { "username": "larry",    "pin": "2222", "role": "caretaker", "person_id": "larry" },
+    { "username": "pilar",    "pin": "3333", "role": "friend",    "person_id": "pilar" },
+    { "username": "tintin",   "pin": "4444", "role": "friend",    "person_id": "tintin" }
+  ]
+}
