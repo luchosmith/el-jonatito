@@ -1,9 +1,10 @@
-// Bottom bar: Jonatito's own face where the Start button would be, then family, then pets.
+// Bottom bar: Jonatito's own face where the Start button would be (opens the orbit), then family, then pets.
 import { Face } from '../common/Face.tsx';
 import type { Person } from '../../../shared/types.ts';
 
-export function Dock({ people, onMe, onPerson, onDay, onMedia }: {
+export function Dock({ people, meActive, onMe, onPerson, onDay, onMedia }: {
   people: Person[];
+  meActive: boolean;
   onMe: () => void;
   onPerson: (p: Person) => void;
   onDay: () => void;
@@ -17,7 +18,7 @@ export function Dock({ people, onMe, onPerson, onDay, onMedia }: {
   return (
     <footer className="dock" data-testid="dock">
       {me && (
-        <button className="me" data-testid="me-button" onClick={onMe} aria-label="Me">
+        <button className={`me ${meActive ? 'on' : ''}`} data-testid="me-button" onClick={onMe} aria-label="Me">
           <Face person={me} />
         </button>
       )}

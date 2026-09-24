@@ -35,7 +35,7 @@ interface FoodSymbol {
 }
 
 interface VocabSymbol {
-  id: string; page: string; row: number; col: number; kind: string; emoji: string; en: string; es: string; log?: boolean; alias_of?: string;
+  id: string; page: string; row: number; col: number; kind: string; emoji: string; en: string; es: string; log?: boolean; alias_of?: string; photo?: string;
 }
 
 const readJson = <T>(file: string): T => JSON.parse(fs.readFileSync(file, 'utf8')) as T;
@@ -108,6 +108,7 @@ export function seed(db: Db, cfg: Config) {
          VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
         s.id, s.page, s.kind, s.emoji, s.en, s.es, s.page, s.row, s.col, s.log ? 1 : 0, s.alias_of ?? null,
       );
+      if (s.photo) copyImage(s.photo, 'symbol', s.id);
     }
     for (const f of food) {
       if (!f.limit) continue;

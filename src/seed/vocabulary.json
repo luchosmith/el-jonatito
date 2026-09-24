@@ -500,6 +500,28 @@
       "es": "libro"
     },
     {
+      "id": "barney",
+      "page": "play",
+      "row": 1,
+      "col": 0,
+      "kind": "thing",
+      "emoji": "🦖",
+      "en": "Barney",
+      "es": "Barney",
+      "photo": "symbols/barney.jpg"
+    },
+    {
+      "id": "pongo",
+      "page": "play",
+      "row": 1,
+      "col": 1,
+      "kind": "thing",
+      "emoji": "🐶",
+      "en": "Pongo",
+      "es": "Pongo",
+      "photo": "symbols/pongo.jpg"
+    },
+    {
       "id": "yes",
       "page": "core",
       "row": 0,

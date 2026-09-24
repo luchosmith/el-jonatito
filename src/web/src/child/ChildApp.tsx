@@ -4,7 +4,8 @@ import { api, setElevatedToken } from '../api.ts';
 import { deviceLang, speak, useEvents, useLongPress, useNow } from '../common/hooks.ts';
 import { personToken, type Board, type StripToken } from '../common/board.ts';
 import { HereNow } from './HereNow.tsx';
-import { BoardView } from './Board.tsx';
+import { BoardView, Strip } from './Board.tsx';
+import { OrbitView } from './OrbitView.tsx';
 import { Dock } from './Dock.tsx';
 import { DispatchCard, type SentState } from './DispatchCard.tsx';
 import { ReplyToast } from './ReplyToast.tsx';
@@ -16,7 +17,7 @@ import { FamilyApp } from '../family/FamilyApp.tsx';
 import type { DispatchNote, LogEntry, Message, NowInfo, Reply, ScheduleItem, User } from '../../../shared/types.ts';
 import { renderSentence } from '../../../shared/grammar.ts';
 
-type View = { name: 'home' } | { name: 'person'; id: string } | { name: 'day' } | { name: 'media' };
+type View = { name: 'home' } | { name: 'me' } | { name: 'person'; id: string } | { name: 'day' } | { name: 'media' };
 
 export function ChildApp({ user }: { user: User }) {
   const now = useNow();
@@ -127,6 +128,19 @@ export function ChildApp({ user }: { user: User }) {
           sending={sending}
         />
       )}
+      {view.name === 'me' && (
+        <>
+          <Strip
+            me={me}
+            tokens={tokens}
+            onClear={() => setTokens([])}
+            onSay={() => speak(sentence(), lang)}
+            onSend={() => void send()}
+            sending={sending}
+          />
+          <OrbitView board={board} me={me} onAdd={add} />
+        </>
+      )}
       {view.name === 'person' && person && (
         <PersonView
           person={person}
@@ -146,7 +160,8 @@ export function ChildApp({ user }: { user: User }) {
 
       <Dock
         people={board.people}
-        onMe={() => setView({ name: 'home' })}
+        meActive={view.name === 'me'}
+        onMe={() => setView(view.name === 'me' ? { name: 'home' } : { name: 'me' })}
         onPerson={(p) => setView({ name: 'person', id: p.id })}
         onDay={() => {
           void loadLogs();

@@ -26,7 +26,7 @@ shared/        types, 12-hour time helpers, sentence grammar (en/es)
 server/        app.ts (wiring), http.ts (router + middleware), auth.ts, db.ts, schema.sql,
                seed.ts, dispatcher.ts (who gets a message + gentle notes), repo.ts,
                routes/{auth,board,messages,day}.ts, events.ts (SSE), uploads.ts
-web/src/       child/ (tablet: Here & Now, board, dock, person close-up, day, media, parent gate)
+web/src/       child/ (tablet: Here & Now, board, orbit, dock, person close-up, day, media, parent gate)
                family/ (phones + parent mode: inbox, status, quick log, people, words, settings)
                common/ (Clock12, faces, tokens, hooks, recorder, login)
 seed/          known_persons.json, food_vocabulary.json, vocabulary.json, media.json, users.json, avatars/, covers/
@@ -89,7 +89,7 @@ extensions: Playwright Test, SQLite Viewer and Claude Code.
 
 ```bash
 npm run test:unit      # grammar, 12-hour time, dispatcher rules (node:test)
-npm run test:e2e       # 51 Playwright end-to-end tests (starts its own server in TEST_MODE)
+npm run test:e2e       # 54 Playwright end-to-end tests (starts its own server in TEST_MODE)
 npm test               # both
 ```
 

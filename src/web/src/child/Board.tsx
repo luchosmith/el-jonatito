@@ -17,6 +17,29 @@ interface Props {
   sending: boolean;
 }
 
+/** The sentence being built, with say / clear / send. Shared by the board and the orbit. */
+export function Strip({ me, tokens, onClear, onSay, onSend, sending }: Pick<Props, 'me' | 'tokens' | 'onClear' | 'onSay' | 'onSend' | 'sending'>) {
+  return (
+    <div className="strip">
+      <div className="tokens" data-testid="strip">
+        {tokens.length === 0 ? (
+          <span className="hint">👆</span>
+        ) : (
+          <>
+            {me && <TokenCard t={personToken(me)} testId="strip-me" />}
+            {tokens.map((t, i) => (
+              <TokenCard key={i} t={t} testId="strip-token" />
+            ))}
+          </>
+        )}
+      </div>
+      <button className="sbtn speak" data-testid="say" onClick={onSay} aria-label="Say">🔊</button>
+      <button className="sbtn clear" data-testid="clear" onClick={onClear} aria-label="Clear">✖</button>
+      <button className="sbtn send" data-testid="send" onClick={onSend} disabled={!tokens.length || sending} aria-label="Send">➤</button>
+    </div>
+  );
+}
+
 export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onSay, onSend, sending }: Props) {
   const cells: (StripToken | null)[] = Array.from({ length: GRID_ROWS * GRID_COLS }, () => null);
   const hidden = new Set<number>();
@@ -42,23 +65,7 @@ export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onS
 
   return (
     <>
-      <div className="strip">
-        <div className="tokens" data-testid="strip">
-          {tokens.length === 0 ? (
-            <span className="hint">👆</span>
-          ) : (
-            <>
-              {me && <TokenCard t={personToken(me)} testId="strip-me" />}
-              {tokens.map((t, i) => (
-                <TokenCard key={i} t={t} testId="strip-token" />
-              ))}
-            </>
-          )}
-        </div>
-        <button className="sbtn speak" data-testid="say" onClick={onSay} aria-label="Say">🔊</button>
-        <button className="sbtn clear" data-testid="clear" onClick={onClear} aria-label="Clear">✖</button>
-        <button className="sbtn send" data-testid="send" onClick={onSend} disabled={!tokens.length || sending} aria-label="Send">➤</button>
-      </div>
+      <Strip me={me} tokens={tokens} onClear={onClear} onSay={onSay} onSend={onSend} sending={sending} />
 
       <div className="main">
         <nav className="cats">
