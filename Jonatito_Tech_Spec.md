@@ -1,6 +1,8 @@
 # El Jonatito — Technical Specification
 
-Version 0.2 · Draft · September 2026 · Companion to `Jonatito_Project_Plan.md`
+Version 0.3 · Draft · September 2026 · Companion to `Jonatito_Project_Plan.md`
+
+> **Build status (v0.3).** The running app (`src/`) uses a lighter stack than sections 1–2 describe: one **Node 22** process with **SQLite** (`node:sqlite`), server-sent events for live updates, and a React web app built with esbuild. See `src/README.md`. The target architecture below still applies to later phases. Section 5 (orbit home and item catalog) is written against the running build.
 
 ---
 
@@ -120,7 +122,7 @@ settings         singleton: location {lat, lon, city, hemisphere}, timezone, qui
 
 audit            id, actor, action, target, at   -- parent-mode changes
 
--- Future (sections 10–11)
+-- Future (sections 11–12)
 vocalizations    id, audio(file), recorded_at, source [tablet|caretaker_phone], label_symbol(rel symbols?),
                  label_source [caretaker|tap_pairing|confirmed_by_child], confidence, used_for_training(bool), consent_ok(bool)
 
@@ -128,19 +130,230 @@ status_signals   id, at, kind [activity|audio_event|heart_rate|presence|mood_est
                  source_device, confirmed_by(rel users?)   -- derived features only, never raw video
 ```
 
+> **v0.3 change:** `symbols`, the display fields of `people`, and the display fields of `media` merge into one **`items`** catalog: one row for everything Jonatito can touch. `limits` becomes `item_rules`. New tables: `audio_clips`, `voice_notes`, `locations`, `pain_reports`. See section 5.9 for the SQL.
+
 **Seed data: known persons.** `known_persons/known_persons.json` (with face-cropped avatars in `known_persons/avatars/`, 512×512 JPG) is the running list of known people. A first-run migration imports it into `people`, and each avatar goes into `people.photo` plus an `images` history row. So far: **Jonatito** (the user himself: `role: child`, `is_self: true`, shown as the "Me" button bottom-left and at the start of every sentence strip), Mommy Joyce, Larry (Papi), Abuelo Lucho, Abuela Pilar, TinTin (Justin). **Pets:** Lexi (poodle), Loki (calico cat), Logan (grey long-haired cat).
 
 **Seed data: food vocabulary.** `vocabulary/food_vocabulary.json` holds the starter food & drink symbols in fixed grid positions, with English and Spanish labels: water, smoothie, chicken soup, rice bowl, grapes, pancakes, pasta with red sauce and pasta with green sauce. The two pastas share a picture, so each has a **colored sauce badge** (red/green) until real photos replace them. Starter limits: smoothie max 2/day (suggest water); grapes get a reminder if eaten in the last 60 min. `symbols` gets an optional `badge_color` field.
 
 **Access rules (PocketBase API rules):**
 - `child` can create `messages`, read their own replies, read symbols/people/schedule/media/logs about themselves.
-- `caretaker` (**admin**) has full CRUD except `audit`, and is the only role that can replace pictures (see section 8).
+- `caretaker` (**admin**) has full CRUD except `audit`, and is the only role that can replace pictures (see section 9).
 - `friend` can read messages addressed to them, create replies, update their own availability, and upload media as `approved=false`.
 - `therapist` has read access to logs and messages (with parent consent), no writes.
 
 ---
 
-## 5. Smart dispatcher (worker)
+## 5. Orbit home & item catalog (v0.3)
+
+### 5.1 Why an orbit
+Jonatito understands the world as something that revolves around him. So the home screen puts **him in the middle**, and everything he can reach floats around him:
+
+- his **core needs** (Eat, Bath, Toilet, Go, favorite things) in a close **inner orbit**;
+- his **people** in a wider **outer orbit**;
+- the **ground** under his feet, with a pin where he is.
+
+The orbit is the **default screen**. The picture-board grid (section 7) stays available from the dock as "All words" while he makes the transition.
+
+### 5.2 Layout (1280×800 tablet, landscape)
+
+```
+┌─ Here & Now bar (unchanged) ─────────────────────────────────────────────┐
+├─ Sentence strip: [Me] [Mommy] [Eat] [Grapes]           🔊  ✖  ➤         ┤
+│                              (Mommy〰²)                   outer orbit:  │
+│          (TinTin)      [Pongo]        [Eat]                 people      │
+│                  [Barney]   ( JONATITO )   [Bath]        (Lucho)        │
+│          (Larry)       [Go]          [Toilet]                            │
+│                                                      (Pilar ✈️)          │
+│   ~~~~~~~~~~~~~~~~~~~~~~~~~~ ground ~~ 📍 ~~~~~~~~~~~~~~~~~~~~~~~~~~       │
+├─ Dock: [Me]  faces…  pets…                     [All words] [Day] [Media] ┤
+```
+
+- **Fixed slots, never recomputed.** The inner orbit has **8 slots**, every 45°, starting half a step past 12:00, so no inner slot sits straight above or below his face. The outer orbit has **10 slots**, every 36° from 12:00. Its 12:00 and 6:00 slots always stay empty: on a landscape screen 12:00 crowds the inner orbit, and 6:00 is where his ground pin sits. That leaves **8 slots for people**. An item keeps its slot for good. A new item takes an empty slot, and a hidden item leaves a gap. This is the "icons never move" rule applied to the orbit. *The v0.2 build spaces items evenly by count, so adding Barney shifted the others. v0.3 fixes this.*
+- Both orbits are ellipses sized in percent of the stage (inner 20% × 30%, outer 40% × 38%), so the layout scales from a 10" to a 13" tablet.
+- Items bob gently (±5 px, 4.5 s). The bob is off when `prefers-reduced-motion` is set, and it never changes where a tap lands.
+- Color follows the Fitzgerald key (green actions, orange things, yellow people). An item with a picture shows the picture, and one without shows its emoji.
+- **Not available:** a busy person gets a yellow ring and a small 12-hour clock of when they're free. An away person is greyed out, with a grey ring and 🚫. *The v0.2 build shows ⏳ for busy, which breaks the "time is always a real clock" principle. v0.3 fixes this.*
+
+### 5.3 What a tap does
+
+| Tapped | What happens |
+|---|---|
+| Action or thing (`tap = add`) | Speaks its word and adds it to the strip |
+| Group item, e.g. **Eat** (`tap = open`) | Speaks "eat", adds it to the strip, and opens its **sub-orbit** (5.4) |
+| Person in the outer orbit | Speaks their name, adds them to the strip, and the **ground zooms out to show where they are** (5.7) |
+| **Sound-wave badge** in front of a person | Plays their newest unheard voice message (5.6) |
+| Media item, e.g. **Pongo** (`tap = play`) | Opens it **full screen** (5.5). It isn't added to the strip |
+| **His own face** (center) | Opens **My body** (5.8) |
+| A closed item (time rule) | Speaks "grapes at 3:00" and shows the clock. It isn't added (5.4) |
+| Dock: **Me** | Back to the main orbit, from anywhere |
+| Dock: a face | That person's close-up with their **voice shelf** (5.6) |
+
+### 5.4 Sub-orbits and time rules (Eat → foods)
+- **Opening a sub-orbit.** Jonatito stays in the center. The opened item (🍇 Eat) sits as a small badge on his face, and its children fill the inner orbit in their own fixed slots. The outer orbit (people) stays, so *"Mommy, eat, grapes"* can be built on one screen. Tapping his face or the badge goes back one level.
+- **Children** are rows in `items` with `parent_id = 'eat'`. Any item can be a group, and nesting deeper than one level is allowed but not recommended.
+- **Time rules (`item_rules`).** A caretaker can make an item open only at certain times, or only a few times a day:
+  - `window`: open from `start` to `end` on the given days, or tied to a routine item (for example "snack", open from the snack's start for 45 min);
+  - `limit`: at most N per day (from the daily log), then closed until tomorrow, with an optional suggestion (smoothie → water);
+  - `interval`: at least N minutes since the last time it was logged.
+- **What "closed" looks like.** The item is dimmed with a small 12-hour clock badge. Tapping it speaks "grapes at 3:00" and shows a large clock with the wait shaded. When any snack item is closed, a side panel shows **"next snack"** as a clock face and "3:00". The item is not added to the strip.
+- **Principle check.** The plan says reminders never block. Closed items are the one exception, and only a caretaker can set one. They must always show *when*, never just "no". The dispatcher's gentle notes (recent, next meal) still apply to open items.
+
+### 5.5 Media items (Pongo) — full screen
+- A `tap = play` item links to a `media` row. It opens **full screen**, hiding the Here & Now bar, strip and dock, with no browser chrome (kiosk mode).
+- **To leave:** tap his face (top-left, always visible), or wait for the video to end. Either way he returns to the orbit. There is no scrubber and no "next video".
+- The media clock (the remaining time shaded on a 12-hour face) sits top-right. The media policy (section 10.2) applies in full: during the **sleep lock** the item shows a moon and the clock of when it wakes, and it doesn't open.
+- To *ask* for media instead of playing it, he uses the board or the sentence strip (`[Me] [watch] [Pongo]`).
+
+### 5.6 Voice messages for Jonatito ("a familiar voice")
+- **Recording (family side).** Each adult's app gets a big **"🎙️ For Jonatito"** button: hold to record, up to 60 s, listen back, send. It's stored in `voice_notes`. Voice replies to his messages are also saved as voice notes, so everything he can hear is in one place. *(The wider messaging system is still to be decided, for example forwarding WhatsApp voice notes. The table is designed so any channel can write into it.)*
+- **Unheard badge.** An animated sound-wave badge sits **in front of the sender's avatar**, both in the orbit and in the dock. A number dot shows when there's more than one. Tapping the badge plays the newest unheard note, marks it heard, and the badge animates while it plays.
+- **Voice shelf (close-up).** Opening a person from the dock shows their face with the TALK/LISTEN zones as before, plus a **shelf of big waveform tiles**, one per note, newest first. **Pinned comfort clips** (⭐, pinned by a caretaker, e.g. *"Te quiero mucho, mi amor"*) always come first and never expire. He can play any tile, any time, as often as he wants. This is the "I just want to hear a familiar voice" use.
+- **No delete on his side.** Caretakers can pin, unpin or hide notes. Unpinned notes are kept for 90 days (a setting).
+- **Playback** uses the tablet speaker at the fixed child volume. A clip never auto-plays (principle 2).
+
+### 5.7 Ground & location
+- **At rest.** The bottom edge of the orbit shows the **top of a large blue-and-green sphere** at about 25% opacity, with **one pin (his face) in the middle**. It stays still, so he always sees he's *standing somewhere*.
+- **Tapping a person** raises the sphere and **zooms out** (about 600 ms; with reduced motion it cross-fades instead) until both pins fit:
+
+  | Where they are | What he sees |
+  |---|---|
+  | same city | neighborhood scale, their pin with their face, 🚗 |
+  | same country, another city | country scale, 🚗 or 🚆 |
+  | **another country** | the globe, with a dotted arc between the pins and a **✈️ flying along it** |
+  | unknown or not shared | only his pin, their face with a ❔ |
+
+  It returns to rest after 6 s, or when he taps it.
+- **Rendering.** An SVG **orthographic globe** drawn with `d3-geo` from the `world-atlas` 110m land outline, bundled with the app (about 50 KB, works offline). There are no map tiles and no outside requests. Ocean `#7fb8e6`, land `#8fcf8a`, and no borders or labels on his side.
+- **Where people's locations come from.** Each adult sets **"Where I am"** in their app: pick a city from a bundled list (about 5,000 cities), or "use my phone's location", rounded to about 10 km. They can add an optional **until** date ("back Oct 3"). The tablet can then show "back in 3 sleeps". Jonatito's own pin comes from `settings.location`, or from the place he's at.
+- **Privacy.** Location is city-level only. The tablet and caretakers can see it; friends can't see each other's. It clears automatically after `until`, and each person can turn it off.
+
+### 5.8 My body & pain scale
+- **Tapping his face** in the center opens **My body**: a simple front-view drawing of a child's body with **his own photo as the head**.
+- **12 tap zones:** head, eyes, ears, mouth/teeth, throat, chest, tummy, potty area (a caretaker can hide this one), arms, hands, legs, feet. Left and right are recorded but aren't required.
+- **Tapping a zone** makes it glow red and speaks it ("tummy"). A **pain scale** slides in: 6 faces from smiling (0) to crying (5), colored green to red, with no numbers or words for him.
+  - The faces are **drawn in-house**. Published scales (Wong-Baker FACES®, FPS-R) need permission to use in software.
+- **Tapping a face** speaks *"My tummy hurts a lot"* and sends it. The thresholds are settings:
+  - level 0: logged only ("no hurt");
+  - levels 1–2: a normal message to the caretaker on duty;
+  - **levels 3–5: urgent.** It goes to everyone on duty, with escalation (section 6, step 1).
+- **Records.** Each report creates a `pain_reports` row plus a log entry (`type = 'pain'`). Family phones show the body drawing with the zone highlighted and the chosen face.
+- The always-on **"I hurt"** core button opens this same screen.
+
+### 5.9 Item catalog (database)
+**One row for everything Jonatito can interact with:** people, pets, foods, actions, places, feelings, body parts and media.
+
+```sql
+CREATE TABLE items (
+  id            TEXT PRIMARY KEY,           -- 'eat', 'grapes', 'mommy_joyce', 'pongo'
+  category      TEXT NOT NULL CHECK (category IN
+                  ('person','pet','food','drink','action','place','feeling','play','media','body','social','urgent','core')),
+  kind          TEXT NOT NULL,              -- Fitzgerald colour: people|action|thing|desc|social|urgent
+  label_en      TEXT NOT NULL,              -- spoken / used in sentences ("take a bath")
+  label_es      TEXT NOT NULL,
+  short_label   TEXT,                       -- shown under the picture ("Bath")
+  emoji         TEXT,                       -- fallback until a picture exists
+  tap           TEXT NOT NULL DEFAULT 'add' CHECK (tap IN ('add','open','play','body','none')),
+  parent_id     TEXT REFERENCES items(id),  -- lives in this item's sub-orbit; NULL = main orbit / board only
+  orbit         TEXT CHECK (orbit IN ('inner','outer')),
+  orbit_slot    INTEGER,                    -- fixed; never recomputed
+  grid_page     TEXT, grid_row INTEGER, grid_col INTEGER,   -- picture-board position (fixed)
+  user_id       INTEGER REFERENCES users(id),               -- the person's account (people only; pets have none)
+  media_id      INTEGER REFERENCES media(id),               -- what a 'play' item plays
+  badge_color   TEXT,
+  log_trackable INTEGER NOT NULL DEFAULT 0,
+  alias_of      TEXT REFERENCES items(id),
+  is_hidden     INTEGER NOT NULL DEFAULT 0,
+  updated_at    TEXT NOT NULL,
+  updated_by    INTEGER REFERENCES users(id),
+  UNIQUE (parent_id, orbit, orbit_slot),
+  UNIQUE (grid_page, grid_row, grid_col)
+);
+
+-- Person details stay in people (relation, species, breed, is_self…), keyed by the same id as the item.
+-- Media details stay in media (file, duration, bedtime_ok…); the item carries picture, label and slot.
+
+CREATE TABLE audio_clips (                  -- versioned like images; the newest active clip wins, none = text-to-speech
+  id INTEGER PRIMARY KEY, owner_type TEXT NOT NULL,        -- 'item'
+  owner_id TEXT NOT NULL, lang TEXT NOT NULL CHECK (lang IN ('en','es')),
+  file TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1, uploaded_by INTEGER, created_at TEXT NOT NULL
+);
+
+CREATE TABLE item_rules (                   -- replaces limits
+  id INTEGER PRIMARY KEY, item_id TEXT NOT NULL REFERENCES items(id),
+  kind TEXT NOT NULL CHECK (kind IN ('window','limit','interval')),
+  days INTEGER,                             -- bitmask Sun..Sat; NULL = every day
+  start_min INTEGER, end_min INTEGER,       -- window, minutes after midnight
+  routine_item_id INTEGER REFERENCES schedule_items(id), routine_open_min INTEGER,  -- or: open with a routine item
+  max_per_day INTEGER, min_interval_min INTEGER,
+  suggest_item_id TEXT REFERENCES items(id)
+);
+
+CREATE TABLE voice_notes (
+  id INTEGER PRIMARY KEY, from_user_id INTEGER NOT NULL REFERENCES users(id),
+  audio_file TEXT NOT NULL, duration_s REAL, created_at TEXT NOT NULL,
+  heard_at TEXT, pinned INTEGER NOT NULL DEFAULT 0, hidden INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'app'        -- app | reply | whatsapp (later)
+);
+
+CREATE TABLE locations (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id),
+  place_label TEXT NOT NULL, country_code TEXT NOT NULL,
+  lat REAL NOT NULL, lon REAL NOT NULL,     -- rounded to 0.1° (~10 km)
+  source TEXT NOT NULL CHECK (source IN ('manual','phone')), until TEXT, updated_at TEXT NOT NULL
+);
+
+CREATE TABLE pain_reports (
+  id INTEGER PRIMARY KEY, body_part TEXT NOT NULL, side TEXT, level INTEGER NOT NULL CHECK (level BETWEEN 0 AND 5),
+  at TEXT NOT NULL, message_id INTEGER REFERENCES messages(id), handled_by INTEGER, handled_at TEXT
+);
+```
+
+- **Pictures** keep using `images` (with `owner_type = 'item'`) and its version history. Every item's picture can be replaced and reverted (section 9). The "Eat" item's picture is grapes.
+- **Audio.** A caretaker can record or upload the word in each language. If there's no clip, the tablet speaks the label with text-to-speech. Tapping plays the clip, and the sentence reads use the clips where they exist.
+- **Migration.** A one-time startup migration copies `symbols` → `items`, the display fields of `people` → `items` (with `user_id` from `users.person_id`), media covers → `items` (`tap = 'play'`), and `limits` → `item_rules`. It then gives inner-orbit slots to Eat, Bath, Toilet, Go, Barney and Pongo in their current order and outer-orbit slots to people by `sort_order`, skipping 12:00 and 6:00. The old tables stay as read-only views for one release.
+
+### 5.10 Item editor (parent mode)
+- **Tree view:** Main orbit (inner, outer) → each sub-orbit → board pages → hidden items.
+- **For each item:**
+  - **Picture:** camera, gallery or symbol library, then a fixed-frame crop, plus the history with one-tap revert (section 9).
+  - **Labels:** EN and ES, plus a short label.
+  - **Audio, per language:** record in the app (up to 10 s), upload, or use text-to-speech; with preview and revert.
+  - **Category and color.**
+  - **Tap behavior:** add, open, play or body.
+  - **Placement:** a slot picker that shows the fixed orbit slots and board cells.
+  - **Links:** the user account (people) or the media file (media).
+  - **Time rules.**
+  - **Hidden** toggle.
+- **Moving an item** to another slot asks for a confirmation (*"He has learned where this is. Move it anyway?"*) and is written to `audit`.
+- Every change reaches the tablet live (an SSE `items` event), and the new picture or audio is cached for offline use.
+
+### 5.11 API additions
+
+| Method & path | Role | Purpose |
+|---|---|---|
+| `GET /api/items` | any | The catalog as a tree, with picture URLs, audio URLs and whether each item is open now |
+| `PATCH /api/items/:id` | caretaker | Labels, category, tap behavior, placement, hidden, rules |
+| `PUT /api/items/:id/image` · `POST …/image/revert` | caretaker | Replace or revert the picture |
+| `PUT /api/items/:id/audio?lang=es` · `DELETE …/audio?lang=es` | caretaker | Replace the audio, or go back to text-to-speech |
+| `POST /api/voice-notes` (audio body) | caretaker, friend | Record a voice note for Jonatito |
+| `GET /api/voice-notes?from=<person>` · `POST /api/voice-notes/:id/heard` | child | Voice shelf and badges |
+| `PATCH /api/voice-notes/:id` | caretaker | Pin, unpin or hide |
+| `PUT /api/location` · `GET /api/locations` | adults · child, caretaker | Set your own location · read the pins |
+| `POST /api/pain` `{part, side?, level}` | child | Pain report → message + log + dispatch |
+
+New SSE events: `items`, `voice_note`, `location`, `pain`.
+
+### 5.12 Decisions to confirm with the family
+1. **Tapping a person in the orbit** adds them to the sentence *and* shows where they are. Their full voice shelf opens from the **dock** face. Alternative: open the close-up from the orbit too, with a long press (harder for him).
+2. **Location:** is each adult willing to set "Where I am"? Should the phone-location option exist at all?
+3. **Closed items:** block entirely (as specified), or allow sending with a gentle note (the current dispatcher behavior)?
+4. **Pain thresholds:** is level 3+ urgent the right line? Should the potty-area zone be shown?
+5. **Board vs. orbit:** keep the "All words" grid long term, or retire it once the orbit covers his vocabulary?
+
+---
+
+## 6. Smart dispatcher (worker)
 
 Triggered by the PocketBase realtime subscription on `messages` create.
 
@@ -189,7 +402,7 @@ async function dispatch(msg: Message) {
 
 ---
 
-## 6. Front-end structure
+## 7. Front-end structure
 
 ```
 apps/
@@ -198,10 +411,14 @@ apps/
       app/                     # routing, providers, service worker registration
       features/
         here-now/              # clock, timeline, sun arc, season, weather, location
+        orbit/                 # v0.3 home: fixed-slot orbits, sub-orbits, time rules (section 5)
+        ground/                # blue-green sphere, pins, zoom-out with ✈️
+        body/                  # My body + pain scale
+        voice-shelf/           # sound-wave badges, per-person voice notes
         me-button/
         people-bar/            # avatars, availability rings, face hotspots
         sentence/              # strip, grammar, TTS, send
-        board/                 # fixed grid, categories, motor-plan layout
+        board/                 # fixed grid, categories, motor-plan layout ("All words" from the dock)
         dispatcher-feedback/   # busy/recent/limit cards with 12-hour clock faces
         log/                   # plate & glass visuals, caretaker entry
         schedule/              # first/then, timeline data
@@ -222,7 +439,7 @@ infra/
 
 ---
 
-## 7. Integrations detail
+## 8. Integrations detail
 
 ### Google Calendar
 - Create two calendars: **"Jonatito — Family"** (availability/duty) and **"Jonatito — Day"** (routine).
@@ -248,7 +465,7 @@ infra/
 
 ---
 
-## 8. Custom pictures (admin)
+## 9. Custom pictures (admin)
 
 **Every picture in the app can be replaced with a real photo** by anyone with admin (caretaker) access. That covers people's avatars, Jonatito's own "Me" face, places (home, school, Abuela's house, the park), things (his cup, his grapes, his favorite train), and media covers.
 
@@ -271,7 +488,7 @@ infra/
 
 ---
 
-## 9. Entertainment & local media library
+## 10. Entertainment & local media library
 
 Entertainment is a reward, a comfort and a way to regulate. It's also a big reason he'll want to use the tablet at all. Everything is **stored locally**, curated by the family, and works without internet.
 
@@ -300,14 +517,14 @@ Entertainment is a reward, a comfort and a way to regulate. It's also a big reas
   - video → H.264/AAC MP4 at 720p with fast start (plays on every tablet)
   - audio → AAC 256 kbps or Opus
   - volume levels evened out (loudnorm) so no track is shockingly louder than the others
-  - poster/album art extracted automatically, replaceable like any other picture (section 8)
+  - poster/album art extracted automatically, replaceable like any other picture (section 9)
 - **Playback:** Caddy serves files with HTTP range requests (seeking works). For very large libraries, **Jellyfin** can run alongside as an optional back end, with the Jonatito player still in front so the UI stays simple.
 - **Offline favorites:** items marked `pin_offline` download to the tablet's browser storage (the Cache API or the Origin Private File System). A 64–128 GB tablet can hold many movies and songs, so favorites play in the car, at Abuela's, or when the internet is down.
 - Use content the family owns. Rip DVDs and CDs you own, or buy DRM-free downloads. Streaming services (Netflix, Disney+) can't be stored locally because of copy protection. At most they could open as a separate app, and doing that would break the kiosk lock. They're not recommended for his tablet.
 
 ---
 
-## 10. Future version: live status & mood awareness
+## 11. Future version: live status & mood awareness
 
 **Goal:** help the family understand how Jonatito is doing right now (calm, active, upset, tired, asleep), so the app and the adults can respond sooner. For example: offer the break screen, alert the on-duty caretaker, or hold back non-urgent notifications.
 
@@ -334,7 +551,7 @@ Entertainment is a reward, a comfort and a way to regulate. It's also a big reas
 
 ---
 
-## 11. Future version: understanding Jonatito's own speech
+## 12. Future version: understanding Jonatito's own speech
 
 **Goal:** Jonatito may make sounds or word approximations that his family understands but strangers don't. The app will learn **his unique spoken language**, recognize it, show what he said as pictures, and speak it aloud in **English and Spanish**, with more languages later.
 
@@ -370,7 +587,7 @@ Entertainment is a reward, a comfort and a way to regulate. It's also a big reas
 
 ---
 
-## 12. Security & privacy
+## 13. Security & privacy
 
 - All traffic is HTTPS (Cloudflare edge + Tunnel).
 - **Cloudflare Access** in front of `/_/` (PocketBase admin) and the parent routes: only family Google accounts get in.
@@ -380,11 +597,13 @@ Entertainment is a reward, a comfort and a way to regulate. It's also a big reas
 - Nightly **encrypted** backups (Litestream → R2/B2; restic for uploaded media). Test a restore quarterly.
 - Data export/delete available to parents.
 - Uploaded photos have EXIF/GPS metadata removed.
-- Voice recordings and status signals (sections 10–11) have their own consent switch, retention period and "delete all" button.
+- Location (section 5.7) is city-level only, visible to the tablet and caretakers, cleared after its `until` date, and can be turned off by each person.
+- Pain reports (section 5.8) are health data: caretakers only, included in the parents' export, never sent to third parties.
+- Voice recordings and status signals (sections 11–12) have their own consent switch, retention period and "delete all" button.
 
 ---
 
-## 13. Getting it running
+## 14. Getting it running
 
 ### Prerequisites
 - A mini PC or Raspberry Pi 5 running Ubuntu Server 24.04 (or Windows with WSL2 + Docker Desktop).
@@ -439,7 +658,7 @@ services:
   # jellyfin:                        # optional, for very large libraries
   #   image: jellyfin/jellyfin:latest
   #   volumes: [/srv/media/library:/media:ro, ./data/jellyfin:/config]
-  # voice:                           # future (section 11): ONNX speech recognizer
+  # voice:                           # future (section 12): ONNX speech recognizer
   #   build: ./apps/voice
   livekit:
     image: livekit/livekit-server:latest
@@ -480,7 +699,7 @@ services:
 
 ---
 
-## 14. Testing & quality
+## 15. Testing & quality
 
 - **Unit tests:** grammar renderer, season/time helpers, dispatcher rules (Vitest).
 - **E2E:** Playwright on tablet (1280×800) and phone viewports: build sentence → send → friend receives → reply → tablet shows it.
@@ -489,7 +708,7 @@ services:
 
 ---
 
-## 15. Rough budget
+## 16. Rough budget
 
 | Item | One-off | Monthly |
 |---|---|---|

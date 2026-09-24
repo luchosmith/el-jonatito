@@ -2,7 +2,7 @@
 
 *A picture-based communication and daily-structure app for a non-verbal autistic child and his family.*
 
-Version 0.2 · Draft · September 2026 · Owner: Lucho
+Version 0.3 · Draft · September 2026 · Owner: Lucho
 
 ---
 
@@ -46,7 +46,8 @@ These come from established AAC (augmentative and alternative communication) pra
 8. **Always-on essentials.** *Yes*, *No*, *Stop*, *Help*, and *I hurt* are visible on every screen.
 9. **The system does the hard part.** He says *what* he wants. The app works out *how* to deliver it: who's available, which channel to use, and whether a gentle reminder helps.
 10. **Grows with him.** Start with a small vocabulary (about 20–40 symbols) and add more as he masters them. Parent mode can hide and reveal symbols without moving them.
-11. **Time is always a real clock.** Every time on screen is a regular **12-hour analog clock face** (the same one as the main clock), with the waiting or remaining time **shaded** on the dial, next to short 12-hour digits ("3:15"). No hourglasses, sand-timers or generic time icons, and as little text as possible.
+11. **The world revolves around him.** The home screen puts Jonatito in the middle. His needs float close to him, his people further out, and the ground sits under his feet. Everything starts from his face.
+12. **Time is always a real clock.** Every time on screen is a regular **12-hour analog clock face** (the same one as the main clock), with the waiting or remaining time **shaded** on the dial, next to short 12-hour digits ("3:15"). No hourglasses, sand-timers or generic time icons, and as little text as possible.
 
 ---
 
@@ -64,12 +65,18 @@ A band across the top of every screen in child mode:
 - **Weather and temperature** from the real location: icon, °C/°F, and a "what to wear" hint (jacket, umbrella).
 - **Where am I** (optional): 🏠 Home / 🏫 School / 👵 Grandma's house, set by the caretaker or detected from Wi-Fi/GPS.
 
-### 4.2 The "Me" button (bottom left)
+### 4.2 The orbit — his home screen (new in v0.3)
 
-- Jonatito's own face sits in the corner where the Windows Start button usually is.
-- **Tapping it opens his personal menu:** *I feel…* (feelings board), *I want…*, *My body* (pain map), *My day* (schedule), *My media*.
-- Every message he sends starts from "Me", which teaches him that *what comes out of this machine comes from him*.
-- When he gets a reply, his avatar glows gently.
+- **He is in the middle.** Jonatito's face sits in the center of the screen. His core needs float around him in an **inner orbit**: 🍇 **Eat**, 🛁 **Bath**, 🚽 **Toilet**, 🚗 **Go**, and favorites like **Barney** and **Pongo**. His people float in a wider **outer orbit**.
+- **Every tap builds a sentence.** Each picture he taps goes into the sentence strip at the top. `[Me] [Mommy] [Eat] [Grapes]` → *"Mommy, I want to eat grapes."*
+- **Pictures open more pictures.** Tapping **Eat** opens a ring of foods around him. Foods that aren't available right now are dimmed, with a clock showing when they open (*"next snack 3:00"*).
+- **Media opens full screen.** Tapping **Pongo** plays it full screen. Tapping his face brings him back.
+- **Ground and place.** A soft blue-and-green sphere peeks from the bottom of the screen with a single pin: *him*. Tapping a person zooms out to show where they are. If they're in another country, a ✈️ flies between the pins.
+- **His own face opens "My body".** He points to where it hurts, then picks a face on a pain scale (smiling → crying). Higher levels go out as urgent.
+- **Slots never move.** Every item in the orbit keeps its fixed spot, the same rule as the picture board.
+- The **Me button** in the dock (bottom left, where the Windows Start button usually is) always brings him back to the orbit. Every message he sends starts from "Me", which teaches him that *what comes out of this machine comes from him*.
+- The picture-board grid stays reachable from the dock ("All words").
+- Details: Tech Spec section 5.
 
 ### 4.3 People bar and avatars
 
@@ -82,6 +89,10 @@ A band across the top of every screen in child mode:
   - ✋ **Hand** → "Help me" / "Hug"
   - ❤️ **Heart** → "I love you / I miss you"
 - This makes the most common social messages a single, physical gesture.
+- **Familiar voices, any time (v0.3).** Family members record voice notes for him from their phones.
+  - A **sound-wave badge** appears in front of their avatar when there's something new. He taps it to hear it.
+  - Opening their face shows a **shelf of all their voice notes**, with pinned comfort clips (*"Te quiero mucho, mi amor"*) first. He can replay them whenever he needs reassurance.
+- **Where are you? (v0.3).** Each person can share which city they're in. Tapping them in the orbit shows their pin on the globe, and a plane if they're far away. An optional "back on" date turns into "back in 3 sleeps".
 
 ### 4.4 Sentence builder
 
@@ -141,7 +152,7 @@ He is non-verbal, so voice is mainly **for the adults and for output**:
 
 ### 4.10 Entertainment corner
 
-Entertainment is his reward, his comfort, and a big reason to pick up the tablet at all. See Tech Spec section 9 for details.
+Entertainment is his reward, his comfort, and a big reason to pick up the tablet at all. See Tech Spec section 10 for details.
 
 - **His favorite movies and songs are stored locally** on the family's home server. Favorites are also copied onto the tablet, so they play offline, in the car, or at Abuela's.
 - **My movies & shows** as big poster tiles, with **"keep watching"** that remembers where he stopped.
@@ -160,6 +171,7 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 - **Entry:** a hidden gesture (for example a 3-second hold on the top-right corner) + PIN. Jonatito can't enter it by accident.
 - **Features:**
   - **Change any picture:** every avatar, place, thing and media cover can be replaced with a **real photo** (camera or gallery, crop, optional background removal). The symbol keeps its position, color and sound, and the old picture can be restored in one tap. Relatives can *suggest* photos, and an admin approves them.
+  - **Item editor (v0.3):** one database entry for everything he can touch (people, pets, foods, actions, places, media, body parts). For each one: picture, labels (EN/ES), recorded audio, category and color, what a tap does, fixed orbit/board slot, linked user account or media file, and time rules (e.g. snacks only at snack time).
   - Vocabulary manager: add, hide, or reveal symbols, record audio labels.
   - People manager: avatars, roles, contact channels, voice clips.
   - Log entry and history.
@@ -180,7 +192,7 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 ### 4.13 Additions to fill the gaps
 
 - **Feelings board and "zones":** happy / sad / angry / scared / tired / too loud. An "I need a break" button starts a calm-down screen (breathing bubble, favorite song, dim colors).
-- **Body map for pain:** tap where it hurts on a body outline. This is urgent-class.
+- **Body map for pain:** tap where it hurts on a drawing of his own body (his photo as the head), then pick a face on a 6-step pain scale. Levels 3–5 are urgent-class. See 4.2 and Tech Spec 5.8.
 - **"Too much" button:** instantly lowers volume and brightness and pauses notifications.
 - **First/Then board:** caretakers set "First shoes 👟, then park 🌳".
 - **Choice boards:** caretakers push "Which one? 🍎 or 🍌" to his screen, and he answers with one tap.
@@ -194,11 +206,11 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 - **Live status & mood awareness:** optional, local-only inputs (tablet camera/mic, room camera, smartwatch, and his app usage) estimate whether he's asleep, calm, active, unsettled or distressed.
   - The status is a **suggestion for adults**: alert the on-duty caretaker, quiet the tablet, or offer him a break or music.
   - It never labels him, and raw video/audio is never stored.
-  - Caretakers confirm or correct the status, and the corrections improve accuracy. See Tech Spec section 10.
+  - Caretakers confirm or correct the status, and the corrections improve accuracy. See Tech Spec section 11.
 - **Understanding his own speech:** the app learns Jonatito's unique sounds and word approximations. It shows what he said as pictures and speaks it in **English and Spanish** (more languages later).
   - Family members label his sounds from day one using a "What did he say?" button.
   - A personal recognizer comes next, then a fine-tuned speech model.
-  - It always asks him to confirm (top 3 guesses as pictures) before speaking for him. See Tech Spec section 11.
+  - It always asks him to confirm (top 3 guesses as pictures) before speaking for him. See Tech Spec section 12.
 
 ---
 
@@ -208,8 +220,9 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 |---|---|---|---|
 | **0 — Discovery** | 2–3 weeks | Meet his speech therapist/OT. Observe his current communication (gestures, sounds, pointing). List his top 30 wants/needs. Photograph family, food, and objects. Pick the tablet. Confirm language(s). | A signed-off starter vocabulary and people list |
 | **1 — MVP: Talk** | 4–6 weeks | Here & Now bar · Me button · People bar · Sentence builder with text-to-speech · Send to one caretaker via push notification · Picture replies · Parent mode (basic vocabulary + people) · Kiosk setup | Jonatito sends a real request that a family member receives and answers |
+| **1.5 — Orbit** (v0.3) | 3–4 weeks | Orbit home with fixed slots · Item catalog + item editor (picture, labels, audio) · Eat sub-orbit with time rules · Full-screen media items · Voice notes for Jonatito (badges + voice shelf) · Ground & location pins · My body + pain scale | He starts most messages from the orbit, and hears a family voice note on his own |
 | **2 — Structure** | 4 weeks | Visual daily log (plate/glass) · Day timeline from Google Calendar · Availability rings · Smart dispatcher v1 (availability + recent-consumption + limits) · Friend mode web app · Urgent escalation | A full day runs with the schedule and log in use |
-| **3 — Connect & Play** | 5 weeks | Voice notes both ways · Live audio calls · Family voice clips · Local media library (movies, jukebox, favorite moments, offline favorites) · Media timers + sleep lock · Sensory play · Feelings/break screen · Body map | Grandparents use it on their own for a week, and bedtime runs with the sleep lock |
+| **3 — Connect & Play** | 5 weeks | Live audio calls · Local media library (movies, jukebox, favorite moments, offline favorites) · Media timers + sleep lock · Sensory play · Feelings/break screen | Grandparents use it on their own for a week, and bedtime runs with the sleep lock |
 | **4 — Smart** | ongoing | Caretaker voice commands · Usage insights · Suggested words · Choice boards pushed from phones · Therapist reports · Start collecting labeled vocalizations | Driven by what the family and therapists ask for |
 | **5 — Future: Sense & Understand** | after 1+ year of use | Live status/mood awareness (least-intrusive inputs first) · Personal speech recognizer → English/Spanish output · Personalized speech model | Recognizes his most common sounds reliably enough that the family approves voice-to-message |
 
@@ -256,6 +269,9 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 9. **Therapy team:** Is there a speech therapist we can involve in vocabulary and rollout?
 10. **Media:** Which movies, shows and songs are his favorites? In what formats does the family own them (DVDs, files, CDs)? What are his bedtime and wake-up times?
 11. **Hosting:** Is there a computer at home that can stay on 24/7? Who maintains it?
+12. **Location sharing:** Is each adult comfortable sharing which city they're in? Should the "use my phone's location" option exist?
+13. **Pain scale:** Which levels should count as urgent? Should the potty-area zone be shown on the body drawing?
+14. **Closed foods:** Should foods outside their time be fully blocked (with a clock), or just come with a gentle reminder?
 
 ---
 
