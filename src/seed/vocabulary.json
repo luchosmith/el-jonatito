@@ -167,7 +167,8 @@
       "kind": "action",
       "emoji": "😋",
       "en": "eat",
-      "es": "comer"
+      "es": "comer",
+      "photo": "symbols/grapes.jpg"
     },
     {
       "id": "drink",
