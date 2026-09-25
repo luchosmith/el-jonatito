@@ -74,7 +74,7 @@ test('a daily limit closes the item until tomorrow and suggests something else',
   await page.getByTestId('orbit-eat').click();
   await expect(page.getByTestId('orbit-smoothie')).toHaveClass(/closed/);
   await page.getByTestId('orbit-smoothie').click();
-  await expect(page.getByTestId('closed-suggest')).toContainText('💧');
+  await expect(page.getByTestId('closed-suggest').locator('img')).toHaveAttribute('src', /seed-item-water/); // the family's water bottle
 });
 
 test('the snack window opens by itself when snack time comes', async ({ page, request }) => {

@@ -103,7 +103,8 @@
       "en": "water",
       "es": "agua",
       "log": true,
-      "alias_of": "water"
+      "alias_of": "water",
+      "photo": "symbols/water.jpg"
     },
     {
       "id": "smoothie_d",
