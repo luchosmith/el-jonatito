@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { AFTERNOON, build, login, openBoard, resetDb, setClock } from './helpers.ts';
+import { AFTERNOON, apiAs, build, login, openBoard, resetDb, setClock } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -61,4 +61,14 @@ test('his own face is the Me button, family and pets sit in the dock', async ({ 
   for (const id of ['mommy_joyce', 'lucho', 'pilar', 'larry', 'tintin', 'lexi', 'loki', 'logan']) {
     await expect(page.getByTestId(`dock-${id}`)).toBeVisible();
   }
+});
+
+test('ice cream has the family photo on the Food page and can be asked for', async ({ page, request }) => {
+  await expect(page.getByTestId('sym-ice_cream')).toHaveAttribute('data-slot', '8');
+  await expect(page.getByTestId('sym-ice_cream').locator('img')).toHaveAttribute('src', /seed-item-ice_cream/);
+  await build(page, ['ice_cream', 'eat_f']);
+  await page.getByTestId('send').click();
+  await expect(page.getByTestId('sentence')).toContainText('I want to eat ice cream.');
+  const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
+  expect(inbox[0].sentence_es).toBe('Quiero comer helado.');
 });

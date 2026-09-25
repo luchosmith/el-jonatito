@@ -159,6 +159,21 @@
       "is_hidden": false,
       "log_trackable": true,
       "badge_color": "#3f9b3a"
+    },
+    {
+      "key": "ice_cream",
+      "category": "food",
+      "board_tab": "food",
+      "fitz_color": "orange (thing)",
+      "placeholder_emoji": "🍨",
+      "image": null,
+      "photo": "symbols/ice_cream.jpg",
+      "labels": { "en": "ice cream", "es": "helado" },
+      "grid_page": "food",
+      "grid_row": 1,
+      "grid_col": 2,
+      "is_hidden": false,
+      "log_trackable": true
     }
   ]
 }
