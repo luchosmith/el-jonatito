@@ -30,12 +30,13 @@ test('renaming Bath in the editor changes the orbit label; the spoken words stay
 test('a new picture, then one-tap revert', async ({ page, browser }) => {
   await login(page, 'jonatito');
   const joyce = await openItem(browser, 'toilet');
+  const img = page.getByTestId('orbit-toilet').locator('img');
+  await expect(img).toHaveAttribute('src', /seed-item-toilet/); // the family's photo from the seed
   await joyce.page.getByTestId('item-photo').setInputFiles({ name: 'toilet.jpg', mimeType: 'image/jpeg', buffer: TINY_JPEG });
-  await expect(page.getByTestId('orbit-toilet').locator('img')).toHaveAttribute('src', /\/api\/images\//);
-  await expect(joyce.page.getByTestId('item-history').locator('span')).toHaveCount(1);
+  await expect(img).not.toHaveAttribute('src', /seed-item-toilet/);
+  await expect(joyce.page.getByTestId('item-history').locator('span')).toHaveCount(2);
   await joyce.page.getByTestId('item-revert').click();
-  await expect(page.getByTestId('orbit-toilet').locator('img')).toHaveCount(0);
-  await expect(page.getByTestId('orbit-toilet')).toContainText('🚽');
+  await expect(img).toHaveAttribute('src', /seed-item-toilet/); // back to the previous picture
   await joyce.context.close();
 });
 

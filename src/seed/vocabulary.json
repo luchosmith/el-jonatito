@@ -258,7 +258,8 @@
       "kind": "action",
       "emoji": "🚽",
       "en": "go to the toilet",
-      "es": "ir al baño"
+      "es": "ir al baño",
+      "photo": "symbols/toilet.jpg"
     },
     {
       "id": "watch",
