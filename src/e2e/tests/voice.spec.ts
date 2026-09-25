@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { AFTERNOON, apiAs, device, FAKE_WEBM, login, resetDb, setClock } from './helpers.ts';
+import { AFTERNOON, apiAs, build, device, FAKE_WEBM, login, resetDb, setClock } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -26,13 +26,10 @@ test('TALK: he taps Abuela Pilar\'s ear, his voice is recorded and arrives on he
   await pilar.context.close();
 });
 
-test('she answers with her voice; he hears it from the reply and from the sound wave (LISTEN)', async ({ page, browser }) => {
+test('she answers with her voice; he hears it from the reply, then again from her voice shelf', async ({ page, browser }) => {
   const pilar = await device(browser, 'pilar', { clock: AFTERNOON });
   await login(page, 'jonatito');
-  await page.getByTestId('page-people').click();
-  await page.getByTestId('sym-pilar').click();
-  await page.getByTestId('page-feel').click();
-  await page.getByTestId('sym-happy').click();
+  await build(page, [{ page: 'people' }, 'pilar', { page: 'feel' }, 'happy']);
   await page.getByTestId('send').click();
   await page.getByTestId('card-ok').click();
 
@@ -48,23 +45,24 @@ test('she answers with her voice; he hears it from the reply and from the sound 
   await played;
   await page.getByTestId('reply-close').click();
 
+  // The same voice is on her shelf, marked new until he plays it.
+  await expect(page.getByTestId('dock-voice-pilar')).toBeVisible();
   await page.getByTestId('dock-pilar').click();
-  await expect(page.getByTestId('zone-listen')).toContainText('LISTEN');
-  const lookup = page.waitForResponse((r) => r.url().endsWith('/api/people/pilar/voice'));
-  await page.getByTestId('zone-listen').click();
-  // Her last recorded message (the same file the toast just played, now served from cache)
-  expect((await (await lookup).json()).url).toMatch(/\/api\/audio\//);
-  await expect(page.getByTestId('zone-listen')).toHaveClass(/speaking/);
+  const tile = page.getByTestId('voice-tile').first();
+  await expect(tile).toHaveAttribute('data-heard', 'no');
+  // The same file the toast just played (the browser serves it from its cache now).
+  await tile.click();
+  await expect(tile).toHaveAttribute('data-heard', 'yes');
+  await expect(page.getByTestId('dock-voice-pilar')).toHaveCount(0);
   await pilar.context.close();
 });
 
-test('LISTEN with no recorded message falls back to the default hello (no error)', async ({ page }) => {
+test('with no voice notes yet, the shelf offers the default hello (no error)', async ({ page }) => {
   await login(page, 'jonatito');
   await page.getByTestId('dock-larry').click();
-  const lookup = page.waitForResponse((r) => r.url().endsWith('/api/people/larry/voice'));
-  await page.getByTestId('zone-listen').click();
-  expect((await (await lookup).json()).url).toBeNull();
-  await expect(page.getByTestId('zone-listen')).toHaveClass(/speaking/);
+  await expect(page.getByTestId('voice-tile')).toHaveCount(0);
+  await page.getByTestId('voice-hello').click();
+  await expect(page.getByTestId('voice-hello')).toHaveClass(/playing/);
 });
 
 test('voice uploads are checked (type and recipient)', async ({ request }) => {

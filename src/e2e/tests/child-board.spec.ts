@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { AFTERNOON, build, login, resetDb, setClock } from './helpers.ts';
+import { AFTERNOON, build, login, openBoard, resetDb, setClock } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
   await setClock(request, AFTERNOON, [page]);
   await login(page, 'jonatito');
+  await openBoard(page);
 });
 
 test('the Here & Now bar shows real 12-hour time, day, season, weather and his routine', async ({ page }) => {

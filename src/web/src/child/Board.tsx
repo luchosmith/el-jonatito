@@ -41,6 +41,7 @@ export function Strip({ me, tokens, onClear, onSay, onSend, sending }: Pick<Prop
 }
 
 export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onSay, onSend, sending }: Props) {
+  const itemOf = (id: string) => board.items.find((i) => i.id === id);
   const cells: (StripToken | null)[] = Array.from({ length: GRID_ROWS * GRID_COLS }, () => null);
   const hidden = new Set<number>();
 
@@ -50,7 +51,7 @@ export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onS
       .filter((p) => !p.is_self)
       .forEach((p, i) => {
         if (i >= cells.length) return;
-        if (p.is_visible) cells[i] = personToken(p);
+        if (p.is_visible) cells[i] = personToken(p, itemOf(p.id));
         else hidden.add(i);
       });
   } else {
@@ -58,7 +59,7 @@ export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onS
       const idx = s.grid_row * GRID_COLS + s.grid_col;
       if (idx >= cells.length) continue;
       if (s.is_hidden) hidden.add(idx);
-      else cells[idx] = symbolToken(s);
+      else cells[idx] = symbolToken(s, 'en', itemOf(s.id));
     }
   }
   const core = board.symbols.filter((s) => s.grid_page === 'core' && !s.is_hidden).sort((a, b) => a.grid_row - b.grid_row);
@@ -100,7 +101,7 @@ export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onS
 
         <div className="core" data-testid="core">
           {core.map((s) => {
-            const t = symbolToken(s);
+            const t = symbolToken(s, 'en', itemOf(s.id));
             return (
               <button key={s.id} className={`sym ${kindClass(s.kind)}`} data-testid={`sym-${s.id}`} onClick={() => onAdd(t)}>
                 <b>{s.emoji}</b>

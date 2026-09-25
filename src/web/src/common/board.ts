@@ -1,4 +1,4 @@
-import type { BoardSymbol, Person } from '../../../shared/types.ts';
+import type { BoardSymbol, Item, Lang, Person } from '../../../shared/types.ts';
 
 export interface Page {
   id: string;
@@ -10,6 +10,8 @@ export interface Board {
   people: Person[];
   symbols: BoardSymbol[];
   pages: Page[];
+  /** the whole catalog, with orbit slots, sounds and time rules */
+  items: Item[];
 }
 
 /** A picture in the sentence strip. */
@@ -20,18 +22,37 @@ export interface StripToken {
   emoji: string | null;
   photo_url: string | null;
   badge_color?: string | null;
+  /** a recorded word, when a caretaker added one */
+  audio_url?: string | null;
 }
 
 export const GRID_ROWS = 3;
 export const GRID_COLS = 6;
 
-export function symbolToken(s: BoardSymbol, lang: 'en' | 'es' = 'en'): StripToken {
-  return { kind: s.kind, id: s.id, label: (lang === 'es' ? s.labels.es : s.labels.en) ?? '', emoji: s.emoji, photo_url: s.photo_url, badge_color: s.badge_color };
+export function symbolToken(s: BoardSymbol, lang: 'en' | 'es' = 'en', item?: Item): StripToken {
+  return {
+    kind: s.kind, id: s.id, label: (lang === 'es' ? s.labels.es : s.labels.en) ?? '', emoji: s.emoji, photo_url: s.photo_url,
+    badge_color: s.badge_color, audio_url: item?.audio[lang] ?? null,
+  };
 }
 
-export function personToken(p: Person): StripToken {
-  return { kind: p.kind === 'pet' ? 'pet' : 'person', id: p.id, label: p.short_label, emoji: p.emoji, photo_url: p.photo_url };
+export function personToken(p: Person, item?: Item, lang: Lang = 'en'): StripToken {
+  return {
+    kind: p.kind === 'pet' ? 'pet' : 'person', id: p.id, label: p.short_label, emoji: p.emoji, photo_url: p.photo_url,
+    audio_url: item?.audio[lang] ?? null,
+  };
 }
+
+/** A catalog item in the sentence strip: its picture, and the spoken word in the tablet's language. */
+export function itemToken(item: Item, lang: Lang = 'en'): StripToken {
+  return {
+    kind: item.kind, id: item.id, label: item.labels[lang] || item.labels.en, emoji: item.emoji, photo_url: item.photo_url,
+    badge_color: item.badge_color, audio_url: item.audio[lang],
+  };
+}
+
+/** What shows under a picture: the short label ("Bath") or the word itself. */
+export const shownLabel = (item: Item) => item.short_label || item.labels.en;
 
 /** Looks up how to draw a token id that came back from the server. */
 export function lookupToken(board: Board, t: { kind: string; id: string }): StripToken | null {

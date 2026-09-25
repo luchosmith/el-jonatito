@@ -2,9 +2,11 @@
 import { loadConfig } from './config.ts';
 import { Db } from './db.ts';
 import { seed } from './seed.ts';
+import { migrate } from './migrate.ts';
 
 const cfg = loadConfig({ ...process.env, TOKEN_SECRET: process.env.TOKEN_SECRET ?? 'unused' });
 const db = new Db(cfg.dbFile);
+migrate(db, cfg);
 db.wipe();
 seed(db, cfg);
 db.close();

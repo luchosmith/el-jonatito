@@ -1,20 +1,18 @@
--- El Jonatito schema (SQLite). Applied idempotently at startup.
+-- El Jonatito schema (SQLite), version 3. Applied idempotently at startup.
+-- Older databases (v2: symbols + limits) are upgraded by migrate.ts.
 PRAGMA foreign_keys = ON;
 
+-- Person / pet details. What Jonatito sees (label, picture, slot) lives in `items`, same id.
 CREATE TABLE IF NOT EXISTS people (
   id            TEXT PRIMARY KEY,               -- 'mommy_joyce', 'lexi'
   kind          TEXT NOT NULL CHECK (kind IN ('person','pet')),
   display_name  TEXT NOT NULL,
-  short_label   TEXT NOT NULL,                  -- what Jonatito sees / hears
-  label_es      TEXT,
   relation      TEXT,
   role          TEXT CHECK (role IN ('child','caretaker','friend')),
   is_self       INTEGER NOT NULL DEFAULT 0,
-  is_visible    INTEGER NOT NULL DEFAULT 1,
   sort_order    INTEGER NOT NULL,               -- fixed; never re-sorted (motor planning)
   species       TEXT,
-  breed         TEXT,
-  emoji         TEXT
+  breed         TEXT
 );
 
 CREATE TABLE IF NOT EXISTS users (
@@ -25,10 +23,39 @@ CREATE TABLE IF NOT EXISTS users (
   person_id     TEXT REFERENCES people(id)
 );
 
--- Every picture ever used for a person / symbol / media item; the newest active one wins.
+-- One row for everything Jonatito can touch: people, pets, foods, actions, places, media, body parts.
+CREATE TABLE IF NOT EXISTS items (
+  id            TEXT PRIMARY KEY,               -- 'eat', 'grapes', 'mommy_joyce', 'pongo', 'body_tummy'
+  category      TEXT NOT NULL CHECK (category IN
+                  ('person','pet','food','drink','action','place','feeling','play','media','body','social','urgent','core')),
+  kind          TEXT NOT NULL CHECK (kind IN ('person','pet','action','thing','desc','social','urgent')),  -- token kind / colour
+  label_en      TEXT NOT NULL,                  -- spoken and used in sentences ("take a bath")
+  label_es      TEXT NOT NULL,
+  short_label   TEXT,                           -- shown under the picture ("Bath")
+  emoji         TEXT,                           -- fallback until a picture exists
+  tap           TEXT NOT NULL DEFAULT 'add' CHECK (tap IN ('add','open','play','body','none')),
+  parent_id     TEXT REFERENCES items(id),      -- lives in this item's sub-orbit; NULL = main orbit / board only
+  orbit         TEXT CHECK (orbit IN ('inner','outer')),
+  orbit_slot    INTEGER,                        -- fixed; never recomputed
+  grid_page     TEXT,
+  grid_row      INTEGER,
+  grid_col      INTEGER,
+  user_id       INTEGER REFERENCES users(id),   -- the person's account (people only)
+  media_id      INTEGER REFERENCES media(id),   -- what a 'play' item plays
+  badge_color   TEXT,
+  log_trackable INTEGER NOT NULL DEFAULT 0,
+  alias_of      TEXT REFERENCES items(id),      -- same word on another page (water on Drinks = water on Food)
+  is_hidden     INTEGER NOT NULL DEFAULT 0,
+  updated_at    TEXT NOT NULL,
+  updated_by    INTEGER REFERENCES users(id),
+  UNIQUE (grid_page, grid_row, grid_col)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS items_slot ON items(COALESCE(parent_id, ''), orbit, orbit_slot) WHERE orbit IS NOT NULL;
+
+-- Every picture ever used for an item or a media cover; the newest active one wins.
 CREATE TABLE IF NOT EXISTS images (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_type    TEXT NOT NULL CHECK (owner_type IN ('person','symbol','media')),
+  owner_type    TEXT NOT NULL CHECK (owner_type IN ('item','media')),
   owner_id      TEXT NOT NULL,
   file          TEXT NOT NULL,
   is_active     INTEGER NOT NULL DEFAULT 1,
@@ -37,28 +64,33 @@ CREATE TABLE IF NOT EXISTS images (
 );
 CREATE INDEX IF NOT EXISTS images_owner ON images(owner_type, owner_id, is_active);
 
-CREATE TABLE IF NOT EXISTS symbols (
-  id            TEXT PRIMARY KEY,               -- 'grapes', 'eat', 'help'
-  category      TEXT NOT NULL,                  -- food, drink, action, place, feel, play, core
-  kind          TEXT NOT NULL,                  -- token kind (thing, action, desc, social, urgent)
-  emoji         TEXT NOT NULL,
-  label_en      TEXT NOT NULL,
-  label_es      TEXT NOT NULL,
-  grid_page     TEXT NOT NULL,
-  grid_row      INTEGER NOT NULL,
-  grid_col      INTEGER NOT NULL,
-  is_hidden     INTEGER NOT NULL DEFAULT 0,
-  badge_color   TEXT,
-  log_trackable INTEGER NOT NULL DEFAULT 0,
-  alias_of      TEXT,                           -- same word on another page (e.g. water on Drinks = water on Food)
-  UNIQUE (grid_page, grid_row, grid_col)
+-- Recorded words, versioned like images; no active clip = text-to-speech.
+CREATE TABLE IF NOT EXISTS audio_clips (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_type    TEXT NOT NULL CHECK (owner_type IN ('item')),
+  owner_id      TEXT NOT NULL,
+  lang          TEXT NOT NULL CHECK (lang IN ('en','es')),
+  file          TEXT NOT NULL,
+  is_active     INTEGER NOT NULL DEFAULT 1,
+  uploaded_by   INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS audio_owner ON audio_clips(owner_type, owner_id, lang, is_active);
 
-CREATE TABLE IF NOT EXISTS limits (
-  symbol_id        TEXT PRIMARY KEY REFERENCES symbols(id),
+-- When an item is open: time windows, daily limits, minimum intervals.
+CREATE TABLE IF NOT EXISTS item_rules (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  item_id          TEXT NOT NULL REFERENCES items(id) ON DELETE CASCADE,
+  kind             TEXT NOT NULL CHECK (kind IN ('window','limit','interval')),
+  blocks           INTEGER NOT NULL DEFAULT 1,  -- 1: closed with a clock in the orbit; 0: only a gentle reminder
+  days             INTEGER,                     -- bitmask Sun..Sat; NULL = every day
+  start_min        INTEGER,
+  end_min          INTEGER,
+  routine_item_id  INTEGER REFERENCES schedule_items(id) ON DELETE CASCADE,
+  routine_open_min INTEGER,
   max_per_day      INTEGER,
   min_interval_min INTEGER,
-  suggest_symbol_id TEXT REFERENCES symbols(id)
+  suggest_item_id  TEXT REFERENCES items(id)
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -94,7 +126,7 @@ CREATE TABLE IF NOT EXISTS replies (
 CREATE TABLE IF NOT EXISTS log_entries (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   type          TEXT NOT NULL,
-  symbol_id     TEXT REFERENCES symbols(id),
+  symbol_id     TEXT REFERENCES items(id),      -- the item (food, drink, body part...)
   amount        REAL,
   note          TEXT,
   at            TEXT NOT NULL,
@@ -132,6 +164,44 @@ CREATE TABLE IF NOT EXISTS media_sessions (
   media_id      INTEGER NOT NULL REFERENCES media(id),
   started_at    TEXT NOT NULL,
   ends_at       TEXT NOT NULL
+);
+
+-- Voice notes for Jonatito ("a familiar voice"): recorded in the family app, or voice replies.
+CREATE TABLE IF NOT EXISTS voice_notes (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user_id  INTEGER NOT NULL REFERENCES users(id),
+  audio_file    TEXT NOT NULL,
+  duration_s    REAL,
+  created_at    TEXT NOT NULL,
+  heard_at      TEXT,
+  pinned        INTEGER NOT NULL DEFAULT 0,     -- comfort clips: first on the shelf, never expire
+  hidden        INTEGER NOT NULL DEFAULT 0,
+  source        TEXT NOT NULL DEFAULT 'app' CHECK (source IN ('app','reply','whatsapp'))
+);
+CREATE INDEX IF NOT EXISTS voice_from ON voice_notes(from_user_id, created_at);
+
+-- Where each adult is (city level only).
+CREATE TABLE IF NOT EXISTS locations (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id),
+  place_label   TEXT NOT NULL,
+  country_code  TEXT NOT NULL,
+  tz            TEXT NOT NULL,
+  lat           REAL NOT NULL,                  -- rounded to 0.1° (~10 km)
+  lon           REAL NOT NULL,
+  source        TEXT NOT NULL CHECK (source IN ('manual','phone')),
+  until         TEXT,
+  updated_at    TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pain_reports (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  body_part     TEXT NOT NULL,
+  side          TEXT,
+  level         INTEGER NOT NULL CHECK (level BETWEEN 0 AND 5),
+  at            TEXT NOT NULL,
+  message_id    INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+  handled_by    INTEGER REFERENCES users(id),
+  handled_at    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS settings (

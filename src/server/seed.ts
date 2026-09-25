@@ -1,9 +1,11 @@
-// Loads the family, vocabulary, media and routine from /seed into an empty database.
+// Loads the family, vocabulary, media and routine from /seed into an empty database (schema v3).
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Db } from './db.ts';
 import { hashPin } from './auth.ts';
 import type { Config } from './config.ts';
+import { applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
+import { SCHEMA_VERSION } from './migrate.ts';
 
 interface SeedPerson {
   id: string;
@@ -62,30 +64,17 @@ export function seed(db: Db, cfg: Config) {
     routine: { emoji: string; label: string; at: string; symbol?: string }[];
   }>(path.join(dir, 'media.json'));
 
-  const imagesDir = path.join(cfg.uploadsDir, 'images');
-  fs.mkdirSync(imagesDir, { recursive: true });
+  fs.mkdirSync(path.join(cfg.uploadsDir, 'images'), { recursive: true });
   fs.mkdirSync(path.join(cfg.uploadsDir, 'audio'), { recursive: true });
   const now = new Date().toISOString();
-
-  const copyImage = (rel: string, ownerType: string, ownerId: string) => {
-    const src = path.join(dir, rel);
-    if (!fs.existsSync(src)) return;
-    const file = `seed-${ownerType}-${ownerId}${path.extname(src)}`;
-    fs.copyFileSync(src, path.join(imagesDir, file));
-    db.run('INSERT INTO images(owner_type, owner_id, file, is_active, created_at) VALUES(?,?,?,1,?)', ownerType, ownerId, file, now);
-  };
 
   db.tx(() => {
     for (const p of people) {
       const kind = p.kind ?? 'person';
-      const emoji = p.placeholder_emoji ?? (kind === 'pet' ? '🐾' : DEFAULT_EMOJI[p.relation ?? ''] ?? '🙂');
       db.run(
-        `INSERT INTO people(id, kind, display_name, short_label, label_es, relation, role, is_self, is_visible, sort_order, species, breed, emoji)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        p.id, kind, p.display_name, p.short_label, p.is_self ? 'Yo' : p.short_label, p.relation, p.role,
-        p.is_self ? 1 : 0, p.is_visible === false ? 0 : 1, p.order, p.species ?? null, p.breed ?? null, emoji,
+        `INSERT INTO people(id, kind, display_name, relation, role, is_self, sort_order, species, breed) VALUES(?,?,?,?,?,?,?,?,?)`,
+        p.id, kind, p.display_name, p.relation, p.role, p.is_self ? 1 : 0, p.order, p.species ?? null, p.breed ?? null,
       );
-      if (p.photo) copyImage(p.photo, 'person', p.id);
     }
 
     for (const u of users) {
@@ -94,33 +83,42 @@ export function seed(db: Db, cfg: Config) {
       if (u.role !== 'child') db.run('INSERT INTO availability(user_id, status, until, updated_at) VALUES(?,?,NULL,?)', id, 'available', now);
     }
 
+    for (const p of people) {
+      const kind = p.kind ?? 'person';
+      const emoji = p.placeholder_emoji ?? (kind === 'pet' ? '🐾' : DEFAULT_EMOJI[p.relation ?? ''] ?? '🙂');
+      const user = db.get<{ id: number }>('SELECT id FROM users WHERE person_id = ?', p.id);
+      db.run(
+        `INSERT INTO items(id, category, kind, label_en, label_es, short_label, emoji, user_id, is_hidden, updated_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?)`,
+        p.id, kind, kind, p.short_label, p.is_self ? 'Yo' : p.short_label, p.short_label, emoji, user?.id ?? null,
+        p.is_visible === false ? 1 : 0, now,
+      );
+      if (p.photo) copySeedImage(db, cfg, p.photo, 'item', p.id, now);
+    }
+
     for (const f of food) {
       db.run(
-        `INSERT INTO symbols(id, category, kind, emoji, label_en, label_es, grid_page, grid_row, grid_col, badge_color, log_trackable)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-        f.key, f.category, 'thing', f.placeholder_emoji, f.labels.en, f.labels.es, 'food', f.grid_row, f.grid_col,
-        f.badge_color ?? null, f.log_trackable === false ? 0 : 1,
+        `INSERT INTO items(id, category, kind, label_en, label_es, emoji, grid_page, grid_row, grid_col, badge_color, log_trackable, updated_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
+        f.key, PAGE_CATEGORY[f.category] ?? 'food', 'thing', f.labels.en, f.labels.es, f.placeholder_emoji, 'food', f.grid_row, f.grid_col,
+        f.badge_color ?? null, f.log_trackable === false ? 0 : 1, now,
       );
     }
     for (const s of vocab.symbols) {
       db.run(
-        `INSERT INTO symbols(id, category, kind, emoji, label_en, label_es, grid_page, grid_row, grid_col, log_trackable, alias_of)
-         VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
-        s.id, s.page, s.kind, s.emoji, s.en, s.es, s.page, s.row, s.col, s.log ? 1 : 0, s.alias_of ?? null,
+        `INSERT INTO items(id, category, kind, label_en, label_es, emoji, grid_page, grid_row, grid_col, log_trackable, alias_of, updated_at)
+         VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
+        s.id, PAGE_CATEGORY[s.page] ?? 'core', s.kind, s.en, s.es, s.emoji, s.page, s.row, s.col, s.log ? 1 : 0, null, now,
       );
-      if (s.photo) copyImage(s.photo, 'symbol', s.id);
+      if (s.photo) copySeedImage(db, cfg, s.photo, 'item', s.id, now);
     }
-    for (const f of food) {
-      if (!f.limit) continue;
-      db.run(
-        'INSERT INTO limits(symbol_id, max_per_day, min_interval_min, suggest_symbol_id) VALUES(?,?,?,?)',
-        f.key, f.limit.max_per_day ?? null, f.limit.min_interval_min ?? null, f.limit.suggest ?? null,
-      );
-    }
+    // Second pass: an alias may point at a word on a later page.
+    for (const s of vocab.symbols) if (s.alias_of) db.run('UPDATE items SET alias_of = ? WHERE id = ?', s.alias_of, s.id);
+    for (const f of food) if (f.limit) insertLimitRules(db, f.key, f.limit);
 
     media.items.forEach((m, i) => {
       const r = db.run('INSERT INTO media(title, kind, emoji, bedtime_ok, sort_order) VALUES(?,?,?,?,?)', m.title, m.kind, m.emoji ?? null, m.bedtime_ok ? 1 : 0, i);
-      if (m.cover) copyImage(m.cover, 'media', String(r.lastId));
+      if (m.cover) copySeedImage(db, cfg, m.cover, 'media', String(r.lastId), now);
     });
     for (const r of media.routine) {
       db.run('INSERT INTO schedule_items(emoji, label, symbol_id, start_min) VALUES(?,?,?,?)', r.emoji, r.label, r.symbol ?? null, hm(r.at));
@@ -133,7 +131,10 @@ export function seed(db: Db, cfg: Config) {
     });
     db.setSetting('quiet_hours', { start_min: hm('21:00'), end_min: hm('07:00') });
     db.setSetting('pages', vocab.pages);
+
+    applyOrbitDefaults(db, cfg);
   });
+  db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
 }
 
 export function isSeeded(db: Db) {

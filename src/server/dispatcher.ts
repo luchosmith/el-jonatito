@@ -11,6 +11,10 @@ export interface DispatchInput {
   toPersonId: string | null;
   tokens: Token[];
   audioFile?: string | null;
+  /** a sentence written by the server (pain reports) instead of one built from the tokens */
+  sentence?: { en: string; es: string };
+  /** force the urgent path (pain reports at a high level) */
+  urgent?: boolean;
 }
 
 export interface DispatchResult {
@@ -24,13 +28,16 @@ export interface DispatchResult {
 
 interface SymbolRow { id: string; kind: TokenKind; label_en: string; label_es: string; is_hidden: number; log_trackable: number; alias_of: string | null }
 interface PersonRow { id: string; kind: 'person' | 'pet'; short_label: string; label_es: string | null; is_self: number; role: string | null }
+
+const PERSON_SQL = `SELECT p.id, p.kind, COALESCE(i.short_label, i.label_en) AS short_label, i.label_es, p.is_self, p.role
+  FROM people p JOIN items i ON i.id = p.id WHERE p.id = ?`;
 interface StaffRow { user_id: number; person_id: string; role: string; status: string | null; until: string | null; sort_order: number }
 
 const DEFAULT_RECENT_MIN = 60;
 
 /** Canonical symbol id: "water" on the Drinks page is the same word as "water" on the Food page. */
 export function canonicalSymbol(db: Db, id: string): string {
-  const r = db.get<{ alias_of: string | null }>('SELECT alias_of FROM symbols WHERE id = ?', id);
+  const r = db.get<{ alias_of: string | null }>('SELECT alias_of FROM items WHERE id = ?', id);
   return r?.alias_of ?? id;
 }
 
@@ -49,24 +56,24 @@ export function isAvailable(s: { status: string | null; until: string | null }, 
 }
 
 export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResult {
-  if (!input.tokens.length && !input.audioFile) throw new HttpError(400, 'Empty message');
+  if (!input.tokens.length && !input.audioFile && !input.sentence) throw new HttpError(400, 'Empty message');
   if (input.tokens.length > 8) throw new HttpError(400, 'Too many pictures');
 
   // 1. Resolve tokens
   const resolved: ResolvedToken[] = [];
   const foodSymbols: string[] = [];
-  let urgent = false;
+  let urgent = !!input.urgent;
   let addressee: PersonRow | undefined;
 
   for (const t of input.tokens) {
     if (t.kind === 'person' || t.kind === 'pet') {
-      const p = db.get<PersonRow>('SELECT id, kind, short_label, label_es, is_self, role FROM people WHERE id = ?', t.id);
+      const p = db.get<PersonRow>(PERSON_SQL, t.id);
       if (!p) throw new HttpError(400, `Unknown person ${t.id}`);
       if (p.is_self) continue; // "Me" is implicit
       resolved.push({ kind: p.kind === 'pet' ? 'pet' : 'person', en: p.short_label, es: p.label_es ?? p.short_label });
       if (p.kind === 'person' && !addressee) addressee = p;
     } else {
-      const s = db.get<SymbolRow>('SELECT id, kind, label_en, label_es, is_hidden, log_trackable, alias_of FROM symbols WHERE id = ?', t.id);
+      const s = db.get<SymbolRow>("SELECT id, kind, label_en, label_es, is_hidden, log_trackable, alias_of FROM items WHERE id = ? AND category NOT IN ('person','pet')", t.id);
       if (!s) throw new HttpError(400, `Unknown symbol ${t.id}`);
       resolved.push({ kind: s.kind, en: s.label_en, es: s.label_es });
       if (s.kind === 'urgent') urgent = true;
@@ -74,13 +81,13 @@ export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResul
     }
   }
   if (input.toPersonId) {
-    const p = db.get<PersonRow>('SELECT id, kind, short_label, label_es, is_self, role FROM people WHERE id = ?', input.toPersonId);
+    const p = db.get<PersonRow>(PERSON_SQL, input.toPersonId);
     if (!p) throw new HttpError(400, 'Unknown recipient');
     addressee = p;
   }
 
-  const sentence_en = input.tokens.length ? renderSentence(resolved, 'en') : `${addressee?.short_label ?? ''} 🔊`.trim();
-  const sentence_es = input.tokens.length ? renderSentence(resolved, 'es') : sentence_en;
+  const sentence_en = input.sentence?.en ?? (input.tokens.length ? renderSentence(resolved, 'en') : `${addressee?.short_label ?? ''} 🔊`.trim());
+  const sentence_es = input.sentence?.es ?? (input.tokens.length ? renderSentence(resolved, 'es') : sentence_en);
 
   const notes: DispatchNote[] = [];
   const people = staff(db);
@@ -126,9 +133,10 @@ export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResul
     const dayStart = startOfDay(now).toISOString();
     for (const sym of [...new Set(foodSymbols)]) {
       const limit = db.get<{ max_per_day: number | null; min_interval_min: number | null; suggest_symbol_id: string | null }>(
-        'SELECT max_per_day, min_interval_min, suggest_symbol_id FROM limits WHERE symbol_id = ?', sym,
+        `SELECT MAX(max_per_day) AS max_per_day, MAX(min_interval_min) AS min_interval_min, MAX(suggest_item_id) AS suggest_symbol_id
+         FROM item_rules WHERE item_id = ? AND kind IN ('limit','interval')`, sym,
       );
-      const aliases = db.all<{ id: string }>('SELECT id FROM symbols WHERE id = ? OR alias_of = ?', sym, sym).map((r) => r.id);
+      const aliases = db.all<{ id: string }>('SELECT id FROM items WHERE id = ? OR alias_of = ?', sym, sym).map((r) => r.id);
       const marks = aliases.map(() => '?').join(',');
       const last = db.get<{ at: string }>(
         `SELECT at FROM log_entries WHERE symbol_id IN (${marks}) AND at <= ? ORDER BY at DESC LIMIT 1`, ...aliases, now.toISOString(),

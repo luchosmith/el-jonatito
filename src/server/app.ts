@@ -8,11 +8,13 @@ import { EventHub } from './events.ts';
 import { jsonBody, mimeOf, Router, safeJoin, sendJson, HttpError } from './http.ts';
 import { clock } from './clock.ts';
 import { isSeeded, seed } from './seed.ts';
+import { migrate } from './migrate.ts';
 import { obj, str } from './validate.ts';
 import { authRoutes } from './routes/auth.ts';
 import { boardRoutes } from './routes/board.ts';
 import { messageRoutes } from './routes/messages.ts';
 import { dayRoutes } from './routes/day.ts';
+import { voiceRoutes } from './routes/voice.ts';
 
 export interface Deps {
   router: Router;
@@ -45,6 +47,8 @@ function weatherFetcher(cfg: Config) {
 
 export function createApp(cfg: Config) {
   const db = new Db(cfg.dbFile);
+  const backup = migrate(db, cfg);
+  if (backup) console.log(`Database upgraded to the item catalog (v3). Backup of the old one: ${backup}`);
   if (!isSeeded(db)) seed(db, cfg);
 
   const router = new Router();
@@ -58,6 +62,7 @@ export function createApp(cfg: Config) {
   boardRoutes(deps);
   messageRoutes(deps);
   dayRoutes(deps);
+  voiceRoutes(deps);
 
   router.get('/api/events', requireAuth(), (ctx) => {
     ctx.handled = true;
@@ -87,7 +92,7 @@ export function createApp(cfg: Config) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('X-Frame-Options', 'DENY');
-    res.setHeader('Permissions-Policy', 'microphone=(self), camera=(self), geolocation=()');
+    res.setHeader('Permissions-Policy', 'microphone=(self), camera=(self), geolocation=(self)');
     try {
       if (await router.handle(req, res)) return;
       const url = new URL(req.url ?? '/', 'http://local');

@@ -2,13 +2,16 @@
 import type { Deps } from '../app.ts';
 import { requireAuth } from '../auth.ts';
 import { canonicalSymbol } from '../dispatcher.ts';
-import { HttpError, jsonBody } from '../http.ts';
-import { getLog, imageUrl, logsBetween } from '../repo.ts';
+import path from 'node:path';
+import { HttpError, jsonBody, rawBody, safeJoin, sendFile } from '../http.ts';
+import { audit, getLog, imageUrl, logsBetween } from '../repo.ts';
+import { MEDIA_MIME, saveMedia } from '../uploads.ts';
 import { num, obj, oneOf, str } from '../validate.ts';
 import { inWindow, minutesOfDay, seasonOf, startOfDay } from '../../shared/time.ts';
 import type { LogEntry, MediaItem, MediaPolicy, ScheduleItem } from '../../shared/types.ts';
 
 const LOG_TYPES = ['food', 'drink', 'meds', 'sleep', 'toilet', 'mood', 'activity'] as const;
+const MAX_MEDIA = 300 * 1024 * 1024;
 
 export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
   // ---- Daily log -------------------------------------------------------------
@@ -17,7 +20,7 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
     const type = oneOf(body, 'type', LOG_TYPES)!;
     let symbol = str(body, 'symbol_id', { optional: true, max: 60 }) ?? null;
     if (symbol) {
-      if (!db.get('SELECT 1 FROM symbols WHERE id = ?', symbol)) throw new HttpError(400, 'Unknown symbol');
+      if (!db.get("SELECT 1 FROM items WHERE id = ? AND category NOT IN ('person','pet')", symbol)) throw new HttpError(400, 'Unknown symbol');
       symbol = canonicalSymbol(db, symbol);
     }
     const amount = num(body, 'amount', { optional: true, min: 0, max: 1 }) ?? null;
@@ -91,11 +94,14 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
 
   router.get('/api/media', requireAuth(), () => {
     const items: MediaItem[] = db
-      .all<{ id: number; title: string; kind: MediaItem['kind']; emoji: string | null; bedtime_ok: number; sort_order: number; cover: string | null }>(
+      .all<{ id: number; title: string; kind: MediaItem['kind']; emoji: string | null; bedtime_ok: number; sort_order: number; cover: string | null; file: string | null }>(
         `SELECT m.*, (SELECT file FROM images i WHERE i.owner_type='media' AND i.owner_id=CAST(m.id AS TEXT) AND i.is_active=1 ORDER BY i.id DESC LIMIT 1) AS cover
          FROM media m ORDER BY sort_order`,
       )
-      .map((m) => ({ id: m.id, title: m.title, kind: m.kind, emoji: m.emoji, cover_url: imageUrl(m.cover), bedtime_ok: !!m.bedtime_ok, sort_order: m.sort_order }));
+      .map((m) => ({
+        id: m.id, title: m.title, kind: m.kind, emoji: m.emoji, cover_url: imageUrl(m.cover), bedtime_ok: !!m.bedtime_ok, sort_order: m.sort_order,
+        file_url: m.file ? `/api/media/${m.id}/file` : null,
+      }));
     return { items, policy: policy(), ...lockState() };
   });
 
@@ -108,5 +114,24 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
     const ends = new Date(start.getTime() + policy().session_max_min * 60_000);
     db.run('INSERT INTO media_sessions(media_id, started_at, ends_at) VALUES(?,?,?)', m.id, start.toISOString(), ends.toISOString());
     return { media_id: m.id, started_at: start.toISOString(), ends_at: ends.toISOString() };
+  });
+
+  // The video / song itself. The sleep lock applies here too, so a saved link can't get around it.
+  router.get('/api/media/:id/file', requireAuth(), (ctx) => {
+    const m = db.get<{ file: string | null; bedtime_ok: number }>('SELECT file, bedtime_ok FROM media WHERE id = ?', Number(ctx.params.id));
+    if (!m?.file) throw new HttpError(404, 'No file for this media');
+    const lock = lockState();
+    if (lock.locked && !m.bedtime_ok && ctx.user!.role === 'child') throw new HttpError(423, 'Media is sleeping', { unlock_at: lock.unlock_at });
+    sendFile(ctx, safeJoin(path.join(cfg.uploadsDir, 'media'), m.file), 'private, max-age=3600');
+  });
+
+  router.put('/api/media/:id/file', requireAuth('caretaker'), rawBody(MEDIA_MIME, MAX_MEDIA), (ctx) => {
+    const id = Number(ctx.params.id);
+    if (!db.get('SELECT 1 FROM media WHERE id = ?', id)) throw new HttpError(404, 'Unknown media');
+    const file = saveMedia(cfg.uploadsDir, ctx.raw!, ctx.req.headers['content-type']);
+    db.run('UPDATE media SET file = ? WHERE id = ?', file, id);
+    audit(db, ctx.user!.id, 'media.file', String(id), now().toISOString());
+    hub.publish('all', { type: 'items' });
+    return { ok: true, file_url: `/api/media/${id}/file` };
   });
 }

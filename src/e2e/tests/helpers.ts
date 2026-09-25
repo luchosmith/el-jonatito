@@ -54,8 +54,15 @@ export async function apiAs(request: APIRequestContext, username: string) {
   };
 }
 
+/** Opens the picture board ("All words" in the dock); the tablet starts on the orbit. */
+export async function openBoard(page: Page) {
+  if (!(await page.getByTestId('grid').isVisible())) await page.getByTestId('open-board').click();
+  await expect(page.getByTestId('grid')).toBeVisible();
+}
+
 /** Taps pictures on the child's board: page id, then symbol ids. */
 export async function build(page: Page, steps: ({ page: string } | string)[]) {
+  await openBoard(page);
   for (const s of steps) {
     if (typeof s === 'string') await page.getByTestId(`sym-${s}`).click();
     else await page.getByTestId(`page-${s.page}`).click();

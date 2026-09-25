@@ -1,0 +1,109 @@
+// Parent mode -> Items: the catalog editor. Changes reach the tablet live.
+import { expect, test } from '@playwright/test';
+import { AFTERNOON, apiAs, device, FAKE_WEBM, login, resetDb, setClock, TINY_JPEG } from './helpers.ts';
+
+test.beforeEach(async ({ request, page }) => {
+  await resetDb(request);
+  await setClock(request, AFTERNOON, [page]);
+});
+
+async function openItem(browser: import('@playwright/test').Browser, id: string) {
+  const joyce = await device(browser, 'joyce', { clock: AFTERNOON });
+  await joyce.page.getByTestId('tab-items').click();
+  await joyce.page.getByTestId(`item-row-${id}`).click();
+  await expect(joyce.page.getByTestId('item-editor')).toHaveAttribute('data-id', id);
+  return joyce;
+}
+
+test('renaming Bath in the editor changes the orbit label; the spoken words stay separate', async ({ page, browser }) => {
+  await login(page, 'jonatito');
+  const joyce = await openItem(browser, 'bath');
+  await expect(joyce.page.getByTestId('item-label-en')).toHaveValue('take a bath');
+  await joyce.page.getByTestId('item-short').fill('Bubbles');
+  await joyce.page.getByTestId('item-label-es').fill('bañito');
+  await joyce.page.getByTestId('item-save-words').click();
+  await expect(page.getByTestId('orbit-bath')).toContainText('Bubbles');
+  await expect(page.getByTestId('orbit-bath')).toHaveAttribute('data-slot', '1');
+  await joyce.context.close();
+});
+
+test('a new picture, then one-tap revert', async ({ page, browser }) => {
+  await login(page, 'jonatito');
+  const joyce = await openItem(browser, 'toilet');
+  await joyce.page.getByTestId('item-photo').setInputFiles({ name: 'toilet.jpg', mimeType: 'image/jpeg', buffer: TINY_JPEG });
+  await expect(page.getByTestId('orbit-toilet').locator('img')).toHaveAttribute('src', /\/api\/images\//);
+  await expect(joyce.page.getByTestId('item-history').locator('span')).toHaveCount(1);
+  await joyce.page.getByTestId('item-revert').click();
+  await expect(page.getByTestId('orbit-toilet').locator('img')).toHaveCount(0);
+  await expect(page.getByTestId('orbit-toilet')).toContainText('🚽');
+  await joyce.context.close();
+});
+
+test('a recorded word plays when he taps; "text-to-speech" goes back to the computer voice', async ({ page, browser }) => {
+  await login(page, 'jonatito');
+  const joyce = await openItem(browser, 'go');
+  const row = joyce.page.getByTestId('item-audio-en');
+  await expect(row).toHaveAttribute('data-state', 'tts');
+  await joyce.page.getByTestId('item-audio-en-upload').setInputFiles({ name: 'go.webm', mimeType: 'audio/webm', buffer: FAKE_WEBM });
+  await expect(row).toHaveAttribute('data-state', 'recorded');
+
+  const played = page.waitForRequest((r) => r.url().includes('/api/audio/'));
+  await page.getByTestId('orbit-go').click();
+  await played;
+
+  await joyce.page.getByTestId('item-audio-en-tts').click();
+  await expect(row).toHaveAttribute('data-state', 'tts');
+  await joyce.context.close();
+});
+
+test('a time rule added in the editor closes the item on the tablet, with its clock', async ({ page, browser }) => {
+  await login(page, 'jonatito');
+  const joyce = await openItem(browser, 'bath');
+  await joyce.page.getByTestId('rule-kind').selectOption('window');
+  await joyce.page.getByTestId('rule-start').fill('19:00');
+  await joyce.page.getByTestId('rule-end').fill('20:00');
+  await joyce.page.getByTestId('rule-add').click();
+  await expect(joyce.page.getByTestId('item-closed')).toBeVisible();
+  await expect(page.getByTestId('orbit-bath')).toHaveClass(/closed/);
+  await expect(page.getByTestId('orbit-bath').locator('svg.clock12')).toHaveAttribute('aria-label', '7:00');
+
+  // "Reminder only" keeps it open.
+  const blocks = joyce.page.locator('[data-testid^="rule-blocks-"]');
+  await blocks.click(); // saved on the server first, then shown
+  await expect(blocks).not.toBeChecked();
+  await expect(page.getByTestId('orbit-bath')).not.toHaveClass(/closed/);
+  await joyce.context.close();
+});
+
+test('moving an item asks first, lands in the chosen empty slot, and taken slots cannot be picked', async ({ page, browser }) => {
+  await login(page, 'jonatito');
+  const joyce = await openItem(browser, 'barney');
+  await expect(joyce.page.getByTestId('item-slot-0')).toBeDisabled(); // Eat lives there
+  let asked = '';
+  joyce.page.on('dialog', (d) => {
+    asked = d.message();
+    void d.accept();
+  });
+  await joyce.page.getByTestId('item-slot-7').click();
+  await joyce.page.getByTestId('item-move').click();
+  await expect(page.getByTestId('orbit-barney')).toHaveAttribute('data-slot', '7');
+  expect(asked).toContain('learned where this is');
+  await expect(page.getByTestId('orbit-empty-4')).toBeVisible();
+  await joyce.context.close();
+});
+
+test('the catalog API checks roles, slots and input', async ({ request }) => {
+  const joyce = await apiAs(request, 'joyce');
+  const pilar = await apiAs(request, 'pilar');
+  expect((await pilar.patch('/api/items/bath', { short_label: 'x' })).status()).toBe(403);
+  expect((await joyce.patch('/api/items/bath', { orbit: 'inner', orbit_slot: 0 })).status()).toBe(409);
+  expect((await joyce.patch('/api/items/lucho', { orbit: 'outer', orbit_slot: 5 })).status()).toBe(400);
+  expect((await joyce.patch('/api/items/bath', { orbit: 'inner', orbit_slot: 9 })).status()).toBe(400);
+  expect((await joyce.patch('/api/items/water', { orbit: 'inner', orbit_slot: 7, parent_id: 'bath' })).status()).toBe(400);
+  expect((await joyce.patch('/api/items/bath', { label_en: '  ' })).status()).toBe(400);
+  expect((await joyce.patch('/api/items/nope', { short_label: 'x' })).status()).toBe(404);
+  expect((await joyce.post('/api/items/bath/rules', { kind: 'window' })).status()).toBe(400);
+  expect((await joyce.raw('PUT', '/api/items/bath/audio?lang=fr', FAKE_WEBM, 'audio/webm')).status()).toBe(400);
+  const items = await (await pilar.get('/api/items')).json();
+  expect(items.find((i: { id: string }) => i.id === 'eat').tap).toBe('open');
+});

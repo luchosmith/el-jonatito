@@ -284,6 +284,31 @@ nav.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .hist div{width:36px;height:36px;border-radius:10px;border:2px solid var(--line);display:grid;place-items:center;font-size:20px;overflow:hidden}
 .hist div.cur{border-color:var(--action)}
 .aud{display:flex;align-items:center;gap:6px;background:var(--calm);border-radius:10px;padding:5px 8px;margin:4px 0;font-size:12px}
+
+/* person screen: where + hear + send */
+.pv{flex:1;display:grid;grid-template-columns:450px 1fr;gap:18px;padding:12px 18px;min-height:0}
+.pv-where{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:24px;background:radial-gradient(circle at 50% 45%,#fff 0%,#eef4fb 75%)}
+.pv-tz{position:absolute;right:4px;top:4px;background:#fff;border-radius:18px;padding:6px 10px;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);font-size:22px}
+.pv-tz b{font-size:20px}
+img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid #fff;box-shadow:0 0 0 2px var(--people)}
+.sleeps{font-size:18px;margin-left:4px;padding-left:8px;border-left:2px solid var(--line)}
+.pv-right{display:flex;flex-direction:column;gap:10px;min-height:0}
+.pv-head{display:flex;align-items:center;gap:14px}
+.pv-head h2{font-size:30px;margin:0}
+.pv-face{width:96px;height:96px;border-radius:50%;border:6px solid #45c46a;overflow:hidden;flex:none}
+.pv-face img{width:100%;height:100%;object-fit:cover}
+.pv-st{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:24px}
+.pv-sec{background:#fff;border-radius:20px;padding:8px 12px 12px;border:1px solid var(--line)}
+.pv-lbl{display:flex;align-items:center;gap:8px;font-size:22px;color:var(--muted);margin-bottom:6px;min-height:38px}
+.pv .shelf{grid-template-columns:repeat(4,1fr);margin-top:0}
+.pv .vtile{height:78px}
+.sendrow{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:10px}
+.sbig{height:96px;border-radius:20px;border:4px solid var(--social);background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:40px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.08);user-select:none}
+.sbig span{font-size:12px;font-weight:800}
+.sbig.talk{background:linear-gradient(#fff,#ffe3ef);border-width:5px;box-shadow:0 6px 0 #c2588e,0 8px 14px rgba(0,0,0,.2);animation:invite 2.4s ease-in-out infinite}
+.sbig.talk.rec{border-color:var(--urgent);animation:pulseR 1s infinite}
+.sbig.love{border-color:var(--urgent)}
+.sbig:active{transform:translateY(3px)}
 </style>
 </head>
 <body>
@@ -344,7 +369,7 @@ nav.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 
   <!-- VIEW: PERSON (close-up + voice shelf, rendered by renderPerson) -->
   <div class="view" id="v-person" style="flex:1;min-height:0">
-    <div class="person" id="personBox"></div>
+    <div id="personBox" style="flex:1;display:flex;min-height:0"></div>
   </div>
 
   <!-- VIEW: LOG -->
@@ -699,11 +724,11 @@ function slotXY(orbit,slot){
 }
 function sig(w,color){const bars=[8,16,26,32,22,30,14,8,4];return `<svg class="sig" width="${w}" height="${Math.round(w*34/62)}" viewBox="0 0 62 34">${bars.map((h,i)=>`<rect x="${2+i*7}" y="${17-h/2}" width="4" height="${h}" rx="2" fill="${color||'#2f9e57'}" style="animation-delay:${(i*.09).toFixed(2)}s"/>`).join('')}</svg>`}
 
-const LOC={home:{lat:40.8,lon:-74.2,cc:'US',place:'Home'},
-  mama:{lat:40.74,lon:-74.17,cc:'US',place:'Work',icon:'🏢'},
-  abuelo:{lat:40.76,lon:-74.25,cc:'US',place:'Doctor',icon:'🏥'},
-  pilar:{lat:-12.05,lon:-77.04,cc:'PE',place:'Lima',icon:'🇵🇪'},
-  larry:{lat:25.76,lon:-80.19,cc:'US',place:'Miami',icon:'🌴'},
+const LOC={home:{lat:40.8,lon:-74.2,cc:'US',place:'Home',tz:'America/New_York'},
+  mama:{lat:40.74,lon:-74.17,cc:'US',place:'Work',icon:'🏢',tz:'America/New_York'},
+  abuelo:{lat:40.76,lon:-74.25,cc:'US',place:'Doctor',icon:'🏥',tz:'America/New_York'},
+  pilar:{lat:-12.05,lon:-77.04,cc:'PE',place:'Lima',icon:'🇵🇪',tz:'America/Lima',back:3},
+  larry:{lat:25.76,lon:-80.19,cc:'US',place:'Miami',icon:'🌴',tz:'America/New_York'},
   tintin:null};
 const OUTER={mama:1,abuelo:2,pilar:4,larry:6,tintin:9};   // 12:00 (slot 0) and 6:00 (slot 5) stay empty
 const ACCT={mama:'joyce · caretaker',abuelo:'lucho · caretaker',pilar:'pilar · friend',larry:'larry · caretaker',tintin:'tintin · friend'};
@@ -755,7 +780,7 @@ const emptySlots=used=>[...Array(IN_N).keys()].filter(x=>!used.has(x)).map(x=>`<
 
 function renderOrbit(){
   const tap=it=>it.tap==='open'?`add('🍇','eat','action');go('food')`:it.tap==='play'?`say('Pongo');go('pongo')`:`add('${it.e}','${it.w}','${it.t}',${it.img?`'${it.img}'`:'null'})`;
-  document.getElementById('v-orbit').innerHTML=`<div class="orbitv">${groundHTML()}<div class="dimmable">${rings()}${emptySlots(new Set(INNER.map(i=>i.slot)))}${INNER.map(it=>itemOrb(it,tap(it))).join('')}${PEOPLE.map(whoOrb).join('')}<div class="ome" onclick="go('body')" title="My body"><img src="${AVATARS.jonatito}" alt="Jonatito"></div></div><div class="globecard" onclick="hideWhere()"></div></div>`;
+  document.getElementById('v-orbit').innerHTML=`<div class="orbitv">${groundHTML()}<div class="dimmable">${rings()}${emptySlots(new Set(INNER.map(i=>i.slot)))}${INNER.map(it=>itemOrb(it,tap(it))).join('')}${PEOPLE.map(whoOrb).join('')}<div class="ome" onclick="go('body')" title="My body"><img src="${AVATARS.jonatito}" alt="Jonatito"></div></div><div class="globecard" onclick="openWhere()"></div></div>`;
 }
 function renderFood(){
   document.getElementById('v-food').innerHTML=`<div class="orbitv">${groundHTML()}<div class="dimmable">${rings()}
@@ -763,7 +788,7 @@ function renderFood(){
     ${FOODS.map((it,i)=>{const c=closedUntil(it);return itemOrb(it,c?`foodClosed(${i},this)`:`add('${it.e}','${it.n}','thing',null,'${it.badge||''}')`,c)}).join('')}
     ${PEOPLE.map(whoOrb).join('')}
     <div class="ome" onclick="go('orbit')" title="Back"><img src="${AVATARS.jonatito}" alt="Jonatito"></div><div class="ome-badge" onclick="go('orbit')">🍇</div></div>
-    <div class="globecard" onclick="hideWhere()"></div><div class="tipclock" id="tip" hidden></div></div>`;
+    <div class="globecard" onclick="openWhere()"></div><div class="tipclock" id="tip" hidden></div></div>`;
 }
 function foodClosed(i,el){
   const it=FOODS[i], d=closedUntil(it), tip=document.getElementById('tip');
@@ -778,11 +803,13 @@ function whoTap(id){const p=PEOPLE.find(x=>x.id===id); add(p.e,p.n,'people',p.im
 let whereT;
 function showWhere(id,stay){
   const g=document.querySelector('#v-'+vel()+' .globecard'); if(!g) return;
-  const p=PEOPLE.find(x=>x.id===id), L=LOC[id], far=L&&L.cc!==LOC.home.cc;
+  whereId=id; const p=PEOPLE.find(x=>x.id===id), L=LOC[id], far=L&&L.cc!==LOC.home.cc;
   g.innerHTML=globeSVG(p,L)+`<div class="gchip">${face(p)}<span>${p.n}</span><span style="font-size:24px">${L?(L.icon||'📍'):'❔'}</span>${L?`<span>${L.place}</span>`:''}${far?'<span style="font-size:24px">✈️</span>':''}</div>`;
   g.classList.add('on'); g.parentElement.classList.add('dim');
   clearTimeout(whereT); if(!stay) whereT=setTimeout(hideWhere,6000);
 }
+let whereId=null;
+function openWhere(){hideWhere(); if(whereId) openPerson(whereId)}
 function hideWhere(){document.querySelectorAll('.globecard').forEach(g=>{g.classList.remove('on');g.parentElement.classList.remove('dim')})}
 // very rough continent outlines (lat, lon) — enough for a "rudimentary" globe
 const CONT=[
@@ -806,12 +833,15 @@ function ortho([la,lo],[la0,lo0],R,c){
 let pinN=0;
 function pinSVG(x,y,img,color){const id='pc'+(pinN++);
   return `<g><line x1="${x}" y1="${y}" x2="${x}" y2="${y-16}" stroke="${color}" stroke-width="3"/><clipPath id="${id}"><circle cx="${x}" cy="${y-34}" r="16"/></clipPath><circle cx="${x}" cy="${y-34}" r="19" fill="#fff" stroke="${color}" stroke-width="3"/><image href="${img}" x="${x-16}" y="${y-50}" width="32" height="32" clip-path="url(#${id})" preserveAspectRatio="xMidYMid slice"/><circle cx="${x}" cy="${y}" r="4" fill="${color}"/></g>`}
-function globeSVG(p,L){
+let ARC=null;
+function globeSVG(p,L,size){
+  size=size||300; const u=pinN++; ARC=null;
   const H=LOC.home, c=150, R=136, A=[H.lat,H.lon], B=L?[L.lat,L.lon]:null;
   const va=v3(...A), vb=B?v3(...B):va, ang=Math.acos(Math.min(1,va[0]*vb[0]+va[1]*vb[1]+va[2]*vb[2]))/RAD;
-  const defs=`<defs><radialGradient id="oc" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#b5dcf7"/><stop offset="1" stop-color="#4f8fcf"/></radialGradient><radialGradient id="ld" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#a8dd96"/><stop offset="1" stop-color="#5fae5c"/></radialGradient></defs>`;
+  const defs=`<defs><radialGradient id="oc${u}" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#b5dcf7"/><stop offset="1" stop-color="#4f8fcf"/></radialGradient><radialGradient id="ld${u}" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#a8dd96"/><stop offset="1" stop-color="#5fae5c"/></radialGradient></defs>`;
   if(B&&ang<1.5){  // same city: a close-up of the ground, not the globe
-    return `<svg width="300" height="300" viewBox="0 0 300 300">${defs}<circle cx="150" cy="150" r="140" fill="url(#ld)" stroke="#fff" stroke-width="4"/>
+    ARC={d:'M96 206 Q150 150 210 160',rev:'M210 160 Q150 150 96 206'};
+    return `<svg class="gsvg" width="${size}" height="${size}" viewBox="0 0 300 300">${defs}<circle cx="150" cy="150" r="140" fill="url(#ld${u})" stroke="#fff" stroke-width="4"/>
       <path d="M30 210 Q150 120 270 170" stroke="#fff" stroke-width="12" fill="none" opacity=".6"/>
       <path id="road" d="M96 206 Q150 150 210 160" stroke="#1f2a37" stroke-width="3" stroke-dasharray="6 6" fill="none"/>
       <text font-size="30" text-anchor="middle" dy="10">🚗<animateMotion dur="3s" repeatCount="indefinite" path="M96 206 Q150 150 210 160"/></text>
@@ -824,11 +854,12 @@ function globeSVG(p,L){
     const s=Math.sin(ang*RAD);
     const pts=[...Array(31).keys()].map(i=>{const t=i/30,w1=Math.sin((1-t)*ang*RAD)/s,w2=Math.sin(t*ang*RAD)/s;return P(toLL([va[0]*w1+vb[0]*w2,va[1]*w1+vb[1]*w2,va[2]*w1+vb[2]*w2]))});
     const d='M'+pts.map(q=>q.map(n=>n.toFixed(1)).join(' ')).join('L');
+    ARC={d,rev:'M'+[...pts].reverse().map(q=>q.map(n=>n.toFixed(1)).join(' ')).join('L')};
     arc=`<path d="${d}" stroke="#1f2a37" stroke-width="3" stroke-dasharray="6 7" fill="none" opacity=".7"/>`;
     mover=`<text font-size="28" text-anchor="middle" dy="10">${L.cc!==H.cc?'✈️':'🚗'}<animateMotion dur="3.5s" repeatCount="indefinite" path="${d}"/></text>`;
   }
   const [ax,ay]=P(A);
-  return `<svg width="300" height="300" viewBox="0 0 300 300">${defs}<circle cx="${c}" cy="${c}" r="${R+7}" fill="#dff0ff" opacity=".7"/><circle cx="${c}" cy="${c}" r="${R}" fill="url(#oc)"/><clipPath id="gclip"><circle cx="${c}" cy="${c}" r="${R}"/></clipPath><g clip-path="url(#gclip)"><path d="${land}" fill="url(#ld)" stroke="#4f9a4c" stroke-width="1"/></g>${arc}${mover}${pinSVG(ax,ay,AVATARS.jonatito,'#e45757')}${B?pinSVG(...P(B),AVATARS[p.img],'#1f2a37'):`<text x="${ax+46}" y="${ay-24}" font-size="44">❔</text>`}</svg>`;
+  return `<svg class="gsvg" width="${size}" height="${size}" viewBox="0 0 300 300">${defs}<circle cx="${c}" cy="${c}" r="${R+7}" fill="#dff0ff" opacity=".7"/><circle cx="${c}" cy="${c}" r="${R}" fill="url(#oc${u})"/><clipPath id="gclip${u}"><circle cx="${c}" cy="${c}" r="${R}"/></clipPath><g clip-path="url(#gclip${u})"><path d="${land}" fill="url(#ld${u})" stroke="#4f9a4c" stroke-width="1"/></g>${arc}${mover}${pinSVG(ax,ay,AVATARS.jonatito,'#e45757')}${B?pinSVG(...P(B),AVATARS[p.img],'#1f2a37'):`<text x="${ax+46}" y="${ay-24}" font-size="44">❔</text>`}</svg>`;
 }
 
 /* ---------- voice messages ---------- */
@@ -842,27 +873,51 @@ function playVoice(v,el){
 }
 function playNewest(id,el){const vs=VOICE[id]||[];const v=vs.find(x=>x.nw)||vs.find(x=>!x.pin)||vs[0];if(v)playVoice(v,el)}
 function refreshVoice(){renderPeople(); const e=vel(); if(e==='orbit')renderOrbit(); if(e==='food')renderFood(); if(e==='person')renderPerson();}
-let curP='abuelo';
+let curP='pilar';
 function openPerson(id){curP=id;go('person')}
 function playTile(i,el){playVoice(VOICE[curP][i],el)}
+function theirTime(tz){return new Date(new Date().toLocaleString('en-US',{timeZone:tz}))}
+function fly(icon,back,done){   // a message travels along the path between the two pins
+  const svg=document.querySelector('#v-person .gsvg');
+  if(!svg||!ARC){done&&done();return}
+  svg.insertAdjacentHTML('beforeend',`<text font-size="34" text-anchor="middle" dy="12">${icon}<animateMotion dur="1.8s" fill="freeze" path="${back?ARC.rev:ARC.d}" begin="indefinite"/></text>`);
+  const t=svg.lastElementChild; t.querySelector('animateMotion').beginElement();
+  setTimeout(()=>{t.remove();done&&done()},1900);
+}
+function sent(){const e=document.getElementById('sentok'); if(e){e.textContent='📬✔'; setTimeout(()=>e.textContent='',2500)}}
+function talkTo(el){
+  if(el.classList.contains('rec')) return;
+  el.classList.add('rec'); el.innerHTML=`${sig(70,'#e45757')}<span>TALK</span>`;
+  setTimeout(()=>{el.classList.remove('rec'); el.innerHTML='👂<span>TALK</span>'; fly('〰️',false,sent)},3000);
+}
+function sendSocial(icon,txt){say(txt); fly(icon,false,sent)}
+function hearTile(i,el){fly('〰️',true); playVoice(VOICE[curP][i],el)}
 function renderPerson(){
-  const p=PEOPLE.find(x=>x.id===curP), vs=VOICE[curP]||[], ring=p.s==='busy'?'#f0b429':p.s==='away'?'#7b8794':'#45c46a';
+  const p=PEOPLE.find(x=>x.id===curP), L=LOC[curP], vs=VOICE[curP]||[];
   const order=[...vs.filter(v=>v.pin),...vs.filter(v=>!v.pin)];
-  document.getElementById('personBox').innerHTML=`
-    <div class="face" style="border-color:${ring}">
-      <img src="${AVATARS[p.img]}" alt="${p.n}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover">
-      <div class="hs" id="hsEar" style="left:-30px;top:170px" onclick="earTap(this)">👂<span>TALK</span></div>
-      <div class="hs" id="hsMouth" style="left:175px;top:285px" onclick="playNewest('${p.id}',this)">${sig(62)}<span>LISTEN</span></div>
-      <div class="hs" style="left:175px;top:60px" onclick="hot('👀 ${p.n}, come see!')">👀<span>COME SEE</span></div>
-      <div class="hs" style="right:-40px;top:300px" onclick="hot('✋ ${p.n}, help me!')">✋<span>HELP</span></div>
-      <div class="hs" style="left:30px;top:340px;border-color:var(--urgent)" onclick="hot('❤️ I love you, ${p.n}!')">❤️<span>LOVE</span></div>
+  const st=p.s==='busy'?'busy':p.s==='away'?'away':'', ring=st==='busy'?'#f0b429':st==='away'?'#7b8794':'#45c46a';
+  const far=L&&L.cc!==LOC.home.cc, tt=L&&L.tz!==LOC.home.tz?theirTime(L.tz):null, free=TT[p.id]||TT.abuelo;
+  const me=`<img class="mini" src="${AVATARS.jonatito}" alt="">`, them=`<img class="mini" src="${AVATARS[p.img]}" alt="">`;
+  const tiles=order.map(v=>`<div class="vtile ${v.pin?'pin':''}" onclick="hearTile(${vs.indexOf(v)},this)">${v.pin?'<span class="star">⭐</span>':''}${v.nw?'<i class="new"></i>':''}${sig(60,v.pin?'#c98a00':null)}<small>${v.when}</small></div>`).join('');
+  document.getElementById('personBox').innerHTML=`<div class="pv">
+    <div class="pv-where">
+      ${globeSVG(p,L,390)}
+      ${tt?`<div class="pv-tz">${them}${clk(tt,null,54)}<b>${fmt(tt)}</b><span>${tt.getHours()>=19||tt.getHours()<7?'🌙':'☀️'}</span></div>`:''}
+      <div class="gchip">${L?`<span style="font-size:24px">${L.icon||'📍'}</span><span>${L.place}</span><span style="font-size:24px">${far?'✈️':'🚗'}</span>`:'<span style="font-size:24px">❔</span>'}${L&&L.back?`<span class="sleeps">${'🌙'.repeat(L.back)} → 🏠</span>`:''}</div>
     </div>
-    <div class="pinfo">
-      <h2>${p.n}</h2>
-      ${p.id==='abuelo'?`<div class="row" style="justify-content:center;gap:18px;margin:6px 0"><span style="font-size:40px">🏥</span><span style="font-size:26px;color:var(--muted)">→</span>${clk(TT.abuelo,new Date(),90)}<b style="font-size:32px">${fmt(TT.abuelo)}</b></div>`:''}
-      <div class="shelf">${order.map(v=>`<div class="vtile ${v.pin?'pin':''}" onclick="playTile(${vs.indexOf(v)},this)">${v.pin?'<span class="star">⭐</span>':''}${v.nw?'<i class="new"></i>':''}${sig(70,v.pin?'#c98a00':null)}<small>${v.when}</small></div>`).join('')||'<div style="color:var(--muted);font-size:14px">No voice messages yet.</div>'}</div>
-      <div id="hotmsg" style="font-size:22px;font-weight:700;min-height:56px;display:flex;align-items:center;gap:12px;margin-top:8px"></div>
-    </div>`;
+    <div class="pv-right">
+      <div class="pv-head"><div class="pv-face" style="border-color:${ring}"><img src="${AVATARS[p.img]}" alt="${p.n}"></div><h2>${p.n}</h2>
+        ${st==='busy'?`<div class="pv-st">${clk(free,new Date(),64)}<b>${fmt(free)}</b></div>`:st==='away'?'<div class="pv-st" style="font-size:34px">🚫</div>':''}</div>
+      <div class="pv-sec"><div class="pv-lbl">${them}${sig(34,'#8a96a3')}➜${me}</div>
+        <div class="shelf">${tiles||'<div style="color:var(--muted);font-size:14px;padding:18px">—</div>'}</div></div>
+      <div class="pv-sec"><div class="pv-lbl">${me}➜${them}<span id="sentok" style="margin-left:auto;font-size:28px;color:var(--ink)"></span></div>
+        <div class="sendrow">
+          <div class="sbig talk" onclick="talkTo(this)">👂<span>TALK</span></div>
+          <div class="sbig" onclick="sendSocial('👀','${p.n}, come see!')">👀<span>COME SEE</span></div>
+          <div class="sbig" onclick="sendSocial('✋','${p.n}, help me!')">✋<span>HELP</span></div>
+          <div class="sbig love" onclick="sendSocial('❤️','I love you, ${p.n}!')">❤️<span>LOVE</span></div>
+        </div></div>
+    </div></div>`;
 }
 
 /* ---------- my body & pain scale ---------- */
@@ -993,17 +1048,17 @@ const VIEWS={
 };
 let view='orbit';
 Object.assign(VIEWS,{
-  orbit:['🪐 Orbit (home)','The new home screen. Jonatito is in the middle. Eat, Bath, Toilet, Go, Barney and Pongo float in fixed slots of the inner orbit (dashed circles are empty slots that stay reserved), and his people float in the outer orbit. Every tap adds to the sentence. A sound-wave badge means a new voice message (tap it to hear). Busy people show a small clock of when they are free; away people are greyed with 🚫. The ground peeks at the bottom with his pin. Tap his face for My body, Eat for the foods, Pongo to play it full screen.'],
+  orbit:['🪐 Orbit (home)','The new home screen. Jonatito is in the middle. Eat, Bath, Toilet, Go, Barney and Pongo float in fixed slots of the inner orbit (dashed circles are empty slots that stay reserved), and his people float in the outer orbit. Every tap adds to the sentence. A sound-wave badge means a new voice message (tap it to hear). Busy people show a small clock of when they are free; away people are greyed with 🚫. The ground peeks at the bottom with his pin. Tap a person: they join the sentence and a globe pops up showing where they are; tap the globe to open their person screen. Tap his face for My body, Eat for the foods, Pongo to play it full screen.'],
   food:['🍇 Eat → foods','Tapping Eat adds “eat” and opens the foods around him; the people stay in the outer orbit. Foods outside their time are dimmed with a clock. Tap one to hear and see when it opens. The next snack is shown top-left. Tap his face or the 🍇 badge to go back.'],
   where:['🌍 Where is…','Tapping a person zooms the ground out to show where they are. Abuela Pilar is in Lima, so a plane flies between the pins. Try Mommy Joyce (same city, 🚗), Larry (Miami, 🚗 across the country) or TinTin (location not shared, ❔). Tap the globe to close it; it also closes by itself after 6 seconds.'],
   body:['🩹 My body','Tap his face in the orbit to get here. He points to where it hurts (his own photo is the head), then picks a face from smiling to crying. Levels 3–5 go out as urgent to everyone on duty, 1–2 go to the caretaker on duty, and 0 is only logged. A caretaker can hide the dashed potty zone.'],
   pongo:['🐶 Pongo full screen','Media items open full screen, with no controls to get lost in. His face (top-left) brings him back to the orbit. The media clock shows when media time ends. During the sleep lock the item shows a moon and does not open.'],
   items:['🧩 Item editor','Parent mode → Items. One database entry for everything he can touch. Pick an item on the left: its picture (with history and revert), words in English and Spanish, recorded sound, what a tap does, its fixed slot, the linked account or media file, and time rules.']
 });
-VIEWS.person=['〰️ Voice messages','Opened from a face in the dock. Besides TALK and LISTEN, the voice shelf holds every voice note from this person: pinned comfort clips (⭐) first, then the newest. He can replay any of them whenever he wants to hear a familiar voice. A red dot marks the ones he has not heard yet. Try other faces in the dock.'];
+VIEWS.person=['📍 Person: where · hear · talk','One screen per person, opened from their face in the dock or by tapping the globe pop-up in the orbit. Left: where they are compared with him (both pins, 🚗 or ✈️, their local time with ☀️/🌙 if it differs, and “back in 3 sleeps” as moons). Right: their voice notes (⭐ pinned comfort clips first, red dot = not heard yet), then TALK, COME SEE, HELP and LOVE. Played notes travel from their pin to his; sent messages travel from his pin to theirs. Try Abuela Pilar (Lima ✈️), Mommy Joyce (same city 🚗) and TinTin (not shared ❔) in the dock.'];
 VIEWS.home[0]='🔲 All words (board)';
 VIEWS.home[1]='Now opened from the dock (“All words”). '+VIEWS.home[1];
-const ORDER=['orbit','food','where','person','body','pongo','home','log','media','parent','items','phone'];
+const ORDER=['orbit','food','person','body','pongo','home','log','media','parent','items','phone'];
 const VIEW_EL={where:'orbit'};
 const vel=()=>VIEW_EL[view]||view;
 function go(v){

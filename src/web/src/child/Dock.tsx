@@ -1,12 +1,16 @@
-// Bottom bar: Jonatito's own face where the Start button would be (opens the orbit), then family, then pets.
-import { Face } from '../common/Face.tsx';
+// Bottom bar: Jonatito's own face where the Start button would be (back to the orbit), then family
+// (each opens their person screen), then pets, then All words / My day / Media.
+import { Face, SoundWave } from '../common/Face.tsx';
 import type { Person } from '../../../shared/types.ts';
 
-export function Dock({ people, meActive, onMe, onPerson, onDay, onMedia }: {
+export function Dock({ people, unheard, meActive, boardActive, onMe, onPerson, onBoard, onDay, onMedia }: {
   people: Person[];
+  unheard: Record<string, number>;
   meActive: boolean;
+  boardActive: boolean;
   onMe: () => void;
   onPerson: (p: Person) => void;
+  onBoard: () => void;
   onDay: () => void;
   onMedia: () => void;
 }) {
@@ -27,6 +31,11 @@ export function Dock({ people, meActive, onMe, onPerson, onDay, onMedia }: {
         {family.map((p) => (
           <button key={p.id} className={`av ${ring(p)}`} data-testid={`dock-${p.id}`} data-status={p.status ?? 'available'} onClick={() => onPerson(p)}>
             <Face person={p} />
+            {(unheard[p.id] ?? 0) > 0 && (
+              <i className="vbadge" data-testid={`dock-voice-${p.id}`}>
+                <SoundWave width={22} />
+              </i>
+            )}
             <span>{p.short_label}</span>
           </button>
         ))}
@@ -47,6 +56,7 @@ export function Dock({ people, meActive, onMe, onPerson, onDay, onMedia }: {
           </>
         )}
       </div>
+      <button className={`dockbtn ${boardActive ? 'on' : ''}`} data-testid="open-board" onClick={onBoard} aria-label="All words">🔲</button>
       <button className="dockbtn" data-testid="open-day" onClick={onDay}>🍽️</button>
       <button className="dockbtn" data-testid="open-media" onClick={onMedia}>🎬</button>
     </footer>

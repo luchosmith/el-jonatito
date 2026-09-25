@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { AFTERNOON, device, login, resetDb, setClock, TINY_JPEG } from './helpers.ts';
+import { AFTERNOON, device, login, resetDb, setClock, TINY_JPEG, openBoard } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -40,6 +40,7 @@ test('drinks fill his glass', async ({ page, browser }) => {
 
 test('hiding a word leaves an empty slot — nothing else moves', async ({ page, browser }) => {
   await login(page, 'jonatito');
+  await openBoard(page);
   await expect(page.getByTestId('sym-pancakes')).toHaveAttribute('data-slot', '5');
   await expect(page.getByTestId('sym-grapes')).toHaveAttribute('data-slot', '4');
 

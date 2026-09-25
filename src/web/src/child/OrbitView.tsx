@@ -1,78 +1,200 @@
-// Jonatito's own face, big, as the starting point for a sentence. His core actions float close
-// to him (inner orbit); everyone else floats further out (outer orbit). Every tap goes to the strip.
-import { Face } from '../common/Face.tsx';
-import { personToken, symbolToken, type Board, type StripToken } from '../common/board.ts';
+// Jonatito in the middle; his core things in the inner orbit, his people in the outer one, the
+// ground under his feet. Every slot is fixed. Tapping Eat opens the foods around him.
+import { useEffect, useState } from 'react';
+import { Face, SoundWave } from '../common/Face.tsx';
+import { Clock12 } from '../common/Clock12.tsx';
+import { INNER_SLOTS, slotStyle } from '../common/orbit.ts';
+import { itemToken, personToken, shownLabel, type Board, type StripToken } from '../common/board.ts';
 import { kindClass } from '../common/Token.tsx';
-import type { Person } from '../../../shared/types.ts';
+import { speak } from '../common/hooks.ts';
+import { Globe } from './Globe.tsx';
+import { fmt12 } from '../../../shared/time.ts';
+import type { Item, Lang, Locations, Person } from '../../../shared/types.ts';
 
-/** The inner-orbit words, with the short name to show and, optionally, an emoji in place of the word's own picture. */
-const CORE_ACTIONS: { id: string; label: string; emoji?: string }[] = [
-  { id: 'eat', emoji: '🍇', label: 'Eat' },
-  { id: 'bath', emoji: '🛁', label: 'Bath' },
-  { id: 'toilet', emoji: '🚽', label: 'Toilet' },
-  { id: 'go', emoji: '🚗', label: 'Go' },
-  { id: 'barney', label: 'Barney' },
-  { id: 'pongo', label: 'Pongo' },
-];
-
-// Orbit radii as a percentage of the stage's width / height (an ellipse, so it fits a landscape tablet).
-const INNER = { rx: 20, ry: 30 };
-const OUTER = { rx: 40, ry: 38 };
-
-function at(orbit: { rx: number; ry: number }, angle: number) {
-  return { left: `${50 + orbit.rx * Math.cos(angle)}%`, top: `${50 + orbit.ry * Math.sin(angle)}%` };
+interface Props {
+  board: Board;
+  me: Person | undefined;
+  /** null = the main orbit; an item id = that item's sub-orbit (Eat -> foods) */
+  parentId: string | null;
+  now: Date;
+  lang: Lang;
+  unheard: Record<string, number>;
+  locations: Locations | null;
+  onAdd: (t: StripToken) => void;
+  onOpen: (item: Item) => void;
+  onPlay: (item: Item) => void;
+  onBody: () => void;
+  onBack: () => void;
+  onPerson: (personId: string) => void;
+  onHearNewest: (personId: string) => void;
 }
 
-const STATUS_MARK: Record<string, string> = { busy: '⏳', away: '🚫' };
+export function OrbitView(p: Props) {
+  const { board, me, parentId, now, lang } = p;
+  const [tip, setTip] = useState<{ item: Item; at: Date } | null>(null);
+  const [where, setWhere] = useState<string | null>(null);
+  const parent = parentId ? board.items.find((i) => i.id === parentId) : undefined;
 
-export function OrbitView({ board, me, onAdd }: { board: Board; me: Person | undefined; onAdd: (t: StripToken) => void }) {
-  const actions = CORE_ACTIONS.flatMap((a) => {
-    const s = board.symbols.find((x) => x.id === a.id && !x.is_hidden);
-    return s ? [{ ...a, token: a.emoji ? { ...symbolToken(s), emoji: a.emoji, photo_url: null } : symbolToken(s) }] : [];
-  });
-  const people = board.people.filter((p) => !p.is_self && p.kind === 'person' && p.is_visible);
+  useEffect(() => {
+    if (!tip) return;
+    const t = setTimeout(() => setTip(null), 4000);
+    return () => clearTimeout(t);
+  }, [tip]);
+  useEffect(() => {
+    if (!where) return;
+    const t = setTimeout(() => setWhere(null), 6000);
+    return () => clearTimeout(t);
+  }, [where]);
+
+  const inner = board.items.filter((i) => i.orbit === 'inner' && (i.parent_id ?? null) === parentId && !i.is_hidden && i.orbit_slot != null);
+  const used = new Set(inner.map((i) => i.orbit_slot));
+  const outer = board.items
+    .filter((i) => i.orbit === 'outer' && !i.parent_id && !i.is_hidden && i.orbit_slot != null)
+    .map((i) => ({ item: i, person: board.people.find((x) => x.id === i.id) }))
+    .filter((x): x is { item: Item; person: Person } => !!x.person);
+
+  const closedUntil = (i: Item) => (i.closed_until && new Date(i.closed_until) > now ? new Date(i.closed_until) : null);
+  const nextOpen = inner.map(closedUntil).filter((d): d is Date => !!d).sort((a, b) => a.getTime() - b.getTime())[0];
+  const nextOpenItem = nextOpen && inner.find((i) => closedUntil(i)?.getTime() === nextOpen.getTime());
+
+  const tapItem = (item: Item) => {
+    const closed = closedUntil(item);
+    if (closed) {
+      setTip({ item, at: closed });
+      speak(`${item.labels[lang] || item.labels.en} ${lang === 'es' ? 'a las' : 'at'} ${fmt12(closed)}`, lang);
+      return;
+    }
+    if (item.tap === 'play') return p.onPlay(item);
+    p.onAdd(itemToken(item, lang));
+    if (item.tap === 'open') p.onOpen(item);
+  };
+
+  const tapPerson = (item: Item, person: Person) => {
+    p.onAdd(personToken(person, item, lang));
+    setWhere(person.id);
+  };
+
+  const wherePerson = where ? board.people.find((x) => x.id === where) : undefined;
+  const whereLoc = where ? p.locations?.people.find((l) => l.person_id === where) ?? null : null;
 
   return (
-    <div className="orbit" data-testid="orbit">
-      <div className="ring inner" />
-      <div className="ring outer" />
+    <div className="orbit" data-testid="orbit" data-parent={parentId ?? ''}>
+      <div className="ground" aria-hidden />
+      <div className="ground-pin" data-testid="ground-pin">
+        <span className="pf">{me && <Face person={me} />}</span>
+        <i />
+      </div>
 
-      {me && (
-        <div className="orbit-me" data-testid="orbit-me">
-          <Face person={me} />
+      <div className={`orbit-layer ${wherePerson ? 'dim' : ''}`}>
+        <div className="ring inner" />
+        <div className="ring outer" />
+
+        {Array.from({ length: INNER_SLOTS }, (_, s) => s).filter((s) => !used.has(s)).map((s) => (
+          <div key={s} className="orb empty" style={slotStyle('inner', s)} data-testid={`orbit-empty-${s}`} />
+        ))}
+
+        {inner.map((item) => {
+          const closed = closedUntil(item);
+          return (
+            <button
+              key={item.id}
+              className={`orb act ${kindClass(item.kind)} ${closed ? 'closed' : ''}`}
+              data-testid={`orbit-${item.id}`}
+              data-slot={item.orbit_slot}
+              data-closed={closed ? closed.toISOString() : ''}
+              style={{ ...slotStyle('inner', item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.6}s` }}
+              onClick={() => tapItem(item)}
+            >
+              <b className="c">{item.photo_url ? <img src={item.photo_url} alt="" draggable={false} /> : item.emoji}</b>
+              {item.badge_color && <i className="badge" style={{ background: item.badge_color }} />}
+              <span>{shownLabel(item)}</span>
+              {closed && <i className="ck"><Clock12 at={closed} from={now} size={30} /></i>}
+            </button>
+          );
+        })}
+
+        {outer.map(({ item, person }) => {
+          const status = person.status ?? 'available';
+          const n = p.unheard[person.id] ?? 0;
+          return (
+            <button
+              key={item.id}
+              className={`orb who ${status}`}
+              data-testid={`orbit-${person.id}`}
+              data-status={status}
+              data-slot={item.orbit_slot}
+              style={{ ...slotStyle('outer', item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.9}s` }}
+              onClick={() => tapPerson(item, person)}
+            >
+              <Face person={person} />
+              {status === 'busy' && (
+                <i className="not-avail" data-testid={`busy-${person.id}`}>
+                  {person.status_until ? <Clock12 at={new Date(person.status_until)} from={now} size={26} /> : '🟡'}
+                </i>
+              )}
+              {status === 'away' && <i className="not-avail" data-testid={`away-${person.id}`}>🚫</i>}
+              {n > 0 && (
+                <span
+                  className="vbadge"
+                  role="button"
+                  data-testid={`voice-badge-${person.id}`}
+                  data-count={n}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    p.onHearNewest(person.id);
+                  }}
+                >
+                  <SoundWave width={26} />
+                  {n > 1 && <i className="n">{n}</i>}
+                </span>
+              )}
+              <span className="nm">{person.short_label}</span>
+            </button>
+          );
+        })}
+
+        <button className="orbit-me" data-testid="orbit-me" onClick={parent ? p.onBack : p.onBody} aria-label={parent ? 'Back' : 'My body'}>
+          {me && <Face person={me} />}
+        </button>
+        {parent && (
+          <button className={`orbit-parent ${kindClass(parent.kind)}`} data-testid="orbit-parent" onClick={p.onBack}>
+            {parent.photo_url ? <img src={parent.photo_url} alt="" /> : parent.emoji}
+          </button>
+        )}
+      </div>
+
+      {parent && nextOpen && nextOpenItem && (
+        <div className="next-open" data-testid="next-open">
+          <b>{nextOpenItem.photo_url ? <img src={nextOpenItem.photo_url} alt="" /> : nextOpenItem.emoji}</b>
+          <Clock12 at={nextOpen} from={now} size={64} />
+          <b className="time">{fmt12(nextOpen)}</b>
         </div>
       )}
 
-      {actions.map((a, i) => (
-        <button
-          key={a.id}
-          className={`orb act ${kindClass(a.token.kind)}`}
-          data-testid={`orbit-${a.id}`}
-          style={{ ...at(INNER, -Math.PI / 2 + ((i + 0.5) * 2 * Math.PI) / actions.length), animationDelay: `${i * -0.7}s` }}
-          onClick={() => onAdd(a.token)}
-        >
-          {a.token.photo_url ? <img src={a.token.photo_url} alt="" draggable={false} /> : <b>{a.token.emoji}</b>}
-          <span>{a.label}</span>
-        </button>
-      ))}
+      {tip && (
+        <div className="closed-tip" data-testid="closed-tip" style={slotStyle('inner', tip.item.orbit_slot ?? 0)}>
+          <b>{tip.item.photo_url ? <img src={tip.item.photo_url} alt="" /> : tip.item.emoji}</b>
+          <Clock12 at={tip.at} from={now} size={72} />
+          <b className="time">{fmt12(tip.at)}</b>
+          {tip.item.closed_by === 'limit' && suggestion(board, tip.item)}
+        </div>
+      )}
 
-      {people.map((p, i) => {
-        const status = p.status ?? 'available';
-        return (
-          <button
-            key={p.id}
-            className={`orb who ${status}`}
-            data-testid={`orbit-${p.id}`}
-            data-status={status}
-            style={{ ...at(OUTER, -Math.PI / 2 + (i * 2 * Math.PI) / people.length), animationDelay: `${i * -0.9}s` }}
-            onClick={() => onAdd(personToken(p))}
-          >
-            <Face person={p} />
-            {STATUS_MARK[status] && <i className="not-avail" aria-label={status}>{STATUS_MARK[status]}</i>}
-            <span>{p.short_label}</span>
-          </button>
-        );
-      })}
+      {wherePerson && p.locations && (
+        <button className="globe-pop" data-testid="globe-pop" data-person={wherePerson.id} onClick={() => p.onPerson(wherePerson.id)}>
+          <Globe home={p.locations.home} homePhoto={me?.photo_url ?? null} other={{ place: whereLoc, photo: wherePerson.photo_url, emoji: wherePerson.emoji }} />
+          <span className="gchip">
+            <Face person={wherePerson} />
+            {whereLoc ? <b>{whereLoc.place_label}</b> : <b>❔</b>}
+          </span>
+        </button>
+      )}
     </div>
   );
+}
+
+function suggestion(board: Board, item: Item) {
+  const id = item.rules.find((r) => r.kind === 'limit' && r.suggest_item_id)?.suggest_item_id;
+  const s = id ? board.items.find((i) => i.id === id) : undefined;
+  return s ? <span className="suggest" data-testid="closed-suggest">→ {s.photo_url ? <img src={s.photo_url} alt="" /> : s.emoji}</span> : null;
 }

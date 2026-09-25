@@ -3,6 +3,8 @@ import { useRef, useState } from 'react';
 import { api } from '../api.ts';
 import { lookupToken, type Board } from '../common/board.ts';
 import { TokenCard } from '../common/Token.tsx';
+import { BodySvg } from '../common/BodySvg.tsx';
+import { PainFace } from '../common/PainFace.tsx';
 import { speak } from '../common/hooks.ts';
 import { startRecording, type Recording } from '../common/recorder.ts';
 import { fmt12ampm } from '../../../shared/time.ts';
@@ -54,6 +56,12 @@ function MessageCard({ m, board, userId, onChange }: { m: Message; board: Board;
             const st = lookupToken(board, t);
             return st ? <TokenCard key={i} t={st} /> : null;
           })}
+        </div>
+      )}
+      {m.pain && (
+        <div className="pain-view" data-testid="message-pain" data-part={m.pain.part} data-level={m.pain.level}>
+          <BodySvg photoUrl={me?.photo_url ?? null} selected={m.pain.part} height={170} />
+          <PainFace level={m.pain.level} size={72} />
         </div>
       )}
       <button className="play" data-testid="message-sentence" onClick={() => speak(m.sentence_en)}>▶ “{m.sentence_en}”</button>

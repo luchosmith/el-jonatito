@@ -2,7 +2,7 @@
 
 Version 0.3 · Draft · September 2026 · Companion to `Jonatito_Project_Plan.md`
 
-> **Build status (v0.3).** The running app (`src/`) uses a lighter stack than sections 1–2 describe: one **Node 22** process with **SQLite** (`node:sqlite`), server-sent events for live updates, and a React web app built with esbuild. See `src/README.md`. The target architecture below still applies to later phases. Section 5 (orbit home and item catalog) is written against the running build.
+> **Build status (v0.3, built September 2026).** The running app (`src/`) uses a lighter stack than sections 1–2 describe: one **Node 22** process with **SQLite** (`node:sqlite`), server-sent events for live updates, and a React web app built with esbuild. See `src/README.md`. The target architecture below still applies to later phases. Section 5 (orbit home and item catalog) is written against the running build.
 
 ---
 
@@ -181,13 +181,13 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
 |---|---|
 | Action or thing (`tap = add`) | Speaks its word and adds it to the strip |
 | Group item, e.g. **Eat** (`tap = open`) | Speaks "eat", adds it to the strip, and opens its **sub-orbit** (5.4) |
-| Person in the outer orbit | Speaks their name, adds them to the strip, and the **ground zooms out to show where they are** (5.7) |
+| Person in the outer orbit | Speaks their name, adds them to the strip, and the ground zooms out to show where they are (5.7). Tapping that globe opens their **person screen** (5.6) |
 | **Sound-wave badge** in front of a person | Plays their newest unheard voice message (5.6) |
 | Media item, e.g. **Pongo** (`tap = play`) | Opens it **full screen** (5.5). It isn't added to the strip |
 | **His own face** (center) | Opens **My body** (5.8) |
 | A closed item (time rule) | Speaks "grapes at 3:00" and shows the clock. It isn't added (5.4) |
 | Dock: **Me** | Back to the main orbit, from anywhere |
-| Dock: a face | That person's close-up with their **voice shelf** (5.6) |
+| Dock: a face | That person's **person screen**: where they are, their voice notes, TALK and quick messages (5.6) |
 
 ### 5.4 Sub-orbits and time rules (Eat → foods)
 - **Opening a sub-orbit.** Jonatito stays in the center. The opened item (🍇 Eat) sits as a small badge on his face, and its children fill the inner orbit in their own fixed slots. The outer orbit (people) stays, so *"Mommy, eat, grapes"* can be built on one screen. Tapping his face or the badge goes back one level.
@@ -198,6 +198,8 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
   - `interval`: at least N minutes since the last time it was logged.
 - **What "closed" looks like.** The item is dimmed with a small 12-hour clock badge. Tapping it speaks "grapes at 3:00" and shows a large clock with the wait shaded. When any snack item is closed, a side panel shows **"next snack"** as a clock face and "3:00". The item is not added to the strip.
 - **Principle check.** The plan says reminders never block. Closed items are the one exception, and only a caretaker can set one. They must always show *when*, never just "no". The dispatcher's gentle notes (recent, next meal) still apply to open items.
+- **Close or remind, per rule.** Each rule has a `blocks` switch in the item editor: *closed with a clock*, or *reminder only* (the item stays open and the dispatcher shows its gentle note). Migrated daily maximums close; the old "eaten in the last hour" reminder stays a reminder.
+- **Where closing applies (v0.3 build).** Closed items are enforced in the orbit. The "All words" board keeps its v0.2 behaviour (everything tappable, gentle notes after sending) while the orbit takes over.
 
 ### 5.5 Media items (Pongo) — full screen
 - A `tap = play` item links to a `media` row. It opens **full screen**, hiding the Here & Now bar, strip and dock, with no browser chrome (kiosk mode).
@@ -205,12 +207,47 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
 - The media clock (the remaining time shaded on a 12-hour face) sits top-right. The media policy (section 10.2) applies in full: during the **sleep lock** the item shows a moon and the clock of when it wakes, and it doesn't open.
 - To *ask* for media instead of playing it, he uses the board or the sentence strip (`[Me] [watch] [Pongo]`).
 
-### 5.6 Voice messages for Jonatito ("a familiar voice")
-- **Recording (family side).** Each adult's app gets a big **"🎙️ For Jonatito"** button: hold to record, up to 60 s, listen back, send. It's stored in `voice_notes`. Voice replies to his messages are also saved as voice notes, so everything he can hear is in one place. *(The wider messaging system is still to be decided, for example forwarding WhatsApp voice notes. The table is designed so any channel can write into it.)*
-- **Unheard badge.** An animated sound-wave badge sits **in front of the sender's avatar**, both in the orbit and in the dock. A number dot shows when there's more than one. Tapping the badge plays the newest unheard note, marks it heard, and the badge animates while it plays.
-- **Voice shelf (close-up).** Opening a person from the dock shows their face with the TALK/LISTEN zones as before, plus a **shelf of big waveform tiles**, one per note, newest first. **Pinned comfort clips** (⭐, pinned by a caretaker, e.g. *"Te quiero mucho, mi amor"*) always come first and never expire. He can play any tile, any time, as often as he wants. This is the "I just want to hear a familiar voice" use.
-- **No delete on his side.** Caretakers can pin, unpin or hide notes. Unpinned notes are kept for 90 days (a setting).
-- **Playback** uses the tablet speaker at the fixed child volume. A clip never auto-plays (principle 2).
+### 5.6 Person screen: where they are, hear them, talk to them
+One screen per person brings together **where they are** (relative to him), **what he can hear from them**, and **how he sends to them**. It replaces the separate close-up and "where is" views from earlier drafts.
+
+**How he gets there:** tap their face in the dock, or tap the globe pop-up after tapping them in the orbit (5.7).
+
+```
+┌─ Here & Now bar ──────────────────────────────────────────────────────────┐
+│  ┌────────── WHERE ──────────┐   (Abuela Pilar)  [clock: free at 4:15]     │
+│  │   🕐 their time  ☀️/🌙     │                                             │
+│  │        (me 📍)             │   HEAR   (her) 〰️ ➜ (me)                     │
+│  │          ╲ ✈️ · · ·        │   [⭐ 〰️] [〰️ •] [〰️ Mon] [〰️ Sun]              │
+│  │           (Abuela 📍)      │                                             │
+│  └────────────────────────────┘   SEND   (me) ➜ (her)                        │
+│   🇵🇪 Lima ✈️   back: 🌙🌙🌙 → 🏠   [ 👂 TALK ] [👀 COME SEE] [✋ HELP] [❤️ LOVE] │
+├─ Dock ────────────────────────────────────────────────────────────────────┤
+```
+
+- **Where (left).** A large version of the ground/globe (5.7) with **both pins**: him and them, a dotted path between them, and the way to get there (🚗 same city or country, ✈️ another country).
+  - **Their time.** If they're in another time zone, a small 12-hour clock shows *their* time with ☀️ or 🌙, so he can see it's night where Abuela is.
+  - **"Back in N sleeps."** If they set an *until* date, a row of moons (one per night) ends in 🏠.
+  - **Unknown or not shared:** only his pin, and their face with ❔.
+- **Who (top right).** Their face with the availability ring. Busy shows a small clock of when they're free; away is greyed with 🚫.
+- **Hear (middle right).** The **voice shelf**, one big waveform tile per note:
+  - **Pinned comfort clips** (⭐, pinned by a caretaker, e.g. *"Te quiero mucho, mi amor"*) come first and never expire;
+  - the rest follow newest first, with a red dot on the ones he hasn't heard.
+  - He can play any tile, any time, as often as he wants: the "I just want to hear a familiar voice" use.
+  - While a note plays, a sound-wave icon travels along the path **from their pin to his**.
+  - The section label is pictures only: *their face* 〰️ ➜ *his face*.
+- **Send (bottom right).** Four big buttons, labeled *his face* ➜ *their face*:
+  - **👂 TALK** records his voice to them. It's the same raised, gently pulsing ear button as before: record up to 15 s, stop on the next tap or after 2 s of silence, then upload.
+  - **👀 COME SEE, ✋ HELP, ❤️ LOVE** send the social messages in one tap. HELP stays urgent-class.
+  - After sending, the message icon **travels along the path from his pin to theirs** and lands with 📬✔. Where they are becomes part of the act of sending.
+  - If they're busy, the dispatcher's usual card appears (the clock of when they're free, plus people who are free now).
+- **Recording (family side).** Each adult's app has a big **"🎙️ For Jonatito"** button: hold to record, up to 60 s, listen back, send. It's stored in `voice_notes`. Voice replies to his messages are also saved there, so everything he can hear is in one place. *(The wider messaging system is still to be decided, for example forwarding WhatsApp voice notes. The table is designed so any channel can write into it.)*
+- **Unheard badge elsewhere.** An animated sound-wave badge sits in front of the sender's avatar in the orbit and the dock, with a number dot when there's more than one. Tapping it plays the newest unheard note without leaving the orbit.
+- **Rules:**
+  - Nothing auto-plays (principle 2).
+  - There's no delete on his side. Caretakers can pin, unpin or hide notes.
+  - Unpinned notes are kept for 90 days (a setting).
+  - Playback uses the fixed child volume.
+- **Pets** use the same screen without SEND (they can't receive messages). Their pin is home.
 
 ### 5.7 Ground & location
 - **At rest.** The bottom edge of the orbit shows the **top of a large blue-and-green sphere** at about 25% opacity, with **one pin (his face) in the middle**. It stays still, so he always sees he's *standing somewhere*.
@@ -223,7 +260,7 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
   | **another country** | the globe, with a dotted arc between the pins and a **✈️ flying along it** |
   | unknown or not shared | only his pin, their face with a ❔ |
 
-  It returns to rest after 6 s, or when he taps it.
+  It returns to rest after 6 s. **Tapping it opens their person screen** (5.6), which shows the same view larger, with hearing and sending.
 - **Rendering.** An SVG **orthographic globe** drawn with `d3-geo` from the `world-atlas` 110m land outline, bundled with the app (about 50 KB, works offline). There are no map tiles and no outside requests. Ocean `#7fb8e6`, land `#8fcf8a`, and no borders or labels on his side.
 - **Where people's locations come from.** Each adult sets **"Where I am"** in their app: pick a city from a bundled list (about 5,000 cities), or "use my phone's location", rounded to about 10 km. They can add an optional **until** date ("back Oct 3"). The tablet can then show "back in 3 sleeps". Jonatito's own pin comes from `settings.location`, or from the place he's at.
 - **Privacy.** Location is city-level only. The tablet and caretakers can see it; friends can't see each other's. It clears automatically after `until`, and each person can turn it off.
@@ -248,7 +285,7 @@ CREATE TABLE items (
   id            TEXT PRIMARY KEY,           -- 'eat', 'grapes', 'mommy_joyce', 'pongo'
   category      TEXT NOT NULL CHECK (category IN
                   ('person','pet','food','drink','action','place','feeling','play','media','body','social','urgent','core')),
-  kind          TEXT NOT NULL,              -- Fitzgerald colour: people|action|thing|desc|social|urgent
+  kind          TEXT NOT NULL,              -- word type / colour: person|pet|action|thing|desc|social|urgent
   label_en      TEXT NOT NULL,              -- spoken / used in sentences ("take a bath")
   label_es      TEXT NOT NULL,
   short_label   TEXT,                       -- shown under the picture ("Bath")
@@ -282,6 +319,7 @@ CREATE TABLE audio_clips (                  -- versioned like images; the newest
 CREATE TABLE item_rules (                   -- replaces limits
   id INTEGER PRIMARY KEY, item_id TEXT NOT NULL REFERENCES items(id),
   kind TEXT NOT NULL CHECK (kind IN ('window','limit','interval')),
+  blocks INTEGER NOT NULL DEFAULT 1,        -- 1: closed with a clock in the orbit; 0: only a gentle reminder
   days INTEGER,                             -- bitmask Sun..Sat; NULL = every day
   start_min INTEGER, end_min INTEGER,       -- window, minutes after midnight
   routine_item_id INTEGER REFERENCES schedule_items(id), routine_open_min INTEGER,  -- or: open with a routine item
@@ -298,7 +336,7 @@ CREATE TABLE voice_notes (
 
 CREATE TABLE locations (
   user_id INTEGER PRIMARY KEY REFERENCES users(id),
-  place_label TEXT NOT NULL, country_code TEXT NOT NULL,
+  place_label TEXT NOT NULL, country_code TEXT NOT NULL, tz TEXT NOT NULL,   -- IANA zone, for "their time" on the person screen
   lat REAL NOT NULL, lon REAL NOT NULL,     -- rounded to 0.1° (~10 km)
   source TEXT NOT NULL CHECK (source IN ('manual','phone')), until TEXT, updated_at TEXT NOT NULL
 );
@@ -316,7 +354,7 @@ CREATE TABLE pain_reports (
 ### 5.10 Item editor (parent mode)
 - **Tree view:** Main orbit (inner, outer) → each sub-orbit → board pages → hidden items.
 - **For each item:**
-  - **Picture:** camera, gallery or symbol library, then a fixed-frame crop, plus the history with one-tap revert (section 9).
+  - **Picture:** camera or gallery, plus the history with one-tap revert (section 9). *Not built yet: symbol-library search and the fixed-frame crop.*
   - **Labels:** EN and ES, plus a short label.
   - **Audio, per language:** record in the app (up to 10 s), upload, or use text-to-speech; with preview and revert.
   - **Category and color.**
@@ -345,7 +383,7 @@ CREATE TABLE pain_reports (
 New SSE events: `items`, `voice_note`, `location`, `pain`.
 
 ### 5.12 Decisions to confirm with the family
-1. **Tapping a person in the orbit** adds them to the sentence *and* shows where they are. Their full voice shelf opens from the **dock** face. Alternative: open the close-up from the orbit too, with a long press (harder for him).
+1. **Tapping a person in the orbit** adds them to the sentence *and* pops up where they are. Tapping the pop-up (or their dock face) opens the **person screen** (where + hear + send). Alternative: skip the pop-up and open the person screen straight from the orbit, so the orbit tap would no longer build sentences with people.
 2. **Location:** is each adult willing to set "Where I am"? Should the phone-location option exist at all?
 3. **Closed items:** block entirely (as specified), or allow sending with a gentle note (the current dispatcher behavior)?
 4. **Pain thresholds:** is level 3+ urgent the right line? Should the potty-area zone be shown?

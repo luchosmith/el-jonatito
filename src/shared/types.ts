@@ -82,6 +82,8 @@ export interface Message {
   created_at: string;
   recipients: number[];
   replies: Reply[];
+  /** set when the message came from the My body screen */
+  pain: { part: string; side: string | null; level: number } | null;
 }
 
 export type DispatchNote =
@@ -94,7 +96,7 @@ export type DispatchNote =
 
 export interface LogEntry {
   id: number;
-  type: 'food' | 'drink' | 'meds' | 'sleep' | 'toilet' | 'mood' | 'activity';
+  type: 'food' | 'drink' | 'meds' | 'sleep' | 'toilet' | 'mood' | 'activity' | 'pain';
   symbol_id: string | null;
   amount: number | null;
   note: string | null;
@@ -119,6 +121,8 @@ export interface MediaItem {
   cover_url: string | null;
   bedtime_ok: boolean;
   sort_order: number;
+  /** the video / song, when one was uploaded */
+  file_url: string | null;
 }
 
 export interface MediaPolicy {
@@ -141,4 +145,101 @@ export type ServerEvent =
   | { type: 'availability'; person_id: string; status: AvailabilityStatus; until: string | null }
   | { type: 'log'; entry: LogEntry }
   | { type: 'people'; }
-  | { type: 'symbols'; };
+  | { type: 'symbols'; }
+  | { type: 'items'; }
+  | { type: 'voice_note'; note: VoiceNote }
+  | { type: 'location'; person_id: string };
+
+// ---- v0.3: item catalog, voice notes, locations ------------------------------------------
+
+export type ItemCategory =
+  | 'person' | 'pet' | 'food' | 'drink' | 'action' | 'place' | 'feeling' | 'play' | 'media' | 'body' | 'social' | 'urgent' | 'core';
+export type TapAction = 'add' | 'open' | 'play' | 'body' | 'none';
+export type Orbit = 'inner' | 'outer';
+
+export interface ItemRule {
+  id: number;
+  item_id: string;
+  kind: 'window' | 'limit' | 'interval';
+  /** true: the item is closed (dimmed, with a clock) in the orbit; false: only a gentle reminder */
+  blocks: boolean;
+  /** bitmask Sun..Sat (bit 0 = Sunday); null = every day */
+  days: number | null;
+  start_min: number | null;
+  end_min: number | null;
+  routine_item_id: number | null;
+  routine_open_min: number | null;
+  max_per_day: number | null;
+  min_interval_min: number | null;
+  suggest_item_id: string | null;
+}
+
+/** One row for everything Jonatito can touch: people, pets, foods, actions, media, body parts. */
+export interface Item {
+  id: string;
+  category: ItemCategory;
+  kind: TokenKind;
+  labels: { en: string; es: string };
+  /** shown under the picture ("Bath"); the spoken label can be longer ("take a bath") */
+  short_label: string | null;
+  emoji: string | null;
+  tap: TapAction;
+  parent_id: string | null;
+  orbit: Orbit | null;
+  orbit_slot: number | null;
+  grid_page: string | null;
+  grid_row: number | null;
+  grid_col: number | null;
+  user_id: number | null;
+  media_id: number | null;
+  badge_color: string | null;
+  log_trackable: boolean;
+  alias_of: string | null;
+  is_hidden: boolean;
+  photo_url: string | null;
+  audio: { en: string | null; es: string | null };
+  rules: ItemRule[];
+  /** when a blocking rule closes the item right now: when it opens again */
+  closed_until: string | null;
+  closed_by: ItemRule['kind'] | null;
+}
+
+export interface ItemImage {
+  id: number;
+  url: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface VoiceNote {
+  id: number;
+  from_user_id: number;
+  from_person_id: string | null;
+  audio_url: string;
+  duration_s: number | null;
+  created_at: string;
+  heard_at: string | null;
+  pinned: boolean;
+  hidden: boolean;
+  source: 'app' | 'reply' | 'whatsapp';
+}
+
+export interface Place {
+  place_label: string;
+  country_code: string;
+  tz: string;
+  lat: number;
+  lon: number;
+}
+
+export interface PersonLocation extends Place {
+  person_id: string;
+  source: 'manual' | 'phone';
+  until: string | null;
+  updated_at: string;
+}
+
+export interface Locations {
+  home: Place;
+  people: PersonLocation[];
+}

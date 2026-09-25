@@ -89,10 +89,12 @@ A band across the top of every screen in child mode:
   - ✋ **Hand** → "Help me" / "Hug"
   - ❤️ **Heart** → "I love you / I miss you"
 - This makes the most common social messages a single, physical gesture.
-- **Familiar voices, any time (v0.3).** Family members record voice notes for him from their phones.
-  - A **sound-wave badge** appears in front of their avatar when there's something new. He taps it to hear it.
-  - Opening their face shows a **shelf of all their voice notes**, with pinned comfort clips (*"Te quiero mucho, mi amor"*) first. He can replay them whenever he needs reassurance.
-- **Where are you? (v0.3).** Each person can share which city they're in. Tapping them in the orbit shows their pin on the globe, and a plane if they're far away. An optional "back on" date turns into "back in 3 sleeps".
+- **Person screen: where, hear, talk (v0.3).** Opening someone (from the dock, or from their globe pop-up in the orbit) shows one screen with three parts:
+  - **Where they are**, relative to him: both pins on the globe with a 🚗 or ✈️ between them, their local time if it differs (☀️/🌙), and "back in 3 sleeps" if they're away.
+  - **Hear:** a shelf of all their voice notes, with pinned comfort clips (*"Te quiero mucho, mi amor"*) first. He can replay them whenever he needs reassurance.
+  - **Send:** 👂 TALK (record his voice to them), 👀 COME SEE, ✋ HELP and ❤️ LOVE. The message visibly travels along the path from his pin to theirs.
+- **Familiar voices, any time.** Family members record voice notes for him from their phones. A **sound-wave badge** in front of their avatar shows something new; tapping it plays it right away.
+- Each person can share which city they're in (city-level only). Tapping them in the orbit briefly shows their pin on the globe.
 
 ### 4.4 Sentence builder
 

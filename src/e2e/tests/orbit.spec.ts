@@ -6,60 +6,121 @@ test.beforeEach(async ({ request, page }) => {
   await setClock(request, AFTERNOON, [page]);
 });
 
-test('his face opens the orbit: core actions close to him, people further out, taps go to the strip', async ({ page }) => {
+test('the orbit is home: his core things in fixed inner slots, people in fixed outer slots', async ({ page }) => {
   await login(page, 'jonatito');
-  await page.getByTestId('me-button').click();
   const orbit = page.getByTestId('orbit');
-  await expect(orbit.getByTestId('orbit-me')).toBeVisible();
-  for (const [id, emoji] of [['eat', '🍇'], ['bath', '🛁'], ['toilet', '🚽'], ['go', '🚗']]) {
-    await expect(orbit.getByTestId(`orbit-${id}`)).toContainText(emoji);
+  await expect(orbit).toHaveAttribute('data-parent', '');
+  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['barney', 4], ['pongo', 5]];
+  for (const [id, slot] of slots) await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
+  await expect(orbit.getByTestId('orbit-eat')).toContainText('🍇');
+  await expect(orbit.getByTestId('orbit-go')).toContainText('🚗');
+  await expect(orbit.getByTestId('orbit-barney').locator('img')).toBeVisible();
+  // Empty slots stay reserved; nothing is spread out to fill them.
+  await expect(orbit.getByTestId('orbit-empty-6')).toBeVisible();
+  await expect(orbit.getByTestId('orbit-empty-7')).toBeVisible();
+  // People: 12:00 and 6:00 stay empty.
+  for (const [id, slot] of [['mommy_joyce', 1], ['lucho', 2], ['pilar', 3], ['larry', 4], ['tintin', 6]] as const) {
+    await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
   }
-  await expect(orbit.getByTestId('orbit-barney').locator('img')).toHaveAttribute('src', /barney/);
-  await expect(orbit.getByTestId('orbit-pongo').locator('img')).toHaveAttribute('src', /pongo/);
-  await expect(orbit.getByTestId('orbit-mommy_joyce')).toBeVisible();
   await expect(orbit.getByTestId('orbit-jonatito')).toHaveCount(0);
-
-  // The bubbles float, so skip Playwright's "wait until still" check.
-  await orbit.getByTestId('orbit-mommy_joyce').click({ force: true });
-  await orbit.getByTestId('orbit-eat').click({ force: true });
-  await expect(page.getByTestId('strip-me')).toBeVisible();
-  await expect(page.getByTestId('strip-token')).toHaveCount(2);
-  await expect(page.getByTestId('strip-token').nth(1)).toContainText('🍇');
-
-  await page.getByTestId('send').click();
-  await expect(page.getByTestId('note-delivered')).toHaveAttribute('data-person', 'mommy_joyce');
+  await expect(page.getByTestId('ground-pin')).toBeVisible();
 });
 
-test('Barney can go in a message from the orbit', async ({ page, request }) => {
+test('tapping builds the sentence; Eat opens the foods around him and his face goes back', async ({ page, request }) => {
   await login(page, 'jonatito');
-  await page.getByTestId('me-button').click();
-  await page.getByTestId('orbit-mommy_joyce').click({ force: true });
-  await page.getByTestId('orbit-barney').click({ force: true });
+  await page.getByTestId('orbit-mommy_joyce').click();
+  await page.getByTestId('orbit-eat').click();
+  await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', 'eat');
+  await expect(page.getByTestId('orbit-parent')).toContainText('🍇');
+  await expect(page.getByTestId('orbit-grapes')).toHaveAttribute('data-slot', '4');
+  // People stay in the outer orbit, so the whole sentence is one screen.
+  await expect(page.getByTestId('orbit-mommy_joyce')).toBeVisible();
+  await page.getByTestId('orbit-grapes').click();
+  await expect(page.getByTestId('strip-token')).toHaveCount(3);
+
   await page.getByTestId('send').click();
-  await expect(page.getByTestId('note-delivered')).toHaveAttribute('data-person', 'mommy_joyce');
+  await expect(page.getByTestId('sentence')).toContainText('Mommy Joyce, I want to eat grapes.');
+  await page.getByTestId('card-ok').click();
   const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
-  expect(inbox[0].sentence_en).toContain('Barney');
+  expect(inbox[0].sentence_es).toBe('Mommy Joyce, quiero comer uvas.');
+
+  await page.getByTestId('orbit-me').click();
+  await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', '');
 });
 
-test('people who are not available are marked in the orbit', async ({ page, request }) => {
+test('foods outside their time are dimmed with a clock and are not added', async ({ page }) => {
+  // 3:40 pm: grapes are open (snack 3:00 for 45 min); pancakes only at breakfast.
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-eat').click();
+  await expect(page.getByTestId('orbit-grapes')).toHaveAttribute('data-closed', '');
+  const pancakes = page.getByTestId('orbit-pancakes');
+  await expect(pancakes).toHaveClass(/closed/);
+  await expect(pancakes.locator('svg.clock12')).toHaveAttribute('aria-label', '7:00');
+  await expect(page.getByTestId('next-open')).toContainText('7:00');
+
+  await pancakes.click();
+  await expect(page.getByTestId('closed-tip')).toContainText('7:00');
+  await expect(page.getByTestId('strip-token')).toHaveCount(1); // only "eat"
+});
+
+test('a daily limit closes the item until tomorrow and suggests something else', async ({ page, request }) => {
+  const joyce = await apiAs(request, 'joyce');
+  for (const at of ['2026-09-23T09:00:00-04:00', '2026-09-23T13:00:00-04:00']) {
+    await joyce.post('/api/logs', { type: 'drink', symbol_id: 'smoothie', at });
+  }
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-eat').click();
+  await expect(page.getByTestId('orbit-smoothie')).toHaveClass(/closed/);
+  await page.getByTestId('orbit-smoothie').click();
+  await expect(page.getByTestId('closed-suggest')).toContainText('💧');
+});
+
+test('the snack window opens by itself when snack time comes', async ({ page, request }) => {
+  await setClock(request, '2026-09-23T14:59:00-04:00', [page]);
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-eat').click();
+  await expect(page.getByTestId('orbit-grapes')).toHaveClass(/closed/);
+  await setClock(request, '2026-09-23T15:01:00-04:00', [page]);
+  // The tablet's clock ticks every 15 s and notices the snack has started.
+  await expect(page.getByTestId('orbit-grapes')).not.toHaveClass(/closed/, { timeout: 20_000 });
+});
+
+test('people who are not available are marked: a clock of when they are free, or 🚫', async ({ page, request }) => {
   await (await apiAs(request, 'lucho')).put('/api/availability', { status: 'busy', until_minutes: 30 });
   await (await apiAs(request, 'larry')).put('/api/availability', { status: 'away' });
   await login(page, 'jonatito');
-  await page.getByTestId('me-button').click();
-
   await expect(page.getByTestId('orbit-lucho')).toHaveAttribute('data-status', 'busy');
-  await expect(page.getByTestId('orbit-lucho').locator('.not-avail')).toHaveText('⏳');
-  await expect(page.getByTestId('orbit-larry')).toHaveAttribute('data-status', 'away');
-  await expect(page.getByTestId('orbit-larry').locator('.not-avail')).toHaveText('🚫');
+  await expect(page.getByTestId('busy-lucho').locator('svg.clock12')).toHaveAttribute('aria-label', '4:10');
+  await expect(page.getByTestId('away-larry')).toHaveText('🚫');
   await expect(page.getByTestId('orbit-mommy_joyce').locator('.not-avail')).toHaveCount(0);
 });
 
-test('tapping his face again goes back to the board, keeping the sentence', async ({ page }) => {
+test('tapping a person shows where they are; tapping the globe opens their person screen', async ({ page, request }) => {
+  await (await apiAs(request, 'pilar')).put('/api/location', { place_label: 'Lima', country_code: 'PE', tz: 'America/Lima', lat: -12.05, lon: -77.05 });
   await login(page, 'jonatito');
-  await page.getByTestId('me-button').click();
-  await page.getByTestId('orbit-go').click({ force: true });
-  await page.getByTestId('me-button').click();
-  await expect(page.getByTestId('orbit')).toHaveCount(0);
-  await expect(page.getByTestId('grid')).toBeVisible();
+  await page.getByTestId('orbit-pilar').click();
   await expect(page.getByTestId('strip-token')).toHaveCount(1);
+  const pop = page.getByTestId('globe-pop');
+  await expect(pop).toContainText('Lima');
+  await expect(pop.getByTestId('globe')).toHaveAttribute('data-reach', 'abroad');
+  await pop.click();
+  await expect(page.getByTestId('person-pilar')).toBeVisible();
+});
+
+test('Pongo plays full screen; his face brings him back', async ({ page }) => {
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-pongo').click();
+  await expect(page.getByTestId('player')).toHaveAttribute('data-state', 'playing');
+  await expect(page.getByTestId('player-poster').locator('img')).toBeVisible();
+  await expect(page.getByTestId('player-clock')).toContainText('3:55');
+  await expect(page.getByTestId('here-now')).toHaveCount(0);
+  await page.getByTestId('player-exit').click();
+  await expect(page.getByTestId('orbit')).toBeVisible();
+});
+
+test('at night Pongo shows the sleeping moon instead of playing', async ({ page, request }) => {
+  await setClock(request, '2026-09-23T21:30:00-04:00', [page]);
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-pongo').click();
+  await expect(page.getByTestId('player-locked')).toContainText('7:00');
 });

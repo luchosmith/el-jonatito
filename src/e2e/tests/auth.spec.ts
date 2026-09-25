@@ -3,11 +3,12 @@ import { login, resetDb } from './helpers.ts';
 
 test.beforeEach(async ({ request }) => resetDb(request));
 
-test('Jonatito signs in on the tablet and lands on his board', async ({ page }) => {
+test('Jonatito signs in on the tablet and lands on his orbit', async ({ page }) => {
   await login(page, 'jonatito');
   await expect(page.getByTestId('here-now')).toBeVisible();
   await expect(page.getByTestId('me-button')).toBeVisible();
-  await expect(page.getByTestId('grid')).toBeVisible();
+  await expect(page.getByTestId('orbit')).toBeVisible();
+  await expect(page.getByTestId('orbit-me')).toBeVisible();
 });
 
 test('a caretaker gets inbox, status, log, people and words tabs', async ({ page }) => {

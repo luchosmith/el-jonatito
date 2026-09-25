@@ -80,11 +80,12 @@ test('a message with no person goes to the caretaker on duty', async ({ page, re
   expect(inbox[0].sentence_es).toBe('Quiero tomar agua.');
 });
 
-test('the face zones send social messages (COME SEE)', async ({ page, request }) => {
+test('the person screen sends social messages (COME SEE); it lands with 📬✔', async ({ page, request }) => {
   await login(page, 'jonatito');
   await page.getByTestId('dock-larry').click();
   await page.getByTestId('zone-come-see').click();
-  await expect(page.getByTestId('sentence')).toContainText('Larry, come see!');
+  await expect(page.getByTestId('sent-ok')).toHaveText('📬✔');
+  await expect(page.getByTestId('dispatch-card')).toHaveCount(0);
   const larry = await apiAs(request, 'larry');
   const inbox = await (await larry.get('/api/messages')).json();
   expect(inbox[0].sentence_es).toBe('Larry, ven a ver!');

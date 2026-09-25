@@ -24,7 +24,7 @@ test('a family member sets Busy on their phone and the ring on the tablet change
   await expect(page.getByTestId('person-status').locator('svg.clock12')).toHaveAttribute('aria-label', '4:10');
 
   await pilar.page.getByTestId('status-available').click();
-  await page.getByTestId('person-back').click();
+  await page.getByTestId('me-button').click();
   await expect(page.getByTestId('dock-pilar')).toHaveAttribute('data-status', 'available');
   await pilar.context.close();
 });

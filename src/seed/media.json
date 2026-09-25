@@ -8,7 +8,8 @@
     { "title": "Story: Dentist",  "kind": "story",   "emoji": "🦷" },
     { "title": "Story: Party",    "kind": "story",   "emoji": "🎂" },
     { "title": "Calm rain",       "kind": "sensory", "emoji": "🌧️", "bedtime_ok": true },
-    { "title": "Purple puppet",   "kind": "movie",   "cover": "covers/purple_puppet.svg" }
+    { "title": "Purple puppet",   "kind": "movie",   "cover": "covers/purple_puppet.svg" },
+    { "title": "Pongo",           "kind": "movie",   "cover": "covers/pongo.jpg" }
   ],
   "routine": [
     { "emoji": "🌅", "label": "wake",      "at": "07:00" },

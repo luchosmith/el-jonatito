@@ -10,14 +10,19 @@ import { QuickLog } from './QuickLog.tsx';
 import { PeopleAdmin } from './PeopleAdmin.tsx';
 import { WordsAdmin } from './WordsAdmin.tsx';
 import { SettingsPanel } from './SettingsPanel.tsx';
+import { ItemsAdmin } from './ItemsAdmin.tsx';
+import { VoicesAdmin } from './VoicesAdmin.tsx';
+import { VoiceForJonatito } from './VoiceForJonatito.tsx';
+import { WhereIAm } from './WhereIAm.tsx';
 
-type Tab = 'inbox' | 'status' | 'log' | 'people' | 'words' | 'settings';
+type Tab = 'inbox' | 'jonatito' | 'status' | 'log' | 'items' | 'voices' | 'people' | 'words' | 'settings';
 
 export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?: boolean; onLogout: () => void }) {
   const isCaretaker = user.role === 'caretaker';
   const [tab, setTab] = useState<Tab>(elevated ? 'log' : 'inbox');
   const [board, setBoard] = useState<Board | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [voiceVersion, setVoiceVersion] = useState(0);
 
   const loadBoard = useCallback(() => api.get<Board>('/api/board').then(setBoard), []);
   const loadInbox = useCallback(() => api.get<Message[]>('/api/messages').then(setMessages), []);
@@ -34,13 +39,17 @@ export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?:
   useEvents((e) => {
     if (e.type === 'message') setMessages((ms) => [e.message, ...ms.filter((m) => m.id !== e.message.id)]);
     if (e.type === 'reply') setMessages((ms) => ms.map((m) => (m.id === e.message_id ? { ...m, replies: [...m.replies.filter((r) => r.id !== e.reply.id), e.reply] } : m)));
-    if (e.type === 'people' || e.type === 'symbols' || e.type === 'availability') void loadBoard();
+    if (e.type === 'people' || e.type === 'symbols' || e.type === 'items' || e.type === 'availability') void loadBoard();
+    if (e.type === 'voice_note') setVoiceVersion((v) => v + 1);
   });
 
   const tabs: [Tab, string][] = [
     ['inbox', '📨 Inbox'],
+    ...(elevated ? [] : ([['jonatito', '🎙️ For Jonatito']] as [Tab, string][])),
     ['status', '🟢 My status'],
-    ...(isCaretaker ? ([['log', '📝 Log'], ['people', '👪 People'], ['words', '🧩 Words']] as [Tab, string][]) : []),
+    ...(isCaretaker
+      ? ([['log', '📝 Log'], ['items', '🧩 Items'], ['voices', '〰️ Voices'], ['people', '👪 People'], ['words', '🔤 Words']] as [Tab, string][])
+      : []),
     ...(elevated ? ([['settings', '⚙️ Tablet']] as [Tab, string][]) : []),
   ];
   const me = board?.people.find((p) => p.id === user.person_id);
@@ -63,7 +72,15 @@ export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?:
       </nav>
       <main className="fam-body">
         {board && tab === 'inbox' && <Inbox messages={messages} board={board} userId={user.id} onChange={loadInbox} />}
-        {board && tab === 'status' && <StatusPanel board={board} user={user} />}
+        {tab === 'jonatito' && <VoiceForJonatito user={user} version={voiceVersion} />}
+        {board && tab === 'status' && (
+          <>
+            <StatusPanel board={board} user={user} />
+            {user.person_id && <WhereIAm user={user} />}
+          </>
+        )}
+        {board && tab === 'items' && isCaretaker && <ItemsAdmin board={board} onChange={loadBoard} />}
+        {board && tab === 'voices' && isCaretaker && <VoicesAdmin board={board} version={voiceVersion} />}
         {board && tab === 'log' && isCaretaker && <QuickLog board={board} />}
         {board && tab === 'people' && isCaretaker && <PeopleAdmin board={board} onChange={loadBoard} />}
         {board && tab === 'words' && isCaretaker && <WordsAdmin board={board} onChange={loadBoard} />}

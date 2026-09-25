@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { AFTERNOON, apiAs, device, login, resetDb, setClock } from './helpers.ts';
+import { AFTERNOON, apiAs, device, login, resetDb, setClock, build } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -12,7 +12,7 @@ test('HELP goes to every caretaker on duty at once, flagged urgent', async ({ pa
   const joyce = await device(browser, 'joyce', { clock: AFTERNOON });
   await login(page, 'jonatito');
 
-  await page.getByTestId('sym-help').click();
+  await build(page, ['help']);
   await page.getByTestId('send').click();
   const note = page.getByTestId('note-urgent');
   await expect(note.getByTestId('urgent-to-mommy_joyce')).toBeVisible();

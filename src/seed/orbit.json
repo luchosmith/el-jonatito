@@ -1,0 +1,20 @@
+{
+  "inner": [
+    { "id": "eat", "slot": 0, "tap": "open", "short_label": "Eat", "emoji": "🍇" },
+    { "id": "bath", "slot": 1, "short_label": "Bath" },
+    { "id": "toilet", "slot": 2, "short_label": "Toilet" },
+    { "id": "go", "slot": 3, "short_label": "Go", "emoji": "🚗" },
+    { "id": "barney", "slot": 4 },
+    { "id": "pongo", "slot": 5, "tap": "play", "media": "Pongo" }
+  ],
+  "outer_slots": [1, 2, 3, 4, 6, 7, 8, 9],
+  "sub_orbits": {
+    "eat": ["water", "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green"]
+  },
+  "rules": [
+    { "item": "grapes", "kind": "window", "routine": "snack", "open_min": 45, "blocks": true },
+    { "item": "pancakes", "kind": "window", "start": "07:00", "end": "10:00", "blocks": true }
+  ],
+  "pain_policy": { "notify_from": 1, "urgent_from": 3 },
+  "voice_retention_days": 90
+}

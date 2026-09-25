@@ -22,14 +22,19 @@ Middleware in `server/http.ts` / `server/auth.ts`: `authenticate` (cookie or Bea
 ## Layout
 
 ```
-shared/        types, 12-hour time helpers, sentence grammar (en/es)
-server/        app.ts (wiring), http.ts (router + middleware), auth.ts, db.ts, schema.sql,
-               seed.ts, dispatcher.ts (who gets a message + gentle notes), repo.ts,
-               routes/{auth,board,messages,day}.ts, events.ts (SSE), uploads.ts
-web/src/       child/ (tablet: Here & Now, board, orbit, dock, person close-up, day, media, parent gate)
-               family/ (phones + parent mode: inbox, status, quick log, people, words, settings)
-               common/ (Clock12, faces, tokens, hooks, recorder, login)
-seed/          known_persons.json, food_vocabulary.json, vocabulary.json, media.json, users.json, avatars/, covers/
+shared/        types, 12-hour time helpers, sentence grammar (en/es), rules.ts (when an item is open),
+               body.ts (body parts + pain sentences), geo.ts + cities.ts (where people are, their time)
+server/        app.ts (wiring), http.ts (router + middleware), auth.ts, db.ts, schema.sql (v3),
+               migrate.ts (v2 -> v3, with a backup), seed.ts, orbit.ts (fixed orbit layout),
+               dispatcher.ts (who gets a message + gentle notes), repo.ts,
+               routes/{auth,board,messages,day,voice}.ts, events.ts (SSE), uploads.ts
+web/src/       child/ (tablet: orbit (home), person screen + globe, My body, full-screen player,
+               All words board, dock, day, media, parent gate)
+               family/ (phones + parent mode: inbox, For Jonatito, status + Where I am, quick log,
+               items editor, voices, people, words, settings)
+               common/ (Clock12, faces, body drawing, pain faces, tokens, sound, orbit geometry, hooks, recorder)
+seed/          known_persons.json, food_vocabulary.json, vocabulary.json, orbit.json (slots + starter rules),
+               media.json, users.json, avatars/, covers/, symbols/
 e2e/           playwright.config.ts + tests/*.spec.ts
 test/          unit tests (grammar, time, dispatcher)
 ```
@@ -57,6 +62,12 @@ Environment: `TOKEN_SECRET` (required), `PORT` (8080), `DATA_DIR` (`data/`), `LA
 (weather + season), `TZ` (the family's time zone, e.g. `America/New_York`).
 
 The database is created and seeded from `seed/` on first start. `npm run seed:reset` wipes it and re-seeds.
+
+**Upgrading from v0.2:** on the first start of v0.3 the database is upgraded in place to the item catalog
+(`server/migrate.ts`). A full copy of the old database is written first, next to it:
+`data/jonatito.sqlite.v2-backup-<time>`. To go back, stop the server and copy that file over `jonatito.sqlite`.
+
+`scripts/gen-cities.mjs` regenerates `shared/cities.ts` (the "Where I am" city list) from the system time-zone table.
 
 ### Accounts (development PINs — change them!)
 
@@ -89,7 +100,7 @@ extensions: Playwright Test, SQLite Viewer and Claude Code.
 
 ```bash
 npm run test:unit      # grammar, 12-hour time, dispatcher rules (node:test)
-npm run test:e2e       # 54 Playwright end-to-end tests (starts its own server in TEST_MODE)
+npm run test:e2e       # 78 Playwright end-to-end tests (starts its own server in TEST_MODE)
 npm test               # both
 ```
 
@@ -98,20 +109,27 @@ The E2E server runs with `TEST_MODE=1`, which enables `/api/test/reset` and `/ap
 
 What the E2E suite covers, by user:
 
-- **Jonatito (tablet):** sign-in; Here & Now bar (12-hour clock, timeline, day, season, weather); building, speaking,
-  clearing and sending sentences; People page; always-on core words; pasta sauce badges; dispatch cards
-  (delivered, busy + pick someone free, recent food, daily limit, next meal, urgent); replies (yes / wait with clock / no /
-  voice); face zones (TALK records a voice message, LISTEN plays their last message or the default hello, COME SEE);
-  My day (plate + glass); media corner with media clock and night-time sleep lock; parent gate.
-- **Caretakers:** inbox + live replies; availability; quick log (food, amounts, drinks); hiding words without moving
-  anything; changing / reverting a person's photo; renaming and hiding people; parent mode on the tablet.
-- **Friends:** inbox + replies (incl. voice); availability; no admin access.
+- **Jonatito (tablet):** sign-in; the orbit as home (fixed inner and outer slots, reserved empty slots, Eat opening the
+  foods, closed foods with a clock and "next snack", daily limits with a suggestion, reopening at snack time, busy /
+  away marks, the globe pop-up); the person screen (where they are: same city / abroad / not shared, their time,
+  "back in N sleeps"; voice shelf with pinned clips first, hearing marks notes heard; TALK, COME SEE, LOVE, busy card);
+  My body (tap a part, pick a face: urgent / to the caretaker / logged); Pongo full screen and its night-time moon;
+  Here & Now bar; the All words board (building, speaking, clearing and sending sentences; People page; core words;
+  pasta badges); dispatch cards; replies (yes / wait with clock / no / voice); My day; media corner; parent gate.
+- **Caretakers:** inbox + live replies (incl. pain reports with the body drawing); availability; quick log; the item
+  editor (words, picture + revert, recorded sound + back to text-to-speech, time rules that close or only remind,
+  moving an item with a confirmation, taken slots locked); pinning / hiding voice notes; hiding the potty zone;
+  hiding words without moving anything; changing / reverting a person's photo; renaming and hiding people; parent mode.
+- **Friends:** inbox + replies (incl. voice); "For Jonatito" voice notes (and seeing when he heard them); "Where I am"
+  (city search, return date, stop sharing); availability; no admin access; only their own notes and location.
 - **Security / API:** auth required everywhere, role checks, recipient-only replies, caretaker-only parent gate,
-  PIN lockout, upload type and magic-byte checks, path traversal, input validation, server-side sleep lock.
+  PIN lockout, upload type and magic-byte checks, path traversal, input validation, server-side sleep lock,
+  catalog slot rules (taken 409, reserved 400), city-level location rounding, pain report validation.
 
 ## Not built yet (next steps)
 
 Google Calendar sync (availability + routine), Web Push / WhatsApp notifications for closed phones, live audio calls
-(LiveKit), local movie/music files and players, caretaker voice commands, service worker for full offline use,
+(LiveKit), a full media library (v0.3 plays one uploaded file per media item), symbol-library search and cropping in the
+item editor, WhatsApp voice notes into the voice shelf, caretaker voice commands, service worker for full offline use,
 and the future-version features (status sensing, personal speech recognition). The data model and
 `dispatcher.ts` are shaped so these plug in without changing the child's screens.

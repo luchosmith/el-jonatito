@@ -4,10 +4,11 @@ import type { Deps } from '../app.ts';
 import { requireAuth } from '../auth.ts';
 import { dispatch } from '../dispatcher.ts';
 import { HttpError, jsonBody, rawBody, safeJoin, sendFile } from '../http.ts';
-import { audioUrl, childUserIds, getMessage, getReply, inboxFor, sentBy } from '../repo.ts';
+import { childUserIds, getLog, getMessage, getReply, getVoiceNote, inboxFor, sentBy } from '../repo.ts';
 import { AUDIO_MIME, saveAudio } from '../uploads.ts';
 import { num, obj, oneOf, str } from '../validate.ts';
-import type { Token, TokenKind } from '../../shared/types.ts';
+import { BODY_PARTS, bodyItemId, DEFAULT_PAIN_POLICY, painSentence, type PainPolicy } from '../../shared/body.ts';
+import type { DispatchNote, LogEntry, Token, TokenKind } from '../../shared/types.ts';
 
 const TOKEN_KINDS: TokenKind[] = ['person', 'pet', 'action', 'thing', 'desc', 'social', 'urgent'];
 const MAX_AUDIO = 5 * 1024 * 1024;
@@ -85,18 +86,52 @@ export function messageRoutes({ router, db, cfg, hub, now }: Deps) {
     const file = saveAudio(cfg.uploadsDir, ctx.raw!, ctx.req.headers['content-type']);
     const r = db.run("INSERT INTO replies(message_id, from_user_id, kind, audio_file, created_at) VALUES(?,?,'voice',?,?)",
       id, ctx.user!.id, file, now().toISOString());
+    // Everything he can hear lives on the voice shelf too.
+    const v = db.run("INSERT INTO voice_notes(from_user_id, audio_file, created_at, source) VALUES(?,?,?,'reply')", ctx.user!.id, file, now().toISOString());
+    hub.publish(childUserIds(db), { type: 'voice_note', note: getVoiceNote(db, v.lastId)! });
     return publishReply(r.lastId, id);
   });
 
-  /** LISTEN (sound wave on a face): that person's last recorded message for Jonatito, if any. */
+  /** That person's newest voice note for Jonatito, if any. */
   router.get('/api/people/:id/voice', requireAuth(), (ctx) => {
-    const r = db.get<{ audio_file: string; created_at: string }>(
-      `SELECT r.audio_file, r.created_at FROM replies r JOIN users u ON u.id = r.from_user_id
-       WHERE u.person_id = ? AND r.audio_file IS NOT NULL ORDER BY r.id DESC LIMIT 1`,
+    const r = db.get<{ id: number }>(
+      `SELECT v.id FROM voice_notes v JOIN users u ON u.id = v.from_user_id
+       WHERE u.person_id = ? AND v.hidden = 0 ORDER BY v.id DESC LIMIT 1`,
       ctx.params.id,
     );
-    if (!r) return { url: null };
-    return { url: audioUrl(r.audio_file), created_at: r.created_at };
+    const note = r ? getVoiceNote(db, r.id) : undefined;
+    return note ? { url: note.audio_url, created_at: note.created_at } : { url: null };
+  });
+
+  /** My body: where it hurts and how much. Low levels are only logged; high levels are urgent. */
+  router.post('/api/pain', requireAuth('child'), jsonBody, (ctx) => {
+    const b = obj(ctx.body);
+    const partId = oneOf(b, 'part', BODY_PARTS.map((p) => p.id))!;
+    const side = oneOf(b, 'side', ['left', 'right'] as const, true) ?? null;
+    const level = num(b, 'level', { min: 0, max: 5 })!;
+    if (!Number.isInteger(level)) throw new HttpError(400, 'level must be 0 to 5');
+    const item = db.get<{ label_en: string; label_es: string; is_hidden: number }>('SELECT label_en, label_es, is_hidden FROM items WHERE id = ?', bodyItemId(partId));
+    if (!item || item.is_hidden) throw new HttpError(400, 'That body part is not available');
+    const plural = BODY_PARTS.find((p) => p.id === partId)!.plural;
+    const part = { en: item.label_en, es: item.label_es, plural };
+    const sentence = { en: painSentence(part, level, 'en'), es: painSentence(part, level, 'es') };
+    const policy = db.setting<PainPolicy>('pain_policy', DEFAULT_PAIN_POLICY);
+    const at = now().toISOString();
+
+    let message = null;
+    let notes: DispatchNote[] = [];
+    if (level >= policy.notify_from) {
+      const r = dispatch(db, now(), { fromUserId: ctx.user!.id, toPersonId: null, tokens: [], sentence, urgent: level >= policy.urgent_from });
+      db.run('INSERT INTO pain_reports(body_part, side, level, at, message_id) VALUES(?,?,?,?,?)', partId, side, level, at, r.messageId);
+      message = deliver(r.messageId, r.recipients);
+      notes = r.notes;
+    } else {
+      db.run('INSERT INTO pain_reports(body_part, side, level, at) VALUES(?,?,?,?)', partId, side, level, at);
+    }
+    const log = db.run("INSERT INTO log_entries(type, symbol_id, amount, note, at, entered_by) VALUES('pain',?,?,?,?,?)",
+      bodyItemId(partId), level / 5, sentence.en, at, ctx.user!.id);
+    hub.publish('all', { type: 'log', entry: getLog(db, log.lastId) as LogEntry });
+    return { sentence, level, message, notes };
   });
 
   router.get('/api/audio/:file', requireAuth(), (ctx) => {
