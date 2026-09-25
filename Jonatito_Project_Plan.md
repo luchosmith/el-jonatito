@@ -55,6 +55,8 @@ These come from established AAC (augmentative and alternative communication) pra
 
 ### 4.1 The "Here & Now" bar (always visible)
 
+*v0.5: the bar moves under the sentence row. Its timeline scrolls under a fixed NOW line centred above his head, and he can drag it into the past and the future (Tech Spec 5.17).*
+
 A band across the top of every screen in child mode:
 
 - **Analog + digital clock.** The analog face helps with time as a visual "shape".
@@ -71,7 +73,8 @@ A band across the top of every screen in child mode:
 - **Every tap builds a sentence.** Each picture he taps goes into the sentence strip at the top. `[Me] [Mommy] [Eat] [Grapes]` → *"Mommy, I want to eat grapes."*
 - **Pictures open more pictures.** Tapping **Eat** opens a ring of foods around him. Foods that aren't available right now are dimmed, with a clock showing when they open (*"next snack 3:00"*).
 - **Media opens full screen.** Tapping **Pongo** plays it full screen. Tapping his face brings him back.
-- **Ground and place.** A soft blue-and-green sphere peeks from the bottom of the screen with a single pin: *him*. Tapping a person zooms out to show where they are. If they're in another country, a ✈️ flies between the pins.
+- **A living sky (v0.5).** The earth turns slowly at the bottom of the screen; the sun and moon travel around it through the day; the sky follows the time of day, the weather and the season (clouds, rain, snow, falling leaves). Dragging the timeline moves all of it to another time: the past shows what he did and photos from his day, and the future shows what is scheduled.
+- **Ground and place.** A soft blue-and-green sphere peeks from the bottom of the screen with a single pin: *him*. Tapping a person opens their page, which shows where they are compared with him. If they're in another country, a ✈️ flies between the pins.
 - **His own face opens "My body".** He points to where it hurts, then picks a face on a pain scale (smiling → crying). Higher levels go out as urgent.
 - **Slots never move.** Every item in the orbit keeps its fixed spot, the same rule as the picture board.
 - The **Me button** in the dock (bottom left, where the Windows Start button usually is) always brings him back to the orbit. Every message he sends starts from "Me", which teaches him that *what comes out of this machine comes from him*.
@@ -89,12 +92,12 @@ A band across the top of every screen in child mode:
   - ✋ **Hand** → "Help me" / "Hug"
   - ❤️ **Heart** → "I love you / I miss you"
 - This makes the most common social messages a single, physical gesture.
-- **Person screen: where, hear, talk (v0.3).** Opening someone (from the dock, or from their globe pop-up in the orbit) shows one screen with three parts:
+- **Person screen: where, hear, talk (v0.3).** Tapping someone (in the orbit or the dock) opens one screen with three parts:
   - **Where they are**, relative to him: both pins on the globe with a 🚗 or ✈️ between them, their local time if it differs (☀️/🌙), and "back in 3 sleeps" if they're away.
   - **Hear:** a shelf of all their voice notes, with pinned comfort clips (*"Te quiero mucho, mi amor"*) first. He can replay them whenever he needs reassurance.
   - **Send:** 👂 TALK (record his voice to them), 👀 COME SEE, ✋ HELP and ❤️ LOVE. The message visibly travels along the path from his pin to theirs.
 - **Familiar voices, any time.** Family members record voice notes for him from their phones. A **sound-wave badge** in front of their avatar shows something new; tapping it plays it right away.
-- Each person can share which city they're in (city-level only). Tapping them in the orbit briefly shows their pin on the globe.
+- Each person can share which city they're in (city-level only).
 
 ### 4.4 Sentence builder
 
@@ -120,12 +123,21 @@ When he taps **Send**, the app decides how to deliver the message:
 4. **Urgent** (*Help*, *I hurt*, *Stop*): skips all rules and goes to **everyone who is on duty right now**, with a loud alert and escalation (WhatsApp/SMS if nobody answers within N minutes).
 5. **Replies come back as pictures + voice:** ✅ "Yes!", ✋ "Wait", ❌ "Not now", or a recorded voice note. "Coming" or "Wait" shows a **12-hour clock face with the wait shaded** and the arrival time ("4:45").
 
+6. **Nothing he says is lost (v0.4).** Every tap is logged. Taps close together form a **moment**, and each moment shows on the caretakers' **🕒 Today** timeline, sent or not, with "He may have meant: *…*".
+   - **A face tap reaches that person** as "💭 Jonatito tapped your face", with what else he tapped, inside their next batched update.
+   - **No spam:** each person gets at most one notification every 10 minutes. The first comes right away, the rest arrive together as one update, and repeats collapse (×3). Urgent messages and the future **panic button** are never held back.
+   - **With no face tapped,** the moment is only on the caretakers' timeline.
+   - **Caretakers can answer** an unsent moment (✅ / ✋ / ❌), and his tablet shows the answer like any reply.
+
 ### 4.6 Two-way audio
 
 - **Voice messages** in both directions, with no microphone or play icons on his side. He **taps the person's ear (TALK)** to send his sounds to them, and **taps the sound-wave (LISTEN)** to hear them.
 - **Live audio calls** (WebRTC) are started by a family member for now. The tablet shows who is calling and answers automatically for caretakers. Video can come later.
 - Family members can record **voice clips of their own words** ("¡Hola Jonatito!"). Those play when he taps the sound-wave (LISTEN), so he hears Grandpa saying hello in Grandpa's own voice.
-- **FaceTime/WhatsApp:** these can't be embedded directly. Parent and friend mode offer one-tap buttons that open FaceTime or WhatsApp on the caretaker's phone. Jonatito's side uses the app's own audio.
+- **Text messages both ways (v0.4):** his sentences arrive as text with pictures; family members can answer with a short typed message that his tablet reads aloud.
+- **Notifications:** inside the app first (batched, see 4.5); push notifications to locked phones come later. WhatsApp is not used.
+- **Panic button (later):** an always-visible SOS (1-second hold) that reaches *every* user at once, past batching and quiet hours, until someone answers "I'm on it".
+- **FaceTime/WhatsApp calls:** these can't be embedded directly. Parent and friend mode offer one-tap buttons that open FaceTime or WhatsApp on the caretaker's phone. Jonatito's side uses the app's own audio.
 
 ### 4.7 Voice activation
 
@@ -223,6 +235,9 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 | **0 — Discovery** | 2–3 weeks | Meet his speech therapist/OT. Observe his current communication (gestures, sounds, pointing). List his top 30 wants/needs. Photograph family, food, and objects. Pick the tablet. Confirm language(s). | A signed-off starter vocabulary and people list |
 | **1 — MVP: Talk** | 4–6 weeks | Here & Now bar · Me button · People bar · Sentence builder with text-to-speech · Send to one caretaker via push notification · Picture replies · Parent mode (basic vocabulary + people) · Kiosk setup | Jonatito sends a real request that a family member receives and answers |
 | **1.5 — Orbit** (v0.3) | 3–4 weeks | Orbit home with fixed slots · Item catalog + item editor (picture, labels, audio) · Eat sub-orbit with time rules · Full-screen media items · Voice notes for Jonatito (badges + voice shelf) · Ground & location pins · My body + pain scale | He starts most messages from the orbit, and hears a family voice note on his own |
+| **1.6 — Messaging** (v0.4) | 2 weeks | Tap log + moments · Caretaker **🕒 Today** timeline with "he may have meant" and answers · Typed text replies · Batched in-app notifications (10-min window, ×N repeats, 💭 face taps) | Caretakers can see what he tried to say, and nobody is flooded |
+| **1.7 — Reach & safety** | 2 weeks | Web Push to locked phones (same queue) · Panic button (everyone, now, "I'm on it") | A panic press reaches every phone within seconds |
+| **1.8 — Living orbit** (v0.5) | 2–3 weeks | Sentence row on top · centred NOW over his head · canvas sky (earth, sun, moon, weather, season) · scrubbable timeline (past from real data, future from the calendar) · caretaker calendar with photos | He drags back to see who he talked to today, and forward to see what's coming |
 | **2 — Structure** | 4 weeks | Visual daily log (plate/glass) · Day timeline from Google Calendar · Availability rings · Smart dispatcher v1 (availability + recent-consumption + limits) · Friend mode web app · Urgent escalation | A full day runs with the schedule and log in use |
 | **3 — Connect & Play** | 5 weeks | Live audio calls · Local media library (movies, jukebox, favorite moments, offline favorites) · Media timers + sleep lock · Sensory play · Feelings/break screen | Grandparents use it on their own for a week, and bedtime runs with the sleep lock |
 | **4 — Smart** | ongoing | Caretaker voice commands · Usage insights · Suggested words · Choice boards pushed from phones · Therapist reports · Start collecting labeled vocalizations | Driven by what the family and therapists ask for |
@@ -253,7 +268,7 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 | Family doesn't respond → he learns it doesn't work | On-duty rota, escalation, and a fallback to whoever is physically present. Make answering take one tap. |
 | Home internet/server goes down | Offline-first web app, a queue for messages, a cheap cloud fallback for relay, and nightly backups. |
 | Privacy of a minor's data (especially his voice and any camera sensing) | Self-hosted, encrypted backups, role-based access, no third-party analytics. Separate consent and a "privacy off" switch for the future sensing and voice features. |
-| Apple devices limit web push/audio | The family installs the web app ("Add to Home Screen"). WhatsApp is the fallback channel. The tablet is ideally Android, or an iPad with Guided Access. |
+| Apple devices limit web push/audio | The family installs the web app ("Add to Home Screen"). Until push is built, notifications show inside the open app. SMS may later back up unanswered urgent alerts; WhatsApp is not used. The tablet is ideally Android, or an iPad with Guided Access. |
 | Project stalls (volunteer effort) | Phase 1 is deliberately small. Use proven building blocks (PocketBase, LiveKit, Open-Meteo) instead of custom infrastructure. |
 
 ---
@@ -265,7 +280,7 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 3. **Motor skills:** Can he tap accurately, or does he need bigger targets or a "tap on release" setting?
 4. **Reading:** Should text labels show under symbols (helpful for literacy exposure)?
 5. **Device:** Is there an existing tablet? iPad or Android?
-6. **Who's in the network?** Names, photos, relationships, and preferred channels (app, WhatsApp, SMS).
+6. **Who's in the network?** Names, photos, relationships, and preferred channels (app notifications; SMS for urgent later).
 7. **Location:** City (for weather/season) and hemisphere. Does he spend time in more than one home?
 8. **Sensory profile:** Sounds, colors, or animations to avoid?
 9. **Therapy team:** Is there a speech therapist we can involve in vocabulary and rollout?
@@ -274,6 +289,8 @@ Entertainment is his reward, his comfort, and a big reason to pick up the tablet
 12. **Location sharing:** Is each adult comfortable sharing which city they're in? Should the "use my phone's location" option exist?
 13. **Pain scale:** Which levels should count as urgent? Should the potty-area zone be shown on the body drawing?
 14. **Closed foods:** Should foods outside their time be fully blocked (with a clock), or just come with a gentle reminder?
+15. **Batching:** Is one notification per person every 10 minutes (the rest grouped) the right balance?
+16. **Panic button:** Who should it reach: everyone, or everyone except friends? What should the tablet show while help is coming?
 
 ---
 

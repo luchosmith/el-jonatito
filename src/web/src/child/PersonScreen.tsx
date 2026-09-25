@@ -6,6 +6,7 @@ import { Clock12 } from '../common/Clock12.tsx';
 import { Face, SoundWave } from '../common/Face.tsx';
 import { speak } from '../common/hooks.ts';
 import { playClip } from '../common/sound.ts';
+import { flushTaps, logTap } from '../common/taplog.ts';
 import { startRecording, type Recording } from '../common/recorder.ts';
 import { Globe, type GlobeHandle } from './Globe.tsx';
 import { differentTime, flagOf, reachOf, sleepsUntil, timeIn } from '../../../shared/geo.ts';
@@ -47,6 +48,7 @@ export function PersonScreen({ person, me, notes, locations, now, onSocial, onHe
   // TALK: his voice goes into their ear, then travels to their pin.
   const onTalk = async () => {
     if (talk === 'recording') return finishTalk();
+    logTap('talk', 'person', { person_id: person.id });
     try {
       rec.current = await startRecording(RECORD_MS + 1000);
       setTalk('recording');
@@ -61,6 +63,7 @@ export function PersonScreen({ person, me, notes, locations, now, onSocial, onHe
     rec.current = null;
     const blob = await r.stop();
     try {
+      await flushTaps();
       await api.upload('POST', `/api/messages/voice?to=${encodeURIComponent(person.id)}`, blob);
       setTalk('sent');
       await globe.current?.fly('〰️');
@@ -71,18 +74,21 @@ export function PersonScreen({ person, me, notes, locations, now, onSocial, onHe
   };
 
   const social = async (symbolId: string, icon: string) => {
+    logTap('social', 'person', { item_id: symbolId, person_id: person.id });
     await onSocial(symbolId);
     await globe.current?.fly(icon);
     landed();
   };
 
   const hear = (n: VoiceNote) => {
+    logTap('hear', 'person', { person_id: person.id }, { note_id: n.id });
     setPlaying(n.id);
     void globe.current?.fly('〰️', true);
     playClip(n.audio_url, () => setPlaying(null));
     if (!n.heard_at) onHeard(n);
   };
   const hello = () => {
+    logTap('hear', 'person', { person_id: person.id }, { hello: true });
     setPlaying('hello');
     void globe.current?.fly('〰️', true);
     speak('¡Hola, Jonatito!', 'es');

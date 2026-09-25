@@ -47,6 +47,11 @@ export class Router {
   }
 
   add(method: string, pattern: string, ...fns: [...Middleware[], Handler]) {
+    // Two routes on one path would silently shadow each other (the first one wins).
+    const shape = (p: string) => p.split('/').filter(Boolean).map((x) => (x.startsWith(':') ? ':' : x)).join('/');
+    if (this.routes.some((r) => r.method === method && r.parts.map((x) => (x.startsWith(':') ? ':' : x)).join('/') === shape(pattern))) {
+      throw new Error(`Route registered twice: ${method} ${pattern}`);
+    }
     const handler = fns.pop() as Handler;
     this.routes.push({ method, parts: pattern.split('/').filter(Boolean), chain: fns as Middleware[], handler });
   }

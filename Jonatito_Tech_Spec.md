@@ -49,7 +49,7 @@ Version 0.3 · Draft · September 2026 · Companion to `Jonatito_Project_Plan.md
 | Speech-to-text (caretakers) | Web Speech API recognition (Chrome/Android) or **whisper.cpp** on the server | Voice logging/commands |
 | Weather/sun | **Open-Meteo** (free, no API key): temperature, weather code, sunrise/sunset | No account needed |
 | Calendar | **Google Calendar API** v3 (`freeBusy`, `events.list`, push channels) | Family already uses Google |
-| Notifications | **Web Push** (VAPID, `web-push` npm); fallback **WhatsApp Business Cloud API** or Telegram bot; SMS via Twilio for urgent | Web push is free; WhatsApp reaches older relatives |
+| Notifications | **Web Push** (VAPID, `web-push` npm), batched per person (5.14); SMS only for unanswered urgent alerts later | Web push is free and private; WhatsApp was considered and dropped |
 | Symbols | **ARASAAC** (CC BY-NC-SA), **Mulberry Symbols** (CC BY-SA), **OpenMoji** (CC BY-SA) + real photos | Free, AAC-standard, Spanish-friendly (ARASAAC is from Spain) |
 | Hosting | Docker Compose on a mini PC (e.g. Intel N100, 8–16 GB RAM, SSD) or Raspberry Pi 5 | Low power, silent, always on |
 | Edge | **Cloudflare** Tunnel + CDN + Access (Zero Trust for the parent admin UI) | Free tier covers this use |
@@ -181,7 +181,7 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
 |---|---|
 | Action or thing (`tap = add`) | Speaks its word and adds it to the strip |
 | Group item, e.g. **Eat** (`tap = open`) | Speaks "eat", adds it to the strip, and opens its **sub-orbit** (5.4) |
-| Person in the outer orbit | Speaks their name, adds them to the strip, and the ground zooms out to show where they are (5.7). Tapping that globe opens their **person screen** (5.6) |
+| Person in the outer orbit | Opens their **person screen** straight away (5.6): where they are, their voice notes, TALK and quick messages. Visiting someone does not add them to the sentence |
 | **Sound-wave badge** in front of a person | Plays their newest unheard voice message (5.6) |
 | Media item, e.g. **Pongo** (`tap = play`) | Opens it **full screen** (5.5). It isn't added to the strip |
 | **His own face** (center) | Opens **My body** (5.8) |
@@ -210,7 +210,7 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
 ### 5.6 Person screen: where they are, hear them, talk to them
 One screen per person brings together **where they are** (relative to him), **what he can hear from them**, and **how he sends to them**. It replaces the separate close-up and "where is" views from earlier drafts.
 
-**How he gets there:** tap their face in the dock, or tap the globe pop-up after tapping them in the orbit (5.7).
+**How he gets there:** tap their face in the orbit or in the dock.
 
 ```
 ┌─ Here & Now bar ──────────────────────────────────────────────────────────┐
@@ -240,7 +240,7 @@ One screen per person brings together **where they are** (relative to him), **wh
   - **👀 COME SEE, ✋ HELP, ❤️ LOVE** send the social messages in one tap. HELP stays urgent-class.
   - After sending, the message icon **travels along the path from his pin to theirs** and lands with 📬✔. Where they are becomes part of the act of sending.
   - If they're busy, the dispatcher's usual card appears (the clock of when they're free, plus people who are free now).
-- **Recording (family side).** Each adult's app has a big **"🎙️ For Jonatito"** button: hold to record, up to 60 s, listen back, send. It's stored in `voice_notes`. Voice replies to his messages are also saved there, so everything he can hear is in one place. *(The wider messaging system is still to be decided, for example forwarding WhatsApp voice notes. The table is designed so any channel can write into it.)*
+- **Recording (family side).** Each adult's app has a big **"🎙️ For Jonatito"** button: hold to record, up to 60 s, listen back, send. It's stored in `voice_notes`. Voice replies to his messages are also saved there, so everything he can hear is in one place. *(Voice notes stay inside the app; WhatsApp is not used.)*
 - **Unheard badge elsewhere.** An animated sound-wave badge sits in front of the sender's avatar in the orbit and the dock, with a number dot when there's more than one. Tapping it plays the newest unheard note without leaving the orbit.
 - **Rules:**
   - Nothing auto-plays (principle 2).
@@ -251,7 +251,7 @@ One screen per person brings together **where they are** (relative to him), **wh
 
 ### 5.7 Ground & location
 - **At rest.** The bottom edge of the orbit shows the **top of a large blue-and-green sphere** at about 25% opacity, with **one pin (his face) in the middle**. It stays still, so he always sees he's *standing somewhere*.
-- **Tapping a person** raises the sphere and **zooms out** (about 600 ms; with reduced motion it cross-fades instead) until both pins fit:
+- **On the person screen** the ground is shown zoomed out until both pins fit (there is no separate pop-up in the orbit):
 
   | Where they are | What he sees |
   |---|---|
@@ -260,7 +260,6 @@ One screen per person brings together **where they are** (relative to him), **wh
   | **another country** | the globe, with a dotted arc between the pins and a **✈️ flying along it** |
   | unknown or not shared | only his pin, their face with a ❔ |
 
-  It returns to rest after 6 s. **Tapping it opens their person screen** (5.6), which shows the same view larger, with hearing and sending.
 - **Rendering.** An SVG **orthographic globe** drawn with `d3-geo` from the `world-atlas` 110m land outline, bundled with the app (about 50 KB, works offline). There are no map tiles and no outside requests. Ocean `#7fb8e6`, land `#8fcf8a`, and no borders or labels on his side.
 - **Where people's locations come from.** Each adult sets **"Where I am"** in their app: pick a city from a bundled list (about 5,000 cities), or "use my phone's location", rounded to about 10 km. They can add an optional **until** date ("back Oct 3"). The tablet can then show "back in 3 sleeps". Jonatito's own pin comes from `settings.location`, or from the place he's at.
 - **Privacy.** Location is city-level only. The tablet and caretakers can see it; friends can't see each other's. It clears automatically after `until`, and each person can turn it off.
@@ -350,6 +349,7 @@ CREATE TABLE pain_reports (
 - **Pictures** keep using `images` (with `owner_type = 'item'`) and its version history. Every item's picture can be replaced and reverted (section 9). The "Eat" item's picture is grapes.
 - **Audio.** A caretaker can record or upload the word in each language. If there's no clip, the tablet speaks the label with text-to-speech. Tapping plays the clip, and the sentence reads use the clips where they exist.
 - **Migration.** A one-time startup migration copies `symbols` → `items`, the display fields of `people` → `items` (with `user_id` from `users.person_id`), media covers → `items` (`tap = 'play'`), and `limits` → `item_rules`. It then gives inner-orbit slots to Eat, Bath, Toilet, Go, Barney and Pongo in their current order and outer-orbit slots to people by `sort_order`, skipping 12:00 and 6:00. The old tables stay as read-only views for one release.
+- **v4 (September 2026):** adds the **Music** item (headphones with a sound wave, orange = a thing) to the first free inner slot, preferring slot 7. Tapping it adds "music" to the sentence. A backup is written first, as for every upgrade.
 
 ### 5.10 Item editor (parent mode)
 - **Tree view:** Main orbit (inner, outer) → each sub-orbit → board pages → hidden items.
@@ -382,12 +382,178 @@ CREATE TABLE pain_reports (
 
 New SSE events: `items`, `voice_note`, `location`, `pain`.
 
-### 5.12 Decisions to confirm with the family
-1. **Tapping a person in the orbit** adds them to the sentence *and* pops up where they are. Tapping the pop-up (or their dock face) opens the **person screen** (where + hear + send). Alternative: skip the pop-up and open the person screen straight from the orbit, so the orbit tap would no longer build sentences with people.
-2. **Location:** is each adult willing to set "Where I am"? Should the phone-location option exist at all?
-3. **Closed items:** block entirely (as specified), or allow sending with a gentle note (the current dispatcher behavior)?
-4. **Pain thresholds:** is level 3+ urgent the right line? Should the potty-area zone be shown?
-5. **Board vs. orbit:** keep the "All words" grid long term, or retire it once the orbit covers his vocabulary?
+### 5.12 Decisions (v0.3 build defaults, all changeable)
+1. **Tapping a person in the orbit** opens their person screen straight away (changed September 2026: the globe pop-up step was removed). To address a sentence to someone, he uses the person screen's buttons or the board's People page; a sentence with no person goes to the caretaker on duty.
+2. **Location:** each adult sets "Where I am" (city search or phone location, rounded).
+3. **Closed items:** each rule chooses *closed with a clock* or *reminder only*; closing applies in the orbit.
+4. **Pain:** 0 logged, 1–2 to the caretaker on duty, 3–5 urgent. The potty zone is shown; a caretaker can hide it.
+5. **Board:** the "All words" grid stays, as a dock button.
+
+### 5.13 Everything he taps: moments and the caretaker timeline (v0.4)
+**Goal:** every tap Jonatito makes is kept, so caretakers can see what he was trying to say, including the sentences he never sent.
+
+- **Tap log.** The tablet records every tap:
+  - adding a picture, opening Eat, tapping a closed food, playing a voice note, TALK, the social buttons, My body and pain faces, Pongo, Send, Clear and 🔊.
+  - Taps are sent to the server in small batches, and queued while offline.
+  - Each tap carries: the time, the item or person, what the tap did, and which screen he was on.
+- **Moments.** Taps close together form one **moment** (one intent). A moment ends when:
+  - he presses **Send** → outcome *sent* (linked to the message);
+  - he presses **Clear** → *cleared*;
+  - he stops for **30 s** (a setting) → *not sent*.
+  For every moment the server also writes the sentence the pictures would have made ("He may have meant: *Mommy, I want to eat grapes.*"), in English and Spanish.
+- **A face tap reaches that person, batched.** When a moment includes a person's face (orbit, dock, board People page) and ends *without* Send, that person gets **"💭 Jonatito tapped your face"**. It includes the rest of what he tapped and the sentence it would have made. It goes through the same batching as messages (5.14), so a burst of taps is one update, not ten.
+  - If he does send, the real message arrives instead.
+- **No face tapped:** the moment is still logged and shows on the caretakers' timeline. Nobody else is notified.
+- **Caretaker timeline** (family app, caretakers only, a new **🕒 Today** tab):
+  - **Moments, newest first:** the time, the pictures in the order he tapped them (closed foods dimmed, with their clock), and the outcome: *📬 sent to Mommy Joyce* · *💭 not sent, in Abuela Pilar's next update* · *📝 not sent*.
+  - **What he meant:** "He may have meant…", plus context, e.g. *"Grapes were closed: snack at 3:00."*
+  - **The rest of his day, in the same list:** pain reports, voice notes he played, media, and the caretakers' own log entries (food, meds).
+  - **Filters:** everything · not sent · urgent; plus a day picker.
+  - **Answer an unsent moment:** ✅ Yes / ✋ Wait / ❌ Not now turns it into a message and replies. His tablet shows the reply like any other.
+- **Privacy:** the tap log is visible to caretakers only. Friends only get the 💭 about their own face. Raw taps are kept for 60 days; moments are kept like messages. Both are included in the parents' data export.
+
+```sql
+CREATE TABLE moments (
+  id INTEGER PRIMARY KEY, started_at TEXT NOT NULL, ended_at TEXT,
+  outcome TEXT NOT NULL DEFAULT 'open' CHECK (outcome IN ('open','sent','cleared','not_sent')),
+  tokens TEXT NOT NULL DEFAULT '[]',           -- the strip as it was
+  sentence_en TEXT, sentence_es TEXT,          -- what he may have meant
+  message_id INTEGER REFERENCES messages(id),  -- when sent, or when a caretaker answered it
+  notified TEXT NOT NULL DEFAULT '[]'          -- person ids that got a 💭
+);
+CREATE TABLE tap_events (
+  id INTEGER PRIMARY KEY, at TEXT NOT NULL, moment_id INTEGER REFERENCES moments(id) ON DELETE CASCADE,
+  item_id TEXT REFERENCES items(id), person_id TEXT REFERENCES people(id),
+  action TEXT NOT NULL,   -- add | open | closed | hear | talk | social | body | pain | media | send | clear | say
+  screen TEXT NOT NULL,   -- orbit | orbit:eat | board | person | body | player
+  detail TEXT             -- JSON, e.g. {"closed_until": "..."} or {"level": 4}
+);
+```
+
+### 5.14 Text messages and notifications without spam (v0.4)
+**Channel:** the El Jonatito app only. WhatsApp is dropped. Phone push notifications (Web Push) come later: v0.4 notifies inside the open app (banner and sound), and push will reuse the same queue.
+
+**Messages are text:**
+- **From Jonatito:** his picture sentence arrives as its text ("Abuela Pilar, I want to eat grapes.") with the pictures under it, as today.
+- **From the family:** besides ✅ / ✋ / ❌ and voice, a relative can reply with a **short typed message** (up to 120 characters). His tablet reads it aloud (in the tablet's language setting) and shows it next to their face.
+
+**Batching: at most one notification per person every 10 minutes.**
+- **The inbox is always live.** Every message appears there as it happens. Only the *notification* (banner, sound, later a push) is batched.
+- **First one through, then a digest.** The first message after a quiet spell notifies right away, so a real request is never delayed. Anything else for that person in the next **10 minutes** (a setting) is held, then delivered as **one update**: "📬 Jonatito · 3 more: grapes ×2, 💭 tapped your face".
+- **Repeats collapse:** the same sentence three times shows once, with ×3.
+- **💭 face taps never notify on their own.** They only ride along in the next update.
+- **Quiet hours** (9 pm–7 am): nothing buzzes. Held items arrive as one morning update, and the inbox still has them.
+- **Never batched:** urgent messages (HELP, I hurt, pain 3–5) and the future **panic button** (5.15). They skip the batching and quiet hours.
+- **Caretakers** don't get a notification per tap. The tap log is for the 🕒 Today timeline (5.13), which they open when they want it.
+- **Per-person settings** (family app → 🔔): the batch window (off / 5 / 10 / 30 min); whether 💭 face taps are included in updates or left out; urgent is always on.
+
+```sql
+CREATE TABLE notify_queue (
+  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id),
+  kind TEXT NOT NULL CHECK (kind IN ('message','face','reply','urgent','panic')),
+  message_id INTEGER REFERENCES messages(id), moment_id INTEGER REFERENCES moments(id),
+  summary TEXT NOT NULL,                       -- one line: the sentence, or "tapped your face"
+  created_at TEXT NOT NULL, delivered_at TEXT, batch_id INTEGER
+);
+CREATE TABLE notify_prefs (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id),
+  batch_min INTEGER NOT NULL DEFAULT 10,       -- 0 = every message notifies
+  face_taps INTEGER NOT NULL DEFAULT 1         -- include 💭 in updates
+);
+```
+A small job runs every minute. It delivers each person's held items once their window has passed (outside quiet hours), as one `notify` event over the existing live connection. Later, the same step sends the push.
+
+**API additions (v0.4):**
+
+| Method & path | Role | Purpose |
+|---|---|---|
+| `POST /api/taps` `[{at, item_id?, person_id?, action, screen, detail?}]` | child | Tap log (batched); the server groups taps into moments |
+| `GET /api/moments?day=` | caretaker | The 🕒 Today timeline (moments + pain + voice plays + media + log) |
+| `POST /api/moments/:id/answer` `{kind}` | caretaker | Turn an unsent moment into a message and reply to it |
+| `POST /api/messages/:id/replies` `{kind: 'text', text}` | caretaker, friend | Typed reply (read aloud on the tablet) |
+| `GET/PUT /api/notify-prefs` | adults | Batch window and 💭 setting |
+
+### 5.15 Panic button (later)
+- **What he sees:** a dedicated, always-visible **SOS** on the tablet, separate from the HELP word. It is big, red, and needs a **1-second hold** so a passing tap doesn't set it off.
+- **Who it reaches:** **everyone:** every caretaker *and* every friend, not only the caretakers on duty. It skips batching, quiet hours and availability.
+- **On every family phone:** a full-screen alert with his photo, the time, and where the tablet is (home, or a place he's at), plus **"I'm on it"**. The first "I'm on it" is shown to everyone else, and on his tablet as that person's face with a 12-hour clock of when they answered.
+- **If nobody answers in 2 minutes:** it repeats to everyone. Once push exists, it also goes out as a push with sound that can't be silenced from the app.
+- Logged on the 🕒 Today timeline, and it can't be deleted.
+- The `urgent` path already built (HELP, I hurt, pain 3–5 → the caretakers on duty) stays as it is. The panic button is the "everyone, now" level above it.
+
+### 5.16 Decisions to confirm (v0.4)
+1. **Batch window:** 10 minutes by default. First message immediately, the rest as one update?
+2. **💭 face taps:** only inside updates (never their own notification). OK?
+3. **Typed replies from the family,** read aloud on his tablet. Wanted?
+4. **Moment length:** does ending a moment after 30 seconds of no taps suit how fast he taps?
+5. **Tap history:** is keeping 60 days of raw taps OK?
+
+### 5.17 Living orbit: sky, earth and a timeline he can scrub (v0.5)
+**Goal:** the main screen shows time passing without words. The earth turns under him, and the sun and moon travel around it. The sky follows the weather and the season. He can drag time back to see what happened, and forward to see what is coming.
+
+**Layout change**
+- **Rows:** the **sentence row moves to the top**; the **time row** (clock, timeline, day/season/weather/place) sits under it.
+- **Centered NOW:** the clock block and the chip block have the same width, so the timeline is centered on the screen. The **NOW line is fixed in the center**, in line with his head, and a faint dashed guide runs from it down to his face.
+- **The timeline moves, not the marker:** past to the left, future to the right, about 1 px per minute (±5 hours visible). Night hours are shaded; each midnight shows the day's colour dot.
+
+**The sky (main area background)**
+- **Earth:** a large sphere peeking from the bottom, with an atmosphere glow. It turns once per day of timeline time, plus a very slow idle drift, so it is never completely still. Land colours follow the season: green spring with pink blossom, green summer, green and orange autumn, white winter.
+- **Sun and moon:** they travel an ellipse around the earth. The sun rises at the left edge at 6:00, is overhead at noon, and sets on the right at 18:00; the moon is always opposite. Symbolic, not astronomical.
+- **Sky colour:** follows the sun's height: day blue → dusk orange → night blue with a few stars.
+- **Weather:** clouds (how many depends on the forecast), rain streaks, snowflakes, and a few falling leaves in autumn. It's all low detail, and nothing flashes.
+
+**Rendering decision: Canvas 2D background + DOM on top**
+
+| | Canvas 2D (chosen) | SVG | WebGL |
+|---|---|---|---|
+| Smooth continuous motion | ✅ one redraw per frame | ⚠️ every moving node is repainted by the browser | ✅ |
+| Memory | one bitmap (~2–4 MB at 1280×424, ×2 on retina) + one cached land strip | grows with the number of nodes | GPU context + buffers; context loss on cheap tablets |
+| Scrubbing time | trivial: `drawSky(ctx, time, weather, season)` is a pure function of time | re-computing many attributes | shaders, more code |
+| Battery / old tablets | good at a 30 fps cap | fine at low detail | worst |
+
+- Only the **sky** is a canvas. Everything he taps (items, people, his face, the strip) stays as DOM on top: big touch targets, screen readers and the existing tests keep working.
+- **Budget:** at most **30 fps**, with `devicePixelRatio` capped at 2. The earth's land is drawn once per season into an offscreen strip and slid sideways. There are no images, filters or blur, apart from two radial gradients (sun glow, atmosphere). In the mockup a full redraw costs about 0.05 ms.
+- **When it stops or slows:**
+  - it **pauses** while the tab is hidden, or when another screen covers the orbit;
+  - in **reduced-motion** mode it redraws once a minute (sun and moon still move with the clock; clouds stop);
+  - it drops to **10 fps** after 2 minutes without a touch.
+
+**Scrubbing time**
+- **Dragging the timeline** (or the NOW area) moves the time under the NOW line. The clock face, digital time, day, sky, sun, moon and earth all follow. The clock shades the span between real now and the dragged time.
+- **The orbit dims while away from NOW:** he cannot act in the past or the future. His face stays bright; **tapping it, the clock or NOW returns to now**. It also springs back by itself 8 s after the last touch.
+- **Left (past), from real data:** his moments (5.13) as small pictures with the person's face; messages sent and answered; voice notes he played; media he watched; pain reports; food logged by caretakers; and **photos caretakers attached to a past time**. Tapping one opens it big (photo, or replay the voice note).
+- **Right (future): only what is scheduled.** The routine plus **calendar events** caretakers add, with a picture and the faces of the people involved, e.g. "Dentist with Mommy Joyce", "Abuela Pilar comes home ✈️".
+- **Range:** 3 days back and 7 days forward.
+
+**Calendar (caretakers)**
+- **📅 Calendar tab:** add an event with a picture (camera, gallery or emoji), a time, a repeat rule, the people involved, and when it starts showing on his timeline (e.g. from the day before).
+- **"Add a photo to his day":** put a photo at a past time; it shows on the past side.
+- The routine becomes repeating events. Google Calendar can feed the same table later (section 8).
+
+```sql
+CREATE TABLE events (
+  id INTEGER PRIMARY KEY, starts_at TEXT NOT NULL, ends_at TEXT,
+  rrule TEXT,                                   -- e.g. FREQ=DAILY for the routine
+  title TEXT NOT NULL, emoji TEXT, item_id TEXT REFERENCES items(id),
+  person_ids TEXT NOT NULL DEFAULT '[]', show_from_min INTEGER NOT NULL DEFAULT 1440,
+  kind TEXT NOT NULL DEFAULT 'event' CHECK (kind IN ('event','routine','photo')),
+  created_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL, hidden INTEGER NOT NULL DEFAULT 0
+);
+-- pictures: images.owner_type 'event'
+```
+
+| Method & path | Role | Purpose |
+|---|---|---|
+| `GET /api/timeline?from=&to=` | child, caretaker | Past items (moments, voice plays, media, pain, logs, photos) + future events in one list |
+| `GET/POST /api/calendar` · `PATCH/DELETE /api/calendar/:id` · `PUT /api/calendar/:id/image` | caretaker | Calendar and photos on his day (`/api/events` is the live-update stream) |
+
+> **Build status (v0.4 + v0.5, September 2026):** built with the defaults above (10-min batching, 💭 only inside updates, 30 s moments, typed replies, ±3/7 days, 8 s spring back, caretakers add photos). Not built yet: push to locked phones and the panic button (5.14–5.15); the routine stays in `schedule_items` rather than repeating events; 💭 on their own wait an hour before they are delivered without a message to carry them.
+
+### 5.18 Decisions to confirm (v0.5)
+1. **Scrub range:** 3 days back, 7 days forward?
+2. **Spring back:** 8 seconds after the last touch, or only when he taps his face?
+3. **Photos on the past side:** caretakers only, or can friends add photos to his day too, with a caretaker approving them?
+4. **Night look:** is a dark night sky OK for him, or should night stay light and calm (only a moon and stars)?
 
 ---
 
@@ -492,7 +658,7 @@ infra/
 
 ### Notifications
 - **Web Push:** VAPID keys in `.env`. Each family phone subscribes when installing the web app. iOS requires the web app to be **added to the Home Screen** (iOS 16.4+).
-- **WhatsApp:** WhatsApp Business Cloud API needs a Meta business account and a dedicated number, and pre-approved **template messages** outside the 24-hour window. A **Telegram bot** is a zero-cost alternative. **Twilio SMS** handles urgent escalation.
+- **WhatsApp:** *not used (decided September 2026: the app is the only channel; see 5.14).*
 - **FaceTime / WhatsApp calls:** no API. Friend and parent screens show `facetime-audio://<contact>` and `https://wa.me/<number>` deep links.
 
 ### Audio
@@ -759,6 +925,6 @@ services:
 | Cloudflare (Tunnel, CDN, Access ≤ 50 users) | — | $0 |
 | Backups (R2/B2, a few GB) | — | < $1 |
 | LiveKit Cloud (if not self-hosted) | — | $0 (free tier) |
-| WhatsApp Business / Twilio SMS | — | pay-per-message, pennies |
+| Twilio SMS (later, unanswered urgent alerts only) | — | pay-per-message, pennies |
 
 *Prices are approximate and should be checked before purchase.*

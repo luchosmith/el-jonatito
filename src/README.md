@@ -25,13 +25,15 @@ Middleware in `server/http.ts` / `server/auth.ts`: `authenticate` (cookie or Bea
 shared/        types, 12-hour time helpers, sentence grammar (en/es), rules.ts (when an item is open),
                body.ts (body parts + pain sentences), geo.ts + cities.ts (where people are, their time)
 server/        app.ts (wiring), http.ts (router + middleware), auth.ts, db.ts, schema.sql (v3),
-               migrate.ts (v2 -> v3, with a backup), seed.ts, orbit.ts (fixed orbit layout),
-               dispatcher.ts (who gets a message + gentle notes), repo.ts,
-               routes/{auth,board,messages,day,voice}.ts, events.ts (SSE), uploads.ts
-web/src/       child/ (tablet: orbit (home), person screen + globe, My body, full-screen player,
-               All words board, dock, day, media, parent gate)
-               family/ (phones + parent mode: inbox, For Jonatito, status + Where I am, quick log,
-               items editor, voices, people, words, settings)
+               migrate.ts (v2 -> v5, with a backup), seed.ts, orbit.ts (fixed orbit layout),
+               dispatcher.ts (who gets a message + gentle notes), repo.ts, moments.ts (tap log -> moments),
+               notify.ts (batched notifications), routes/{auth,board,messages,day,voice,activity}.ts,
+               events.ts (SSE), uploads.ts
+web/src/       child/ (tablet: orbit (home) with the canvas sky, time bar you can drag, person screen + globe,
+               My body, full-screen player, All words board, dock, day, media, parent gate)
+               family/ (phones + parent mode: inbox with typed replies, notification banner, For Jonatito,
+               status + Where I am + 🔔 settings, 🕒 Today, 📅 Calendar, quick log, items editor, voices,
+               people, words, settings)
                common/ (Clock12, faces, body drawing, pain faces, tokens, sound, orbit geometry, hooks, recorder)
 seed/          known_persons.json, food_vocabulary.json, vocabulary.json, orbit.json (slots + starter rules),
                media.json, users.json, avatars/, covers/, symbols/
@@ -100,12 +102,13 @@ extensions: Playwright Test, SQLite Viewer and Claude Code.
 
 ```bash
 npm run test:unit      # grammar, 12-hour time, dispatcher rules (node:test)
-npm run test:e2e       # 78 Playwright end-to-end tests (starts its own server in TEST_MODE)
+npm run test:e2e       # 89 Playwright end-to-end tests (starts its own server in TEST_MODE)
 npm test               # both
 ```
 
-The E2E server runs with `TEST_MODE=1`, which enables `/api/test/reset` and `/api/test/clock`
-(frozen server time for sleep lock, reminders and schedules). These routes do not exist otherwise.
+The E2E server runs with `TEST_MODE=1`, which enables `/api/test/reset`, `/api/test/clock`
+(frozen server time for sleep lock, reminders and schedules) and `/api/test/tick` (runs the background
+jobs: moments ending, held notifications going out). These routes do not exist otherwise.
 
 What the E2E suite covers, by user:
 
@@ -122,6 +125,12 @@ What the E2E suite covers, by user:
   hiding words without moving anything; changing / reverting a person's photo; renaming and hiding people; parent mode.
 - **Friends:** inbox + replies (incl. voice); "For Jonatito" voice notes (and seeing when he heard them); "Where I am"
   (city search, return date, stop sharing); availability; no admin access; only their own notes and location.
+- **Activity & time (v0.4/v0.5):** every tap is logged and grouped into moments; 🕒 Today shows unsent
+  moments with "he may have meant" and answers reach the tablet; a face visit becomes a 💭 that rides
+  along with the next message; batching (first message right away, the rest as one update, ×N, urgent
+  never held); typed replies read aloud; notification settings; the sentence row above the time row,
+  NOW centred over his head; dragging time (the orbit dims, springs back); past photos and future
+  calendar events on the timeline; the caretaker calendar.
 - **Security / API:** auth required everywhere, role checks, recipient-only replies, caretaker-only parent gate,
   PIN lockout, upload type and magic-byte checks, path traversal, input validation, server-side sleep lock,
   catalog slot rules (taken 409, reserved 400), city-level location rounding, pain report validation.
@@ -130,6 +139,6 @@ What the E2E suite covers, by user:
 
 Google Calendar sync (availability + routine), Web Push / WhatsApp notifications for closed phones, live audio calls
 (LiveKit), a full media library (v0.3 plays one uploaded file per media item), symbol-library search and cropping in the
-item editor, WhatsApp voice notes into the voice shelf, caretaker voice commands, service worker for full offline use,
+item editor, push notifications to locked phones and the panic button (spec 5.14–5.15), caretaker voice commands, service worker for full offline use,
 and the future-version features (status sensing, personal speech recognition). The data model and
 `dispatcher.ts` are shaped so these plug in without changing the child's screens.

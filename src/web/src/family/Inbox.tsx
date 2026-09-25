@@ -21,12 +21,21 @@ export function Inbox({ messages, board, userId, onChange }: { messages: Message
 
 function MessageCard({ m, board, userId, onChange }: { m: Message; board: Board; userId: number; onChange: () => void }) {
   const [recording, setRecording] = useState(false);
+  const [text, setText] = useState('');
   const rec = useRef<Recording | null>(null);
   const me = board.people.find((p) => p.is_self);
   const mine = m.replies.filter((r) => r.from_user_id === userId);
 
   const reply = async (kind: 'yes' | 'wait' | 'no', eta_minutes?: number) => {
     await api.post(`/api/messages/${m.id}/replies`, { kind, ...(eta_minutes ? { eta_minutes } : {}) });
+    onChange();
+  };
+
+  const sendText = async () => {
+    const t = text.trim();
+    if (!t) return;
+    await api.post(`/api/messages/${m.id}/replies`, { kind: 'text', text: t });
+    setText('');
     onChange();
   };
 
@@ -75,8 +84,12 @@ function MessageCard({ m, board, userId, onChange }: { m: Message; board: Board;
           {recording ? '⏹ Send voice' : '🎙️ Voice reply'}
         </button>
       </div>
+      <form className="reply-typed" onSubmit={(e) => { e.preventDefault(); void sendText(); }}>
+        <input value={text} maxLength={120} placeholder="Type a reply… he hears it" data-testid="reply-text-input" onChange={(e) => setText(e.target.value)} />
+        <button className="save" data-testid="reply-text-send" disabled={!text.trim()}>➤</button>
+      </form>
       {mine.length > 0 && (
-        <p className="muted" data-testid="my-replies">You replied: {mine.map((r) => r.kind).join(', ')}</p>
+        <p className="muted" data-testid="my-replies">You replied: {mine.map((r) => (r.kind === 'text' ? `“${r.text}”` : r.kind)).join(', ')}</p>
       )}
     </article>
   );

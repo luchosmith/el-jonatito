@@ -309,6 +309,81 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 .sbig.talk.rec{border-color:var(--urgent);animation:pulseR 1s infinite}
 .sbig.love{border-color:var(--urgent)}
 .sbig:active{transform:translateY(3px)}
+
+/* v0.4 messaging: caretaker timeline, notifications, WhatsApp bridge */
+.tl-head{background:#fff;padding:16px 16px 10px;border-bottom:1px solid var(--line)}
+.tl-head h3{margin:0 0 8px;font-size:19px;display:flex;align-items:center;gap:8px}
+.tl-filt{display:flex;gap:6px}.tl-filt span{border:1px solid var(--line);border-radius:999px;padding:5px 10px;font-size:12px;font-weight:700;background:#fff}
+.tl-filt span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.tl-list{padding:10px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
+.mom{background:#fff;border:1px solid var(--line);border-radius:16px;padding:9px 11px;font-size:13px}
+.mom.ns{border-left:5px solid #f0b429}.mom.sent{border-left:5px solid #45c46a}.mom.face{border-left:5px solid var(--social)}.mom.misc{border-left:5px solid #cfd8e3}
+.mom .top{display:flex;align-items:center;gap:8px;font-weight:700}.mom .top time{margin-left:auto;color:var(--muted);font-weight:600;font-size:12px}
+.chips2{display:flex;gap:5px;margin:7px 0;flex-wrap:wrap;align-items:center}
+.tchip{width:40px;height:40px;border-radius:10px;border:3px solid var(--thing);background:#fff1e3;display:grid;place-items:center;font-size:20px;position:relative;overflow:hidden}
+.tchip img{width:100%;height:100%;object-fit:cover}
+.tchip.p{border-color:var(--people);background:#fff8d6}.tchip.a{border-color:var(--action);background:#e6f7ea}
+.tchip.dim{filter:grayscale(1);opacity:.5}
+.tchip .ck{position:absolute;right:-2px;top:-2px}
+.meant{color:var(--muted);font-style:italic}
+.ctx{background:#fff7d6;border-radius:8px;padding:4px 8px;margin-top:5px;font-size:12px}
+.ans{display:flex;gap:6px;margin-top:7px}.ans span{flex:1;text-align:center;border-radius:10px;padding:6px 0;font-weight:800;font-size:12px}
+.lock{height:100%;background:linear-gradient(160deg,#2c3e63,#0f1a2d 70%);color:#fff;display:flex;flex-direction:column;align-items:center;padding:30px 12px}
+.lock .big{font-size:64px;font-weight:300;line-height:1}.lock .date{font-size:15px;opacity:.8;margin-bottom:26px}
+.ntf{width:100%;background:rgba(255,255,255,.88);color:var(--ink);border-radius:18px;padding:10px 12px;margin-bottom:9px;font-size:13px;display:flex;gap:10px;align-items:flex-start}
+.ntf img{width:38px;height:38px;border-radius:50%;object-fit:cover;flex:none}
+.ntf b{display:block;font-size:12px;color:var(--muted);font-weight:700}.ntf .t{margin-left:auto;font-size:11px;color:var(--muted)}
+.ntf .sil{font-size:11px;color:var(--muted)}
+.setrow{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);background:#fff;font-size:14px}
+.setrow small{display:block;color:var(--muted);font-size:12px}
+.seg{display:flex;flex:none;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg span{padding:5px 7px;font-size:12px;font-weight:700}.seg span.on{background:var(--ink);color:#fff}
+.wa{height:100%;display:flex;flex-direction:column;background:#efe7dd}
+.wa-top{background:#1f6f5c;color:#fff;padding:18px 12px 10px;display:flex;align-items:center;gap:10px;font-weight:700}
+.wa-top img{width:36px;height:36px;border-radius:50%;object-fit:cover}.wa-top small{display:block;font-weight:400;font-size:11px;opacity:.85}
+.wa-body{flex:1;padding:10px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+.bub{max-width:82%;background:#fff;border-radius:12px;padding:7px 9px;font-size:13px;box-shadow:0 1px 1px rgba(0,0,0,.1)}
+.bub.out{align-self:flex-end;background:#d9fdd3}.bub .tm{display:block;text-align:right;font-size:10px;color:#7a8a86;margin-top:2px}
+.wbtns{display:flex;flex-direction:column;gap:3px;max-width:82%}.wbtns span{background:#fff;border-radius:10px;text-align:center;padding:7px;color:#1f7aa8;font-weight:700;font-size:13px}
+.vn{display:flex;align-items:center;gap:8px;min-width:190px}.vn img{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.vn .bars{flex:1;height:18px;background:repeating-linear-gradient(90deg,#8aa39b 0 3px,transparent 3px 6px);border-radius:3px;opacity:.8}
+.sysn{align-self:center;background:#fff3c4;border-radius:8px;padding:4px 10px;font-size:11px;color:#6b5b00}
+
+/* v0.5 living orbit */
+.screen.living #stripbar{order:-2}.screen.living #here2{order:-1}
+.here2 .lv-clock{width:216px;flex:none;display:flex;align-items:center;gap:8px;cursor:pointer}
+.here2 .lv-clock .digital{font-size:24px}
+.here2 #lvchips{width:216px;flex:none;grid-template-columns:repeat(2,1fr)}
+.here2 #lvchips .chip{font-size:13px;padding:4px 8px}
+.lv-tl{flex:1;position:relative;height:88px;border-radius:14px;border:1px solid var(--line);overflow:hidden;background:linear-gradient(#e8f3ff,#fff);touch-action:none;cursor:grab}
+.lv-tl.scrubbed{background:linear-gradient(#eef0f7,#fbfbfd)}
+.lv-track{position:absolute;left:0;top:0;height:100%;will-change:transform}
+.lv-night{position:absolute;top:0;bottom:0;background:rgba(39,49,61,.10)}
+.lv-tick{position:absolute;top:0;bottom:0;width:1px;background:rgba(31,42,55,.07)}.lv-tick.maj{background:rgba(31,42,55,.16)}
+.lv-hr{position:absolute;bottom:1px;font-size:9px;color:var(--muted);transform:translateX(3px)}
+.lv-mid{position:absolute;top:2px;transform:translateX(-50%)}.lv-mid b{display:block;width:10px;height:10px;border-radius:50%}
+.lv-rt{position:absolute;top:44px;transform:translateX(-50%);font-size:20px;display:flex;flex-direction:column;align-items:center;line-height:1}
+.lv-rt small{font-size:9px;color:var(--muted);margin-top:2px}
+.lv-ev{position:absolute;top:6px;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;border:3px solid var(--people);background:#fff;padding:0;overflow:visible;cursor:pointer}
+.lv-ev img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.lv-ev.photo{border-radius:8px;width:44px;border-color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3)}.lv-ev.photo img{border-radius:6px}
+.lv-ev.future{border-style:dashed;border-color:#5aa4e6}
+.lv-ev b{font-size:18px;font-weight:normal}
+.lv-ev i{position:absolute;right:-8px;bottom:-6px;font-style:normal;font-size:13px;background:#fff;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.lv-now{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--urgent);border-radius:2px;cursor:pointer;z-index:2}
+.lv-now span{position:absolute;top:-1px;left:6px;font-size:10px;font-weight:800;color:var(--urgent)}
+.lv-stage{flex:1;position:relative;overflow:hidden}
+.lv-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.lv-items{position:absolute;inset:0;transition:opacity .3s}
+.lv-stage.scrubbed .lv-items{opacity:.3;pointer-events:none}
+.lv-guide{position:absolute;left:50%;top:0;height:calc(50% - 75px);border-left:2px dashed rgba(228,87,87,.55);transform:translateX(-1px)}
+.lv-me{z-index:3}
+#lvdemo{display:inline-flex;gap:6px;flex-wrap:wrap;margin-left:6px}#lvdemo button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 9px;font-size:13px;cursor:pointer}
+.cal-ev{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin:6px 10px;font-size:13px}
+.cal-ev img{width:54px;height:40px;object-fit:cover;border-radius:8px}.cal-ev .av2{width:30px;height:30px;border-radius:50%;object-fit:cover}
+.cal-ev b{display:block}
+.cal-form{background:#fff;border:1px solid var(--line);border-radius:14px;margin:8px 10px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:7px}
+.cal-form .f{border:1px solid var(--line);border-radius:10px;padding:7px 9px;color:var(--muted)}
+.cal-form .pick{display:flex;gap:6px;margin:0}.cal-form .pick img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:3px solid transparent}.cal-form .pick img.sel{border-color:var(--action)}
 </style>
 </head>
 <body>
@@ -321,7 +396,7 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 <div class="stage"><div class="scaler" id="scaler">
 
 <!-- TABLET -->
-<div class="tablet" id="tablet"><div class="screen">
+<div class="tablet" id="tablet"><div class="screen" id="screen">
 
   <!-- HERE & NOW (shared) -->
   <div class="here" id="here">
@@ -356,6 +431,13 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
     <button class="sbtn speak" onclick="speak()">🔊<span>SAY</span></button>
     <button class="sbtn clear" onclick="clearTok()">✖<span>CLEAR</span></button>
     <button class="sbtn send" onclick="send()">➤<span>SEND</span></button>
+  </div>
+
+  <!-- v0.5: time row below the sentence, NOW in the centre -->
+  <div class="here here2" id="here2" style="display:none">
+    <div class="clock lv-clock" id="lvclock" onclick="lvNow()" title="back to now"></div>
+    <div class="lv-tl" id="lvtl"><div class="lv-track" id="lvtrack"></div><div class="lv-now" onclick="lvNow()"><span>NOW</span></div></div>
+    <div class="chips" id="lvchips"></div>
   </div>
 
   <!-- VIEW: HOME / BUILDER -->
@@ -486,6 +568,8 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
   <div class="view" id="v-pongo" style="flex:1;min-height:0"></div>
   <div class="view" id="v-items" style="flex:1;min-height:0"></div>
 
+  <div class="view" id="v-living" style="flex:1;min-height:0"></div>
+
   <!-- DOCK (shared) -->
   <div class="dock" id="dock">
     <div class="me" onclick="go('orbit')" title="Me — Jonatito"><img class="ph" data-p="jonatito" alt="Jonatito" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>
@@ -501,6 +585,7 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 </div></div>
 
 <!-- PHONE (friend mode) -->
+<div class="phoneWrap" id="phones2" style="display:none"></div>
 <div class="phoneWrap" id="phoneView" style="display:none">
   <div class="phone"><div class="pscreen">
     <div class="ptop"><h3 class="hh" style="display:flex;align-items:center;gap:8px"><span style="width:40px;height:40px;display:inline-block"><img class="ph" data-p="lucho" alt="" style="width:40px;height:40px"></span>Abuelo Lucho · Jonatito app</h3>
@@ -746,7 +831,8 @@ const INNER=[
   {slot:3,e:'🚽',n:'Toilet',w:'toilet',t:'action'},
   {slot:4,e:'🚗',n:'Go',w:'go',t:'action'},
   {slot:5,e:'🦖',n:'Barney',w:'Barney',t:'thing',img:'barney'},
-  {slot:7,e:'🐶',n:'Pongo',w:'Pongo',t:'thing',img:'pongo',tap:'play'}];
+  {slot:7,e:'🐶',n:'Pongo',w:'Pongo',t:'thing',img:'pongo',tap:'play'},
+  {slot:6,e:'🎧',n:'Music',w:'music',t:'thing'}];
 const FOODS=[
   {slot:0,e:'💧',n:'water',t:'thing'},
   {slot:1,e:'🍇',n:'grapes',t:'thing',rule:'snack'},
@@ -799,7 +885,7 @@ function foodClosed(i,el){
 }
 
 /* ---------- ground & location ---------- */
-function whoTap(id){const p=PEOPLE.find(x=>x.id===id); add(p.e,p.n,'people',p.img); showWhere(id);}
+function whoTap(id){openPerson(id)}   // straight to their page (no globe pop-up)
 let whereT;
 function showWhere(id,stay){
   const g=document.querySelector('#v-'+vel()+' .globecard'); if(!g) return;
@@ -1037,6 +1123,292 @@ function selectItem(id){
     <button class="save" style="grid-column:1/-1">Save · reaches the tablet instantly</button>`;
 }
 
+
+/* ===================== v0.4 — messaging mockups ===================== */
+const phone=(inner)=>`<div class="phone"><div class="pscreen">${inner}</div></div>`;
+const img=(k)=>`<img src="${AVATARS[k]}" alt="">`;
+const chip=(c,cls='',extra='')=>`<span class="tchip ${cls}">${c}${extra}</span>`;
+function renderPhones(v){
+  const el=document.getElementById('phones2');
+  const soon=new Date(); soon.setHours(7,0,0,0); soon.setDate(soon.getDate()+1);
+  if(v==='timeline'){
+    el.innerHTML=phone(`<div class="tl-head"><h3>${img('mommy_joyce').replace('<img','<img style="width:34px;height:34px;border-radius:50%;object-fit:cover"')} 🕒 Today · Jonatito</h3>
+      <div class="tl-filt"><span class="on">All</span><span>Not sent · 2</span><span>Urgent</span><span>📅 Today</span></div></div>
+      <div class="tl-list">
+        <div class="mom sent"><div class="top">📬 Sent to Abuela Pilar<time>3:44</time></div>
+          <div class="chips2">${chip(img('pilar'),'p')}${chip('🍇','a')}${chip('🍇')}</div>
+          <div>“Abuela Pilar, I want to eat grapes.”</div></div>
+        <div class="mom ns"><div class="top">📝 Not sent<time>3:31</time></div>
+          <div class="chips2">${chip('🍇','a')}${chip('🥞','dim','<i class="ck">'+clk(soon,null,16)+'</i>')}${chip('🥞','dim')}</div>
+          <div class="meant">He may have meant: “I want to eat pancakes.”</div>
+          <div class="ctx">🥞 was closed: breakfast, opens 7:00 · he tapped it twice</div>
+          <div class="ans"><span style="background:#d9f5e1">✅ Yes</span><span style="background:#e6f0ff">✋ Wait</span><span style="background:#fde2e2">❌ Not now</span></div></div>
+        <div class="mom face"><div class="top">💭 Not sent · in Abuelo Lucho’s next update<time>3:12</time></div>
+          <div class="chips2">${chip(img('lucho'),'p')}${chip('🚗','a')}</div>
+          <div class="meant">He may have meant: “Abuelo Lucho, I want to go.”</div></div>
+        <div class="mom sent"><div class="top">🩹 Tummy · 2 of 5 → Mommy Joyce<time>2:58</time></div></div>
+        <div class="mom misc"><div class="top">〰️ Played Mommy Joyce’s ⭐ “Te quiero”<time>2:40</time></div></div>
+        <div class="mom misc"><div class="top">🐶 Pongo · 12 min<time>2:15</time></div></div>
+        <div class="mom misc"><div class="top">📝 Abuela Pilar logged 🍝 pasta ½<time>1:05</time></div></div>
+      </div>`)+`<div class="legend"><h3>Caretaker timeline (🕒 Today)</h3>
+      <p>Every tap on the tablet is kept. Taps close together form a <b>moment</b>; a moment ends at Send, Clear, or after 30 seconds of nothing.</p>
+      <p><b>Not sent</b> moments show the pictures in the order he tapped them and <i>“He may have meant…”</i>, with context: here pancakes were closed until breakfast, and he tried twice.</p>
+      <p>A caretaker can <b>answer</b> an unsent moment: ✅ / ✋ / ❌ becomes a message and a picture reply on his tablet.</p>
+      <p>💭 means he tapped someone’s face: it goes into that person’s next batched update, never as a notification of its own.</p>
+      <p>Pain reports, the voice notes he played, media, and the caretakers’ own log are in the same list. Caretakers only.</p></div>`;
+  }
+  if(v==='notify'){
+    el.innerHTML=phone(`<div class="ptop"><h3 class="hh" style="display:flex;align-items:center;gap:8px">${img('pilar').replace('<img','<img style="width:36px;height:36px;border-radius:50%;object-fit:cover"')} Abuela Pilar</h3></div>
+      <div class="ntf" style="margin:10px 10px 4px;width:auto;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.18);border:2px solid var(--people)">${img('jonatito')}<div><b>📬 Jonatito · 3 more since 3:44</b>“Abuela Pilar, I want to eat grapes.” <b style="display:inline;color:var(--ink)">×2</b><br>💭 tapped your face</div><span class="t">3:54</span></div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-bottom:6px">one update every 10 min · the inbox is always live</div>
+      <div class="msg" style="margin:6px 10px"><div class="from"><i>${img('jonatito').replace('<img','<img style="width:30px;height:30px;border-radius:50%;object-fit:cover;vertical-align:middle"')}</i>Jonatito<span style="margin-left:auto;font-weight:500;color:var(--muted);font-size:12px">3:44 · 3:49 ×2</span></div>
+        <div class="mstrip"><div class="tok" style="background:#fff8d6;border-color:var(--people)">${img('pilar')}<span>Abuela</span></div><div class="tok" style="background:#e6f7ea;border-color:var(--action)">🍇<span>eat</span></div><div class="tok" style="background:#fff1e3;border-color:var(--thing)">🍇<span>grapes</span></div></div>
+        <div class="play">“Abuela Pilar, I want to eat grapes.”</div>
+        <div class="replies"><div style="background:#d9f5e1">✅ Yes!</div><div style="background:#e6f0ff">✋ Wait</div></div>
+        <div style="display:flex;gap:6px;margin-top:8px"><div style="flex:1;border:1px solid var(--line);border-radius:10px;padding:8px;color:var(--muted);font-size:13px">Type a reply… he hears it</div><div style="background:var(--action);color:#fff;border-radius:10px;padding:8px 12px;font-weight:800">➤</div></div></div>
+      <div class="msg" style="margin:6px 10px;opacity:.85"><div class="from">💭 <span style="font-weight:600">He tapped your face at 3:52</span></div><div class="mstrip" style="margin:4px 0 0"><div class="tok" style="background:#fff8d6;border-color:var(--people);width:44px;height:44px">${img('pilar')}</div><div class="tok" style="width:44px;height:44px;background:#e6f7ea;border-color:var(--action)">🚗</div></div></div>`)+phone(`<div class="ptop"><h3>🔔 Notifications</h3></div>
+      <div class="setrow"><div>📬 Group his messages<small>first one right away, the rest in one update</small></div><div class="seg"><span>Off</span><span>5</span><span class="on">10</span><span>30</span></div></div>
+      <div class="setrow"><div>💭 Face taps<small>only inside the update</small></div><div class="tog"></div></div>
+      <div class="setrow"><div>🌙 Quiet hours<small>9:00 pm – 7:00 am · one morning update</small></div><b>✔</b></div>
+      <div class="setrow"><div>🆘 Urgent &amp; panic<small>always, right away, never grouped</small></div><b>✔</b></div>
+      <div style="padding:12px;font-size:12px;color:var(--muted)">For now notifications show while the app is open. Phone (push) notifications come later and will follow these same settings.</div>`);
+  }
+  if(v==='bridge'){
+    el.innerHTML=phone(`<div class="wa"><div class="wa-top">${img('jonatito')}<div>El Jonatito<small>family number · business account</small></div></div>
+      <div class="wa-body">
+        <div class="sysn">Outside 24 h: only an approved template</div>
+        <div class="bub">💬 <b>Jonatito</b> sent you a message:<br>“Abuelo Lucho, I love you!”<span class="tm">3:12</span></div>
+        <div class="wbtns"><span>✅ Yes</span><span>✋ Wait</span><span>🎙️ Listen</span></div>
+        <div class="bub out">🎙️ Listen<span class="tm">3:15 ✔✔</span></div>
+        <div class="sysn">24 h window open: voice and pictures allowed</div>
+        <div class="bub"><div class="chips2" style="margin:0 0 4px">${chip(img('lucho'),'p')}${chip('❤️')}</div>“Abuelo Lucho, I love you!”<span class="tm">3:15</span></div>
+        <div class="bub"><div class="vn">${img('jonatito')}▶<span class="bars"></span>0:04</div><span class="tm">3:15</span></div>
+        <div class="bub out"><div class="vn">${img('lucho')}▶<span class="bars"></span>0:07</div><span class="tm">3:16 ✔✔</span></div>
+        <div class="sysn">→ on Jonatito’s voice shelf, with a sound wave in front of Abuelo’s face</div>
+      </div></div>`)+`<div class="legend"><h3>WhatsApp bridge (optional)</h3>
+      <p>For relatives who won’t use the app: one family WhatsApp number, “El Jonatito”, run through Meta’s official Cloud API.</p>
+      <p><b>Outside 24 hours</b> since the relative last wrote, the bridge may only send an <b>approved template</b>: text plus buttons, no voice. Any button tap opens the window.</p>
+      <p><b>Inside 24 hours</b> it sends the picture strip and his actual voice as a WhatsApp voice note. “Played” comes back as heard ✔.</p>
+      <p>Voice notes the relative sends to the number <b>land on his voice shelf</b>. Button replies become picture replies on the tablet.</p>
+      <p>Costs: Meta charges per message (small, by country). Copies of messages pass through Meta. The app’s own notifications stay free and private, so they remain the main channel.</p></div>`;
+  }
+}
+
+/* ===================== v0.5 — living orbit: sky, earth, scrubbable time ===================== */
+// Rendering: ONE canvas for the sky/earth/sun/moon/weather, drawn by drawSky(time) at <=30 fps;
+// the things he taps stay as DOM on top. Scrubbing the timeline just changes `time`.
+const LV = { scrub: 0, returning: false, idle: 0, drag: null, ppm: 1.1, weather: 'partly', season: null, raf: 0, last: 0, minute: -1, land: null, landSeason: '', fast: false };
+const DAY = 86400000, MIN = 60000;
+const lvTime = () => Date.now() + LV.scrub * MIN;
+const lvSeason = (t) => LV.season || ['winter', 'spring', 'summer', 'autumn'][Math.floor(((new Date(t).getMonth() + 1) % 12) / 3)];
+
+// Placeholder "photos" caretakers added (tiny SVGs).
+const svgUri = (s) => 'data:image/svg+xml;utf8,' + encodeURIComponent(s);
+const PHOTO_PARK = svgUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fd3f7"/><stop offset="1" stop-color="#e8f6ff"/></linearGradient></defs><rect width="120" height="90" fill="url(#a)"/><circle cx="96" cy="20" r="10" fill="#ffd166"/><path d="M0 70 Q30 48 60 66 T120 60 V90 H0Z" fill="#6fbe6c"/><rect x="28" y="44" width="5" height="22" fill="#7a5230"/><circle cx="30" cy="40" r="13" fill="#3f9b3a"/></svg>');
+const PHOTO_CAKE = svgUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#fde2ef"/><rect x="30" y="46" width="60" height="30" rx="6" fill="#f4a3c4"/><rect x="30" y="46" width="60" height="9" fill="#fff"/><rect x="58" y="28" width="4" height="18" fill="#5aa4e6"/><ellipse cx="60" cy="25" rx="4" ry="6" fill="#ffb13b"/></svg>');
+const PHOTO_DENTIST = svgUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#e3f1fb"/><path d="M40 30 Q60 18 80 30 Q86 50 76 74 Q70 78 66 64 Q60 54 54 64 Q50 78 44 74 Q34 50 40 30Z" fill="#fff" stroke="#5aa4e6" stroke-width="3"/></svg>');
+
+function lvEvents() {
+  const n = Date.now(), h = 3600000;
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const dayAt = (d, hh, mm = 0) => { const x = new Date(d0); x.setDate(x.getDate() + d); x.setHours(hh, mm, 0, 0); return x.getTime(); };
+  const ev = [
+    { t: n - 18 * MIN, lane: 'past', img: 'pilar', badge: '🍇', title: 'Sent to Abuela Pilar: “I want to eat grapes.” She answered ✅' },
+    { t: n - 47 * MIN, lane: 'past', img: 'mommy_joyce', badge: '〰️', title: 'He played Mommy Joyce’s voice note ⭐ “Te quiero”' },
+    { t: n - 95 * MIN, lane: 'past', img: 'pongo', title: 'Watched Pongo · 12 min' },
+    { t: n - 150 * MIN, lane: 'past', photo: PHOTO_PARK, title: 'Photo from Abuela Pilar: the park' },
+    { t: n - 5 * h, lane: 'past', emoji: '🩹', title: 'Tummy · 2 of 5 → Mommy Joyce' },
+    { t: dayAt(-1, 17, 20), lane: 'past', photo: PHOTO_CAKE, title: 'Yesterday: cousin’s birthday (photo from Larry)' },
+    { t: dayAt(-1, 19, 40), lane: 'past', img: 'lucho', badge: '〰️', title: 'Abuelo Lucho said good night' },
+    { t: dayAt(1, 10, 0), lane: 'future', photo: PHOTO_DENTIST, img: 'mommy_joyce', title: 'Tomorrow 10:00 · Dentist with Mommy Joyce (added by Mommy Joyce)' },
+    { t: dayAt(3, 12, 0), lane: 'future', img: 'pilar', badge: '✈️', title: 'Abuela Pilar comes home' },
+  ];
+  for (let d = -3; d <= 7; d++) for (const r of ROUTINE) ev.push({ t: dayAt(d, Math.floor(r[2]), Math.round((r[2] % 1) * 60)), lane: 'routine', emoji: r[0], label: fmtH(r[2]) });
+  return ev.map((e, i) => ({ ...e, id: i }));
+}
+let LV_EVENTS = [];
+let LV_T0 = 0;
+
+function renderLiving() {
+  LV_EVENTS = lvEvents();
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - 3); LV_T0 = d0.getTime();
+  const x = (t) => ((t - LV_T0) / MIN) * LV.ppm;
+  let html = '';
+  for (let d = 0; d < 11; d++) {
+    const day = LV_T0 + d * DAY;
+    // night band: 8:30 pm -> 7:00 am
+    html += `<div class="lv-night" style="left:${x(day + 20.5 * 3600000)}px;width:${10.5 * 60 * LV.ppm}px"></div>`;
+    for (let hh = 0; hh < 24; hh++) {
+      const tx = x(day + hh * 3600000);
+      html += `<i class="lv-tick ${hh % 3 ? '' : 'maj'}" style="left:${tx}px"></i>`;
+      if (hh % 3 === 0 && hh) html += `<span class="lv-hr" style="left:${tx}px">${hh % 12 || 12}</span>`;
+    }
+    const dd = new Date(day);
+    html += `<span class="lv-mid" style="left:${x(day)}px"><b style="background:${DAYCOL[dd.getDay()]}"></b></span>`;
+  }
+  for (const e of LV_EVENTS) {
+    if (e.lane === 'routine') { html += `<span class="lv-rt" style="left:${x(e.t)}px">${e.emoji}<small>${e.label}</small></span>`; continue; }
+    const pic = e.photo ? `<img src="${e.photo}" alt="">` : e.img ? `<img src="${AVATARS[e.img]}" alt="">` : `<b>${e.emoji}</b>`;
+    html += `<button class="lv-ev ${e.lane} ${e.photo ? 'photo' : ''}" style="left:${x(e.t)}px" onclick="lvShow(${e.id})">${pic}${e.badge ? `<i>${e.badge}</i>` : ''}</button>`;
+  }
+  document.getElementById('lvtrack').innerHTML = html;
+
+  document.getElementById('v-living').innerHTML = `<div class="lv-stage" id="lvstage">
+      <canvas id="lvsky"></canvas>
+      <div class="lv-guide"></div>
+      <div class="lv-items">${rings()}${emptySlots(new Set(INNER.map((i) => i.slot)))}${INNER.map((it) => itemOrb(it, `add('${it.e}','${it.w}','${it.t}',${it.img ? `'${it.img}'` : 'null'})`)).join('')}${PEOPLE.map(whoOrb).join('')}</div>
+      <div class="ome lv-me" onclick="lvNow()"><img src="${AVATARS.jonatito}" alt=""></div>
+    </div>`;
+  const wrap = document.getElementById('lvtl');
+  wrap.onpointerdown = (e) => { if (e.target.closest('.lv-ev')) return; LV.drag = { x: e.clientX, s: LV.scrub }; LV.returning = false; wrap.setPointerCapture(e.pointerId); };
+  wrap.onpointermove = (e) => {
+    if (!LV.drag) return;
+    const scale = document.getElementById('tablet').getBoundingClientRect().width / document.getElementById('tablet').offsetWidth;
+    LV.scrub = Math.max(-3 * 1440, Math.min(7 * 1440, LV.drag.s - (e.clientX - LV.drag.x) / scale / LV.ppm));
+    lvUpdate();
+  };
+  wrap.onpointerup = () => { LV.drag = null; clearTimeout(LV.idle); LV.idle = setTimeout(() => (LV.returning = true), 8000); };
+  lvUpdate(true);
+  if (!LV.raf) LV.raf = requestAnimationFrame(lvLoop);
+}
+
+function lvNow() { LV.returning = true; }
+function lvShow(id) {
+  const e = LV_EVENTS.find((x) => x.id === id); if (!e) return;
+  const pic = e.photo ? `<img src="${e.photo}" style="width:100%;max-height:260px;object-fit:cover;border-radius:16px">` : e.img ? `<span class="big">${face({ img: e.img })}</span>` : `<span class="big-emoji">${e.emoji}</span>`;
+  document.getElementById('card').innerHTML = `<h2>${e.lane === 'future' ? '📅' : '🕰️'} ${new Date(e.t).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</h2><div class="row" style="flex-direction:column;align-items:stretch">${pic}<div>${e.title}</div></div><button class="cbtn" style="background:#d9f5e1" onclick="closeCard()">👍</button>`;
+  document.getElementById('overlay').classList.add('on');
+}
+
+/** Moves the timeline under the fixed NOW line and updates the clock / chips for the scrubbed time. */
+function lvUpdate(force) {
+  const t = lvTime();
+  const w = document.getElementById('lvtl').offsetWidth;
+  document.getElementById('lvtrack').style.transform = `translateX(${w / 2 - ((t - LV_T0) / MIN) * LV.ppm}px)`;
+  const away = Math.abs(LV.scrub) >= 1;
+  document.getElementById('lvstage')?.classList.toggle('scrubbed', away);
+  document.getElementById('lvtl').classList.toggle('scrubbed', away);
+  const m = Math.floor(t / MIN);
+  if (m === LV.minute && !force) return;
+  LV.minute = m;
+  const d = new Date(t);
+  document.getElementById('lvclock').innerHTML = `${clk(d, away ? new Date() : null, 80)}<div class="digital">${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}<small>${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</small></div>`;
+  const S = { winter: ['❄️', 'Winter'], spring: ['🌸', 'Spring'], summer: ['☀️', 'Summer'], autumn: ['🍂', 'Autumn'] }[lvSeason(t)];
+  const W = { clear: ['☀️', '21°C'], partly: ['⛅', '18°C'], cloudy: ['☁️', '15°C'], rain: ['🌧️', '12°C'], snow: ['❄️', '-2°C'] }[LV.weather];
+  document.getElementById('lvchips').innerHTML = `<div class="chip"><b class="daydot" style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${DAYCOL[d.getDay()]}"></b>${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+    <div class="chip"><b>${S[0]}</b>${S[1]}</div><div class="chip"><b>${W[0]}</b>${W[1]}</div><div class="chip"><b>🏠</b>Home</div>`;
+}
+
+function lvLoop(ts) {
+  if (view !== 'living') { LV.raf = 0; return; }
+  if (LV.fast) { LV.scrub += 12; if (LV.scrub > 1440) { LV.scrub = 0; LV.fast = false; } lvUpdate(); }
+  else if (LV.returning) { LV.scrub += (0 - LV.scrub) * 0.12; if (Math.abs(LV.scrub) < 0.5) { LV.scrub = 0; LV.returning = false; } lvUpdate(); }
+  if (ts - LV.last >= 33) { LV.last = ts; drawSky(ts); } // <= 30 fps, one canvas
+  LV.raf = requestAnimationFrame(lvLoop);
+}
+
+// ---- the sky: one pure-ish function of (time, weather, season) + a slow idle clock for drift ----
+function rng(seed) { let s = seed; return () => ((s = (s * 16807) % 2147483647) / 2147483647); }
+const mix = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const PAL = {
+  day: [[142, 201, 245], [233, 246, 255]], dusk: [[255, 176, 124], [255, 230, 204]], night: [[22, 33, 62], [58, 77, 119]],
+};
+const LAND = { spring: [[126, 205, 120], [236, 170, 200]], summer: [[96, 180, 92], [70, 150, 70]], autumn: [[110, 170, 90], [212, 150, 70]], winter: [[232, 238, 245], [150, 190, 150]] };
+
+// The earth's surface as a wide strip of small continents (drawn once per season, then just slid sideways).
+function landStrip(season) {
+  if (LV.land && LV.landSeason === season) return LV.land;
+  const c = document.createElement('canvas'); c.width = 2400; c.height = 90;
+  const g = c.getContext('2d'); const r = rng(7); const [a, b] = LAND[season];
+  const blob = (x, y, w, h) => { for (const dx of [0, -2400, 2400]) { g.beginPath(); g.ellipse(x + dx, y, w, h, 0, 0, Math.PI * 2); g.fill(); } };
+  for (let i = 0; i < 9; i++) {           // continents: a few lumps each
+    const x = r() * 2400, y = 18 + r() * 50, w = 50 + r() * 90;
+    g.fillStyle = rgb(a);
+    for (let k = 0; k < 4; k++) blob(x + (r() - 0.5) * w * 1.4, y + (r() - 0.5) * 18, w * (0.4 + r() * 0.5), 7 + r() * 9);
+    g.fillStyle = rgb(b, 0.9);               // second tone: forests / autumn leaves / snow-free patches
+    blob(x + (r() - 0.5) * w, y + (r() - 0.5) * 8, w * 0.3, 5 + r() * 4);
+  }
+  LV.land = c; LV.landSeason = season; return c;
+}
+
+function drawSky(idle) {
+  const cv = document.getElementById('lvsky'); if (!cv) return;
+  const W = cv.offsetWidth, H = cv.offsetHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const t = lvTime(), d = new Date(t), hrs = d.getHours() + d.getMinutes() / 60;
+  const th = ((hrs - 12) / 24) * Math.PI * 2, alt = Math.cos(th); // 1 at noon, -1 at midnight
+  const season = lvSeason(t), wx = LV.weather;
+
+  // sky colour by the sun's height
+  let top, bot;
+  if (alt > 0.3) [top, bot] = PAL.day;
+  else if (alt > 0.05) { const k = (alt - 0.05) / 0.25; top = mix(PAL.dusk[0], PAL.day[0], k); bot = mix(PAL.dusk[1], PAL.day[1], k); }
+  else if (alt > -0.2) { const k = (alt + 0.2) / 0.25; top = mix(PAL.night[0], PAL.dusk[0], k); bot = mix(PAL.night[1], PAL.dusk[1], k); }
+  else [top, bot] = PAL.night;
+  const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, rgb(top)); sky.addColorStop(1, rgb(bot));
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  if (wx === 'cloudy' || wx === 'rain' || wx === 'snow') { g.fillStyle = 'rgba(120,130,145,.22)'; g.fillRect(0, 0, W, H); }
+
+  // stars at night
+  if (alt < 0.05) {
+    const r = rng(3), a = Math.min(1, (0.05 - alt) * 4);
+    for (let i = 0; i < 40; i++) { const x = r() * W, y = r() * H * 0.7, tw = 0.6 + 0.4 * Math.sin(idle / 700 + i); g.fillStyle = `rgba(255,255,240,${a * tw * 0.8})`; g.fillRect(x, y, 2, 2); }
+  }
+
+  // sun and moon orbit the earth (an ellipse around it: east horizon at 6, overhead at noon, west at 6)
+  const EH = 74, hy = H - EH, cx = W / 2, rx = W * 0.47, ry = hy - 36;
+  const body = (a) => [cx + rx * Math.sin(a), hy - ry * Math.cos(a)];
+  const [sx, sy] = body(th);
+  const glow = g.createRadialGradient(sx, sy, 4, sx, sy, 70); glow.addColorStop(0, 'rgba(255,214,102,.55)'); glow.addColorStop(1, 'rgba(255,214,102,0)');
+  g.fillStyle = glow; g.beginPath(); g.arc(sx, sy, 70, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#ffd166'; g.beginPath(); g.arc(sx, sy, 24, 0, Math.PI * 2); g.fill();
+  const [mx, my] = body(th + Math.PI);
+  g.fillStyle = '#f4f1e6'; g.beginPath(); g.arc(mx, my, 18, 0, Math.PI * 2); g.fill();
+  g.fillStyle = 'rgba(180,176,160,.5)'; g.beginPath(); g.arc(mx - 5, my - 4, 4, 0, 7); g.arc(mx + 6, my + 5, 3, 0, 7); g.fill();
+
+  // clouds drift (idle clock), count by weather
+  const nC = { clear: 1, partly: 3, cloudy: 6, rain: 6, snow: 5 }[wx], rc = rng(11);
+  for (let i = 0; i < nC; i++) {
+    const base = rc() * W, y = 24 + rc() * 120, sp = 6 + rc() * 8, s = 0.7 + rc() * 0.6;
+    const x = ((base + (idle / 1000) * sp) % (W + 260)) - 130;
+    g.fillStyle = alt > 0 ? (wx === 'rain' ? 'rgba(190,198,210,.9)' : 'rgba(255,255,255,.85)') : 'rgba(150,164,192,.35)';
+    g.beginPath(); g.ellipse(x, y, 46 * s, 16 * s, 0, 0, 7); g.ellipse(x + 30 * s, y - 10 * s, 30 * s, 16 * s, 0, 0, 7); g.ellipse(x - 28 * s, y - 4 * s, 24 * s, 12 * s, 0, 0, 7); g.fill();
+  }
+  if (wx === 'rain') { const r = rng(5); g.strokeStyle = 'rgba(110,150,205,.5)'; g.lineWidth = 1.5; g.beginPath(); for (let i = 0; i < 70; i++) { const x = r() * W, y = (r() * H + idle * 0.35) % H; g.moveTo(x, y); g.lineTo(x - 3, y + 10); } g.stroke(); }
+  if (wx === 'snow') { const r = rng(9); g.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 60; i++) { const x = (r() * W + Math.sin(idle / 900 + i) * 10) % W, y = (r() * H + idle * 0.05) % H; g.beginPath(); g.arc(x, y, 2.2, 0, 7); g.fill(); } }
+  if (season === 'autumn' && wx !== 'snow') { const r = rng(13); g.fillStyle = 'rgba(214,120,40,.7)'; for (let i = 0; i < 6; i++) { const x = (r() * W - idle * 0.02 + W * 3) % W, y = (r() * H + idle * 0.03) % hy; g.beginPath(); g.ellipse(x, y, 5, 3, idle / 600 + i, 0, 7); g.fill(); } }
+
+  // earth: a huge sphere peeking at the bottom; it turns once a day (+ a slow idle drift)
+  const ER = W * 1.3, ecy = H + ER - EH;
+  const atm = g.createRadialGradient(cx, ecy, ER - 6, cx, ecy, ER + 26); atm.addColorStop(0, alt > 0 ? 'rgba(170,215,255,.75)' : 'rgba(110,140,210,.45)'); atm.addColorStop(1, 'rgba(170,215,255,0)');
+  g.fillStyle = atm; g.beginPath(); g.arc(cx, ecy, ER + 26, 0, Math.PI * 2); g.fill();
+  g.save(); g.beginPath(); g.arc(cx, ecy, ER, 0, Math.PI * 2); g.clip();
+  const sea = g.createLinearGradient(0, hy, 0, H); sea.addColorStop(0, alt > 0 ? '#6fb0e6' : '#35507e'); sea.addColorStop(1, alt > 0 ? '#3f7fc4' : '#22345a');
+  g.fillStyle = sea; g.fillRect(0, hy - 10, W, EH + 10);
+  const strip = landStrip(season), off = (((t % DAY) / DAY) * 2400 + idle * 0.004) % 2400;
+  g.globalAlpha = alt > 0 ? 1 : 0.55;
+  g.drawImage(strip, -off, hy - 2); g.drawImage(strip, 2400 - off, hy - 2);
+  g.globalAlpha = 1; g.restore();
+}
+
+function renderCalendarPhone(el){
+  el.innerHTML=phone(`<div class="ptop"><h3>📅 Calendar · Jonatito</h3><div class="tl-filt" style="margin-top:8px"><span class="on">Coming up</span><span>Add a photo to his day</span></div></div>
+    <div class="cal-ev"><img src="${PHOTO_DENTIST}" alt=""><div><b>Tomorrow 10:00 · Dentist</b>with ${img('mommy_joyce').replace('<img','<img class="av2" style="width:20px;height:20px;vertical-align:middle"')} Mommy Joyce · shows on his timeline from today</div></div>
+    <div class="cal-ev"><span style="font-size:30px">✈️</span><div><b>Sat 12:00 · Abuela Pilar comes home</b>${img('pilar').replace('<img','<img class="av2" style="width:20px;height:20px;vertical-align:middle"')} her pin moves home too</div></div>
+    <div class="cal-ev"><span style="font-size:30px">🛁</span><div><b>Every day 7:30 pm · Bath</b>routine</div></div>
+    <div class="cal-form"><b>＋ New event</b>
+      <div class="f">🖼️ Picture: 📷 take a photo · gallery · emoji</div>
+      <div class="f">🕒 Sat, Sep 26 · 3:00 pm · repeats: never</div>
+      <div>Who: <span class="pick">${['mommy_joyce','lucho','pilar','larry','tintin'].map((k,i)=>img(k).replace('<img',`<img class="${i===2?'sel':''}"`)).join('')}</span></div>
+      <div class="f">Show on his timeline: from the day before</div>
+      <div class="save" style="text-align:center">Add to his timeline</div></div>`)+`<div class="legend"><h3>Calendar (caretakers)</h3>
+    <p>Events added here appear on the <b>right side</b> of his timeline (the future), with their picture and the faces of who is involved. Only scheduled things can be in the future.</p>
+    <p><b>Add a photo to his day</b>: a photo put at a past time (the park at 1:30) appears on the <b>left side</b> of the timeline, next to what he did then.</p>
+    <p>The daily routine (breakfast, bath, sleep) is a repeating event. Later, Google Calendar can feed the same list.</p></div>`;
+}
+
 /* NAV */
 const VIEWS={
   home:['🏠 Home & sentence builder','Here & Now bar on top (live clock, day timeline with NOW marker, sun/moon, weekday color, season, weather, place). The sentence strip goes below it, then fixed-position symbol grid with category tabs on the left and always-on core words (yes/no/stop/help/I hurt) on the right. Jonatito\'s face sits bottom-left as the “Me” button. Try it: tap Grapes and Eat, then SEND. Or try Smoothie, or Help.'],
@@ -1048,43 +1420,60 @@ const VIEWS={
 };
 let view='orbit';
 Object.assign(VIEWS,{
-  orbit:['🪐 Orbit (home)','The new home screen. Jonatito is in the middle. Eat, Bath, Toilet, Go, Barney and Pongo float in fixed slots of the inner orbit (dashed circles are empty slots that stay reserved), and his people float in the outer orbit. Every tap adds to the sentence. A sound-wave badge means a new voice message (tap it to hear). Busy people show a small clock of when they are free; away people are greyed with 🚫. The ground peeks at the bottom with his pin. Tap a person: they join the sentence and a globe pops up showing where they are; tap the globe to open their person screen. Tap his face for My body, Eat for the foods, Pongo to play it full screen.'],
+  orbit:['🪐 Orbit (home)','The new home screen. Jonatito is in the middle. Eat, Bath, Toilet, Go, Barney and Pongo float in fixed slots of the inner orbit (dashed circles are empty slots that stay reserved), and his people float in the outer orbit. Every tap adds to the sentence. A sound-wave badge means a new voice message (tap it to hear). Busy people show a small clock of when they are free; away people are greyed with 🚫. The ground peeks at the bottom with his pin. Tap a person to open their page. Tap his face for My body, Eat for the foods, Pongo to play it full screen.'],
   food:['🍇 Eat → foods','Tapping Eat adds “eat” and opens the foods around him; the people stay in the outer orbit. Foods outside their time are dimmed with a clock. Tap one to hear and see when it opens. The next snack is shown top-left. Tap his face or the 🍇 badge to go back.'],
   where:['🌍 Where is…','Tapping a person zooms the ground out to show where they are. Abuela Pilar is in Lima, so a plane flies between the pins. Try Mommy Joyce (same city, 🚗), Larry (Miami, 🚗 across the country) or TinTin (location not shared, ❔). Tap the globe to close it; it also closes by itself after 6 seconds.'],
   body:['🩹 My body','Tap his face in the orbit to get here. He points to where it hurts (his own photo is the head), then picks a face from smiling to crying. Levels 3–5 go out as urgent to everyone on duty, 1–2 go to the caretaker on duty, and 0 is only logged. A caretaker can hide the dashed potty zone.'],
   pongo:['🐶 Pongo full screen','Media items open full screen, with no controls to get lost in. His face (top-left) brings him back to the orbit. The media clock shows when media time ends. During the sleep lock the item shows a moon and does not open.'],
   items:['🧩 Item editor','Parent mode → Items. One database entry for everything he can touch. Pick an item on the left: its picture (with history and revert), words in English and Spanish, recorded sound, what a tap does, its fixed slot, the linked account or media file, and time rules.']
 });
-VIEWS.person=['📍 Person: where · hear · talk','One screen per person, opened from their face in the dock or by tapping the globe pop-up in the orbit. Left: where they are compared with him (both pins, 🚗 or ✈️, their local time with ☀️/🌙 if it differs, and “back in 3 sleeps” as moons). Right: their voice notes (⭐ pinned comfort clips first, red dot = not heard yet), then TALK, COME SEE, HELP and LOVE. Played notes travel from their pin to his; sent messages travel from his pin to theirs. Try Abuela Pilar (Lima ✈️), Mommy Joyce (same city 🚗) and TinTin (not shared ❔) in the dock.'];
+VIEWS.person=['📍 Person: where · hear · talk','One screen per person, opened by tapping their face in the orbit or the dock. Left: where they are compared with him (both pins, 🚗 or ✈️, their local time with ☀️/🌙 if it differs, and “back in 3 sleeps” as moons). Right: their voice notes (⭐ pinned comfort clips first, red dot = not heard yet), then TALK, COME SEE, HELP and LOVE. Played notes travel from their pin to his; sent messages travel from his pin to theirs. Try Abuela Pilar (Lima ✈️), Mommy Joyce (same city 🚗) and TinTin (not shared ❔) in the dock.'];
 VIEWS.home[0]='🔲 All words (board)';
 VIEWS.home[1]='Now opened from the dock (“All words”). '+VIEWS.home[1];
-const ORDER=['orbit','food','person','body','pongo','home','log','media','parent','items','phone'];
+Object.assign(VIEWS,{
+  timeline:['🕒 Caretaker timeline','Mommy Joyce’s phone, 🕒 Today tab: every moment on the tablet, sent or not, with “he may have meant…”, context, and one-tap answers.'],
+  notify:['🔔 Messages without spam','Abuela Pilar’s app: the first message notifies right away; everything else in the next 10 minutes arrives as ONE update (repeats ×2, 💭 face taps included). She can answer with a typed message that his tablet reads aloud. Right: her settings. Urgent messages and the future panic button are never grouped.'],
+  bridge:['💬 WhatsApp bridge','Abuelo Lucho uses plain WhatsApp: a template when the 24-hour window is closed, then the picture strip and his voice once it opens; Abuelo’s voice note lands on Jonatito’s shelf.']
+});
+Object.assign(VIEWS,{
+  living:['🌍 Living orbit (v0.5)','The sentence row is on top, the time row under it. NOW is fixed in the centre, in line with his head. Drag the timeline: left is the past (what he did, voice notes he played, photos caretakers added), right is the future (only what is scheduled). The sky, sun, moon and earth follow the time you drag to, and snap back to NOW after 8 s (or tap his face / the clock). Tap a picture on the timeline to see it.'],
+  calendar:['📅 Calendar (caretakers)','Caretakers add events with a photo and the people involved. They show on the future side of his timeline; photos added to a past time show on the past side.']
+});
+const ORDER=['living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
+const PHONEISH=['phone','timeline','notify','bridge','calendar'];
 const VIEW_EL={where:'orbit'};
 const vel=()=>VIEW_EL[view]||view;
 function go(v){
   view=v; const el=vel();
   document.getElementById('tabs').innerHTML=ORDER.map(k=>`<button class="${k===v?'on':''}" onclick="go('${k}')">${VIEWS[k][0]}</button>`).join('');
   document.getElementById('note').textContent=VIEWS[v][1];
-  document.getElementById('tablet').style.display=v==='phone'?'none':'block';
+  document.getElementById('tablet').style.display=PHONEISH.includes(v)?'none':'block';
   document.getElementById('phoneView').style.display=v==='phone'?'flex':'none';
-  ['home','person','log','media','parent','orbit','food','body','pongo','items'].forEach(k=>document.getElementById('v-'+k).classList.toggle('on',k===el));
+  document.getElementById('phones2').style.display=PHONEISH.includes(v)&&v!=='phone'?'flex':'none';
+  if(v==='calendar') renderCalendarPhone(document.getElementById('phones2'));
+  else if(PHONEISH.includes(v)&&v!=='phone') renderPhones(v);
+  ['home','person','log','media','parent','orbit','food','body','pongo','items','living'].forEach(k=>document.getElementById('v-'+k).classList.toggle('on',k===el));
+  document.getElementById('screen').classList.toggle('living',el==='living');
+  document.getElementById('here2').style.display=el==='living'?'flex':'none';
   const bare=['parent','items','pongo'].includes(el);
-  document.getElementById('here').style.display=bare?'none':'flex';
+  document.getElementById('here').style.display=bare||el==='living'?'none':'flex';
   document.getElementById('dock').style.display=bare?'none':'flex';
-  document.getElementById('stripbar').style.display=['home','orbit','food'].includes(el)?'flex':'none';
+  document.getElementById('stripbar').style.display=['home','orbit','food','living'].includes(el)?'flex':'none';
   if(el==='orbit')renderOrbit(); if(el==='food')renderFood(); if(el==='person')renderPerson();
   if(el==='body')renderBody(); if(el==='pongo')renderPongo(); if(el==='items')renderItems();
+  if(el==='living'){ LV.scrub=0; renderLiving();
+    document.getElementById('note').innerHTML=VIEWS[v][1]+' <span id="lvdemo">Demo: <button onclick="LV.weather=\'clear\';lvUpdate(1)">☀️</button><button onclick="LV.weather=\'partly\';lvUpdate(1)">⛅</button><button onclick="LV.weather=\'rain\';lvUpdate(1)">🌧️</button><button onclick="LV.weather=\'snow\';LV.season=\'winter\';lvUpdate(1)">❄️</button><button onclick="LV.season=null;lvUpdate(1)">season: auto</button><button onclick="LV.returning=false;LV.fast=true">⏩ play a whole day</button></span>'; }
   closeCard(); fit(); tick();
   if(v==='where') setTimeout(()=>showWhere('pilar',true),350);
 }
 function fit(){
-  const el=document.getElementById('scaler'); const w=view==='phone'?860:1224; const h=view==='phone'?790:824;
+  const el=document.getElementById('scaler'); const ph=PHONEISH.includes(view); const w=ph?860:1224; const h=ph?790:824;
   const s=Math.min(1,(window.innerWidth-24)/w);
   el.style.transform=`scale(${s})`; el.parentElement.style.height=(h*s+40)+'px';
 }
 window.addEventListener('resize',fit);
 document.querySelectorAll('img.ph').forEach(i=>i.src=AVATARS[i.dataset.p]);
-renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('orbit');setInterval(tick,15000);
+renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('living');setInterval(tick,15000);
 </script>
 </body>
 </html>

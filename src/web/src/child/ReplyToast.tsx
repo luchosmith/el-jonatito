@@ -1,14 +1,19 @@
 // A family member answered: their face + a picture answer (and a clock for "wait"/"coming").
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { speak } from '../common/hooks.ts';
 import { Clock12 } from '../common/Clock12.tsx';
 import { Face, SoundWave } from '../common/Face.tsx';
 import { fmt12 } from '../../../shared/time.ts';
-import type { Person, Reply } from '../../../shared/types.ts';
+import type { Lang, Person, Reply } from '../../../shared/types.ts';
 
-const ICON: Record<string, string> = { yes: '✅', no: '❌', wait: '✋', coming: '🚶' };
+const ICON: Record<string, string> = { yes: '✅', no: '❌', wait: '✋', coming: '🚶', text: '💬' };
 
-export function ReplyToast({ reply, person, now, onClose }: { reply: Reply; person: Person | undefined; now: Date; onClose: () => void }) {
+export function ReplyToast({ reply, person, now, lang, onClose }: { reply: Reply; person: Person | undefined; now: Date; lang: Lang; onClose: () => void }) {
   const [playing, setPlaying] = useState(false);
+  // A typed reply is read aloud as it arrives.
+  useEffect(() => {
+    if (reply.kind === 'text' && reply.text) speak(reply.text, lang);
+  }, [reply.id]);
   const play = () => {
     if (!reply.audio_url) return;
     const a = new Audio(reply.audio_url);
@@ -21,7 +26,9 @@ export function ReplyToast({ reply, person, now, onClose }: { reply: Reply; pers
   return (
     <div className="toast" data-testid="reply-toast" data-kind={reply.kind}>
       {person && <span className="big"><Face person={person} /></span>}
-      {reply.kind === 'voice' ? (
+      {reply.kind === 'text' ? (
+        <button className="reply-text" data-testid="reply-text" onClick={() => speak(reply.text ?? '', lang)}>“{reply.text}”</button>
+      ) : reply.kind === 'voice' ? (
         <button className="listen-btn" data-testid="reply-listen" onClick={play}>
           <SoundWave playing={playing} />
         </button>

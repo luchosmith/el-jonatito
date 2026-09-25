@@ -6,6 +6,7 @@ import { BodySvg } from '../common/BodySvg.tsx';
 import { PainFace } from '../common/PainFace.tsx';
 import { Face } from '../common/Face.tsx';
 import { speak } from '../common/hooks.ts';
+import { flushTaps, logTap } from '../common/taplog.ts';
 import { bodyItemId, PAIN_LEVELS } from '../../../shared/body.ts';
 import type { DispatchNote, Item, Lang, Message, Person } from '../../../shared/types.ts';
 
@@ -25,6 +26,7 @@ export function BodyView({ me, items, people, lang }: { me: Person | undefined; 
 
   const pick = (id: string, side: 'left' | 'right' | null) => {
     setPart({ id, side });
+    logTap('body', 'body', { item_id: bodyItemId(id) }, side ? { side } : undefined);
     const it = bodyItem(id);
     speak(it ? it.labels[lang] || it.labels.en : id, lang);
   };
@@ -33,6 +35,8 @@ export function BodyView({ me, items, people, lang }: { me: Person | undefined; 
     if (!part || sending) return;
     setSending(true);
     try {
+      logTap('pain', 'body', { item_id: bodyItemId(part.id) }, { level });
+      await flushTaps();
       const r = await api.post<PainResult>('/api/pain', { part: part.id, level, ...(part.side ? { side: part.side } : {}) });
       speak(r.sentence[lang], lang);
       setResult(r);

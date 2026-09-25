@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Music: headphones with a sound wave between the ear cups -->
+  <rect width="256" height="256" fill="#fff1e3"/>
+  <path d="M50 158 V126 A78 78 0 0 1 206 126 V158" fill="none" stroke="#1f2a37" stroke-width="18" stroke-linecap="round"/>
+  <rect x="24" y="140" width="50" height="86" rx="20" fill="#5aa4e6" stroke="#1f2a37" stroke-width="8"/>
+  <rect x="182" y="140" width="50" height="86" rx="20" fill="#5aa4e6" stroke="#1f2a37" stroke-width="8"/>
+  <g fill="#2f9e57">
+    <rect x="86" y="174" width="9" height="18" rx="4.5"/>
+    <rect x="99" y="162" width="9" height="42" rx="4.5"/>
+    <rect x="112" y="150" width="9" height="66" rx="4.5"/>
+    <rect x="125" y="160" width="9" height="46" rx="4.5"/>
+    <rect x="138" y="146" width="9" height="74" rx="4.5"/>
+    <rect x="151" y="164" width="9" height="38" rx="4.5"/>
+    <rect x="164" y="174" width="9" height="18" rx="4.5"/>
+  </g>
+</svg>

@@ -51,7 +51,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   const db = new Db(cfg.dbFile); // applies the v3 schema next to the old tables, like a real restart
   const backup = migrate(db, cfg);
   assert.ok(backup && fs.existsSync(backup), 'writes a backup copy first');
-  assert.equal(schemaVersion(db), 3);
+  assert.equal(schemaVersion(db), 5);
   const tables = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name);
   assert.ok(!tables.includes('symbols') && !tables.includes('limits'));
   assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
@@ -77,6 +77,8 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   assert.equal(item('lexi').orbit, null);
   assert.equal(item('grapes').parent_id, 'eat');
   assert.equal(items.filter((i) => i.category === 'body').length, 12);
+  assert.deepEqual([item('music').orbit, item('music').orbit_slot, item('music').short_label], ['inner', 6, 'Music']);
+  assert.match(item('music').photo_url ?? '', /music\.svg/);
 
   // Limits became rules: a daily maximum closes; the old "recent" reminder stays a reminder.
   assert.deepEqual(item('smoothie').rules.map((r) => [r.kind, r.blocks, r.max_per_day, r.suggest_item_id]), [['limit', true, 2, 'water']]);
@@ -91,5 +93,25 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
 
   // Running it again does nothing.
   assert.equal(migrate(db, cfg), null);
+  db.close();
+});
+
+test('a v3 database gets Music in a free inner slot (and never moves anything else)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-migrate4-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  v2Database(cfg.dbFile);
+  const db = new Db(cfg.dbFile);
+  migrate(db, cfg);
+  // Pretend it is a v3 database whose slot 6 a caretaker has used, without Music yet.
+  db.run("DELETE FROM images WHERE owner_id = 'music'");
+  db.run("DELETE FROM items WHERE id = 'music'");
+  db.run("UPDATE items SET orbit_slot = 6 WHERE id = 'bath'");
+  db.raw.exec('PRAGMA user_version = 3');
+  const backup = migrate(db, cfg);
+  assert.match(backup ?? '', /\.v3-backup-/);
+  const items = listItems(db, new Date());
+  assert.equal(items.find((i) => i.id === 'bath')!.orbit_slot, 6);
+  assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 7);
+  assert.equal(schemaVersion(db), 5);
   db.close();
 });

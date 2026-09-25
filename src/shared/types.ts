@@ -57,7 +57,7 @@ export interface Token {
   id: string;
 }
 
-export type ReplyKind = 'yes' | 'wait' | 'no' | 'coming' | 'voice';
+export type ReplyKind = 'yes' | 'wait' | 'no' | 'coming' | 'voice' | 'text';
 
 export interface Reply {
   id: number;
@@ -67,6 +67,8 @@ export interface Reply {
   kind: ReplyKind;
   eta_at: string | null;
   audio_url: string | null;
+  /** typed reply, read aloud on the tablet */
+  text: string | null;
   created_at: string;
 }
 
@@ -148,7 +150,9 @@ export type ServerEvent =
   | { type: 'symbols'; }
   | { type: 'items'; }
   | { type: 'voice_note'; note: VoiceNote }
-  | { type: 'location'; person_id: string };
+  | { type: 'location'; person_id: string }
+  | { type: 'notify'; batch: NotifyBatch }
+  | { type: 'timeline' };
 
 // ---- v0.3: item catalog, voice notes, locations ------------------------------------------
 
@@ -242,4 +246,81 @@ export interface PersonLocation extends Place {
 export interface Locations {
   home: Place;
   people: PersonLocation[];
+}
+
+
+// ---- v0.4: tap log, moments, batched notifications ------------------------------------------
+
+/** What a logged tap did (not to be confused with TapAction: what an item does when tapped). */
+export type LoggedTap =
+  | 'add' | 'open' | 'closed' | 'person' | 'hear' | 'talk' | 'social' | 'body' | 'pain' | 'media' | 'send' | 'clear' | 'say';
+
+export interface TapInput {
+  at: string;
+  action: LoggedTap;
+  screen: string;
+  item_id?: string | null;
+  person_id?: string | null;
+  detail?: Record<string, unknown> | null;
+}
+
+/** One picture in a moment, as he tapped it. */
+export interface MomentChip {
+  at: string;
+  action: LoggedTap;
+  id: string | null;
+  kind: TokenKind | 'body' | null;
+  label: string;
+  emoji: string | null;
+  photo_url: string | null;
+  /** the item was closed when he tapped it: when it opens */
+  closed_until: string | null;
+}
+
+export interface Moment {
+  id: number;
+  started_at: string;
+  ended_at: string | null;
+  outcome: 'open' | 'sent' | 'cleared' | 'not_sent';
+  chips: MomentChip[];
+  sentence_en: string | null;
+  sentence_es: string | null;
+  message_id: number | null;
+  sent_to: string[];
+  notified: string[];
+  answered_by: string | null;
+}
+
+export type TimelineEntry =
+  | { kind: 'moment'; at: string; moment: Moment }
+  | { kind: 'pain'; at: string; part: string; level: number; message_id: number | null }
+  | { kind: 'voice'; at: string; person_id: string | null; note_id: number; audio_url: string }
+  | { kind: 'media'; at: string; title: string; cover_url: string | null; emoji: string | null }
+  | { kind: 'log'; at: string; type: string; label: string; emoji: string | null; amount: number | null; by: string }
+  | { kind: 'photo'; at: string; event: CalendarEvent }
+  | { kind: 'event'; at: string; event: CalendarEvent };
+
+export interface CalendarEvent {
+  id: number;
+  starts_at: string;
+  title: string;
+  emoji: string | null;
+  kind: 'event' | 'photo';
+  person_ids: string[];
+  show_from_min: number;
+  photo_url: string | null;
+  created_by: string | null;
+}
+
+export interface NotifyBatch {
+  id: number;
+  at: string;
+  /** one line each; repeats collapsed */
+  lines: { kind: 'message' | 'face' | 'reply' | 'urgent' | 'panic'; summary: string; count: number; message_id: number | null }[];
+  total: number;
+}
+
+export interface NotifyPrefs {
+  batch_min: number;
+  face_taps: boolean;
 }

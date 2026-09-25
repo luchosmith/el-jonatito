@@ -15,6 +15,8 @@ interface Props {
   onSay: () => void;
   onSend: () => void;
   sending: boolean;
+  /** the sentence row is drawn by the tablet above the time row */
+  showStrip?: boolean;
 }
 
 /** The sentence being built, with say / clear / send. Shared by the board and the orbit. */
@@ -40,7 +42,7 @@ export function Strip({ me, tokens, onClear, onSay, onSend, sending }: Pick<Prop
   );
 }
 
-export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onSay, onSend, sending }: Props) {
+export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onSay, onSend, sending, showStrip = true }: Props) {
   const itemOf = (id: string) => board.items.find((i) => i.id === id);
   const cells: (StripToken | null)[] = Array.from({ length: GRID_ROWS * GRID_COLS }, () => null);
   const hidden = new Set<number>();
@@ -66,7 +68,7 @@ export function BoardView({ board, me, page, onPage, tokens, onAdd, onClear, onS
 
   return (
     <>
-      <Strip me={me} tokens={tokens} onClear={onClear} onSay={onSay} onSend={onSend} sending={sending} />
+      {showStrip && <Strip me={me} tokens={tokens} onClear={onClear} onSay={onSay} onSend={onSend} sending={sending} />}
 
       <div className="main">
         <nav className="cats">

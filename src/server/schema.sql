@@ -1,5 +1,5 @@
--- El Jonatito schema (SQLite), version 3. Applied idempotently at startup.
--- Older databases (v2: symbols + limits) are upgraded by migrate.ts.
+-- El Jonatito schema (SQLite), version 5. Applied idempotently at startup.
+-- Older databases are upgraded by migrate.ts.
 PRAGMA foreign_keys = ON;
 
 -- Person / pet details. What Jonatito sees (label, picture, slot) lives in `items`, same id.
@@ -55,7 +55,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS items_slot ON items(COALESCE(parent_id, ''), o
 -- Every picture ever used for an item or a media cover; the newest active one wins.
 CREATE TABLE IF NOT EXISTS images (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_type    TEXT NOT NULL CHECK (owner_type IN ('item','media')),
+  owner_type    TEXT NOT NULL CHECK (owner_type IN ('item','media','event')),
   owner_id      TEXT NOT NULL,
   file          TEXT NOT NULL,
   is_active     INTEGER NOT NULL DEFAULT 1,
@@ -117,9 +117,10 @@ CREATE TABLE IF NOT EXISTS replies (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   message_id    INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
   from_user_id  INTEGER NOT NULL REFERENCES users(id),
-  kind          TEXT NOT NULL CHECK (kind IN ('yes','wait','no','coming','voice')),
+  kind          TEXT NOT NULL CHECK (kind IN ('yes','wait','no','coming','voice','text')),
   eta_at        TEXT,
   audio_file    TEXT,
+  text          TEXT,                           -- typed reply (read aloud on the tablet)
   created_at    TEXT NOT NULL
 );
 
@@ -203,6 +204,69 @@ CREATE TABLE IF NOT EXISTS pain_reports (
   handled_by    INTEGER REFERENCES users(id),
   handled_at    TEXT
 );
+
+-- Everything he taps, grouped into moments (one intent each).
+CREATE TABLE IF NOT EXISTS moments (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at    TEXT NOT NULL,
+  last_at       TEXT NOT NULL,
+  ended_at      TEXT,
+  outcome       TEXT NOT NULL DEFAULT 'open' CHECK (outcome IN ('open','sent','cleared','not_sent')),
+  tokens        TEXT NOT NULL DEFAULT '[]',     -- JSON Token[]: the strip as he built it
+  sentence_en   TEXT,
+  sentence_es   TEXT,
+  message_id    INTEGER REFERENCES messages(id) ON DELETE SET NULL,
+  answered_by   INTEGER REFERENCES users(id),
+  notified      TEXT NOT NULL DEFAULT '[]'      -- person ids told about it (💭)
+);
+CREATE INDEX IF NOT EXISTS moments_at ON moments(started_at);
+
+CREATE TABLE IF NOT EXISTS tap_events (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  at            TEXT NOT NULL,
+  moment_id     INTEGER REFERENCES moments(id) ON DELETE CASCADE,
+  item_id       TEXT REFERENCES items(id) ON DELETE SET NULL,
+  person_id     TEXT REFERENCES people(id) ON DELETE SET NULL,
+  action        TEXT NOT NULL,
+  screen        TEXT NOT NULL,
+  detail        TEXT
+);
+CREATE INDEX IF NOT EXISTS taps_at ON tap_events(at);
+
+-- Notifications, batched per person (the inbox itself is always live).
+CREATE TABLE IF NOT EXISTS notify_queue (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL REFERENCES users(id),
+  kind          TEXT NOT NULL CHECK (kind IN ('message','face','reply','urgent','panic')),
+  message_id    INTEGER REFERENCES messages(id) ON DELETE CASCADE,
+  moment_id     INTEGER REFERENCES moments(id) ON DELETE CASCADE,
+  summary       TEXT NOT NULL,
+  created_at    TEXT NOT NULL,
+  delivered_at  TEXT,
+  batch_id      INTEGER
+);
+CREATE INDEX IF NOT EXISTS notify_pending ON notify_queue(user_id, delivered_at);
+
+CREATE TABLE IF NOT EXISTS notify_prefs (
+  user_id       INTEGER PRIMARY KEY REFERENCES users(id),
+  batch_min     INTEGER NOT NULL DEFAULT 10,    -- 0 = every message notifies
+  face_taps     INTEGER NOT NULL DEFAULT 1      -- include 💭 in updates
+);
+
+-- Calendar: scheduled events (future side of his timeline) and photos put on his day (past side).
+CREATE TABLE IF NOT EXISTS events (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  starts_at     TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  emoji         TEXT,
+  kind          TEXT NOT NULL DEFAULT 'event' CHECK (kind IN ('event','photo')),
+  person_ids    TEXT NOT NULL DEFAULT '[]',
+  show_from_min INTEGER NOT NULL DEFAULT 1440,  -- appears on his timeline this long before it starts
+  hidden        INTEGER NOT NULL DEFAULT 0,
+  created_by    INTEGER REFERENCES users(id),
+  created_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS events_at ON events(starts_at);
 
 CREATE TABLE IF NOT EXISTS settings (
   key           TEXT PRIMARY KEY,

@@ -8,13 +8,16 @@ import { EventHub } from './events.ts';
 import { jsonBody, mimeOf, Router, safeJoin, sendJson, HttpError } from './http.ts';
 import { clock } from './clock.ts';
 import { isSeeded, seed } from './seed.ts';
-import { migrate } from './migrate.ts';
+import { migrate, SCHEMA_VERSION } from './migrate.ts';
 import { obj, str } from './validate.ts';
 import { authRoutes } from './routes/auth.ts';
 import { boardRoutes } from './routes/board.ts';
 import { messageRoutes } from './routes/messages.ts';
 import { dayRoutes } from './routes/day.ts';
 import { voiceRoutes } from './routes/voice.ts';
+import { activityRoutes } from './routes/activity.ts';
+import { closeStaleMoments } from './moments.ts';
+import { flushNotifications } from './notify.ts';
 
 export interface Deps {
   router: Router;
@@ -48,7 +51,7 @@ function weatherFetcher(cfg: Config) {
 export function createApp(cfg: Config) {
   const db = new Db(cfg.dbFile);
   const backup = migrate(db, cfg);
-  if (backup) console.log(`Database upgraded to the item catalog (v3). Backup of the old one: ${backup}`);
+  if (backup) console.log(`Database upgraded to schema v${SCHEMA_VERSION}. Backup of the old one: ${backup}`);
   if (!isSeeded(db)) seed(db, cfg);
 
   const router = new Router();
@@ -63,6 +66,7 @@ export function createApp(cfg: Config) {
   messageRoutes(deps);
   dayRoutes(deps);
   voiceRoutes(deps);
+  activityRoutes(deps);
 
   router.get('/api/events', requireAuth(), (ctx) => {
     ctx.handled = true;
@@ -80,12 +84,32 @@ export function createApp(cfg: Config) {
       clock.set(null);
       return { ok: true };
     });
+    // Runs the background jobs once (moments ending, held notifications going out).
+    router.post('/api/test/tick', () => {
+      closeStaleMoments(db, hub, clock.now());
+      flushNotifications(db, hub, clock.now());
+      return { ok: true };
+    });
     router.post('/api/test/clock', jsonBody, (ctx) => {
       const iso = str(obj(ctx.body), 'iso', { optional: true, max: 40 });
       clock.set(iso ? new Date(iso) : null);
       return { now: clock.now().toISOString() };
     });
   }
+
+  // Background jobs: moments end after a quiet spell; held notifications go out when their window passes.
+  // (Test mode runs them on demand through /api/test/tick, so tests control time.)
+  const jobs = cfg.testMode
+    ? null
+    : setInterval(() => {
+        try {
+          closeStaleMoments(db, hub, clock.now());
+          flushNotifications(db, hub, clock.now());
+        } catch (e) {
+          console.error('background job failed', e);
+        }
+      }, 15_000);
+  jobs?.unref();
 
   const indexFile = path.join(cfg.webDist, 'index.html');
   const server = http.createServer(async (req, res) => {
@@ -129,6 +153,7 @@ export function createApp(cfg: Config) {
     close: () =>
       new Promise<void>((resolve) => {
         hub.close();
+        if (jobs) clearInterval(jobs);
         server.close(() => {
           db.close();
           resolve();

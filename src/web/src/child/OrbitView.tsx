@@ -1,15 +1,18 @@
 // Jonatito in the middle; his core things in the inner orbit, his people in the outer one, the
-// ground under his feet. Every slot is fixed. Tapping Eat opens the foods around him.
-import { useEffect, useState } from 'react';
+// ground under his feet. Every slot is fixed. Tapping Eat opens the foods around him; tapping a
+// person opens their person screen.
+import { useEffect, useState, type MutableRefObject } from 'react';
 import { Face, SoundWave } from '../common/Face.tsx';
 import { Clock12 } from '../common/Clock12.tsx';
 import { INNER_SLOTS, slotStyle } from '../common/orbit.ts';
-import { itemToken, personToken, shownLabel, type Board, type StripToken } from '../common/board.ts';
+import { itemToken, shownLabel, type Board, type StripToken } from '../common/board.ts';
 import { kindClass } from '../common/Token.tsx';
 import { speak } from '../common/hooks.ts';
-import { Globe } from './Globe.tsx';
+import { logTap } from '../common/taplog.ts';
+import { Sky, type Weather } from './Sky.tsx';
+import type { Season } from '../../../shared/time.ts';
 import { fmt12 } from '../../../shared/time.ts';
-import type { Item, Lang, Locations, Person } from '../../../shared/types.ts';
+import type { Item, Lang, Person } from '../../../shared/types.ts';
 
 interface Props {
   board: Board;
@@ -19,7 +22,6 @@ interface Props {
   now: Date;
   lang: Lang;
   unheard: Record<string, number>;
-  locations: Locations | null;
   onAdd: (t: StripToken) => void;
   onOpen: (item: Item) => void;
   onPlay: (item: Item) => void;
@@ -27,24 +29,26 @@ interface Props {
   onBack: () => void;
   onPerson: (personId: string) => void;
   onHearNewest: (personId: string) => void;
+  /** the time the sky shows (now, or where he dragged the timeline) */
+  timeRef: MutableRefObject<number>;
+  weather: Weather;
+  season: Season;
+  /** dragged away from NOW: the orbit dims; his face brings him back */
+  away: boolean;
+  onNow: () => void;
 }
 
 export function OrbitView(p: Props) {
   const { board, me, parentId, now, lang } = p;
   const [tip, setTip] = useState<{ item: Item; at: Date } | null>(null);
-  const [where, setWhere] = useState<string | null>(null);
   const parent = parentId ? board.items.find((i) => i.id === parentId) : undefined;
+  const screen = parentId ? `orbit:${parentId}` : 'orbit';
 
   useEffect(() => {
     if (!tip) return;
     const t = setTimeout(() => setTip(null), 4000);
     return () => clearTimeout(t);
   }, [tip]);
-  useEffect(() => {
-    if (!where) return;
-    const t = setTimeout(() => setWhere(null), 6000);
-    return () => clearTimeout(t);
-  }, [where]);
 
   const inner = board.items.filter((i) => i.orbit === 'inner' && (i.parent_id ?? null) === parentId && !i.is_hidden && i.orbit_slot != null);
   const used = new Set(inner.map((i) => i.orbit_slot));
@@ -60,32 +64,29 @@ export function OrbitView(p: Props) {
   const tapItem = (item: Item) => {
     const closed = closedUntil(item);
     if (closed) {
+      logTap('closed', screen, { item_id: item.id }, { closed_until: closed.toISOString() });
       setTip({ item, at: closed });
       speak(`${item.labels[lang] || item.labels.en} ${lang === 'es' ? 'a las' : 'at'} ${fmt12(closed)}`, lang);
       return;
     }
-    if (item.tap === 'play') return p.onPlay(item);
+    if (item.tap === 'play') {
+      logTap('media', screen, { item_id: item.id });
+      return p.onPlay(item);
+    }
     p.onAdd(itemToken(item, lang));
-    if (item.tap === 'open') p.onOpen(item);
+    if (item.tap === 'open') {
+      logTap('open', screen, { item_id: item.id });
+      p.onOpen(item);
+    }
   };
 
-  const tapPerson = (item: Item, person: Person) => {
-    p.onAdd(personToken(person, item, lang));
-    setWhere(person.id);
-  };
-
-  const wherePerson = where ? board.people.find((x) => x.id === where) : undefined;
-  const whereLoc = where ? p.locations?.people.find((l) => l.person_id === where) ?? null : null;
 
   return (
     <div className="orbit" data-testid="orbit" data-parent={parentId ?? ''}>
-      <div className="ground" aria-hidden />
-      <div className="ground-pin" data-testid="ground-pin">
-        <span className="pf">{me && <Face person={me} />}</span>
-        <i />
-      </div>
+      <Sky timeRef={p.timeRef} weather={p.weather} season={p.season} />
+      <div className="now-guide" aria-hidden />
 
-      <div className={`orbit-layer ${wherePerson ? 'dim' : ''}`}>
+      <div className={`orbit-layer ${p.away ? 'away' : ''}`}>
         <div className="ring inner" />
         <div className="ring outer" />
 
@@ -124,7 +125,10 @@ export function OrbitView(p: Props) {
               data-status={status}
               data-slot={item.orbit_slot}
               style={{ ...slotStyle('outer', item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.9}s` }}
-              onClick={() => tapPerson(item, person)}
+              onClick={() => {
+                logTap('person', screen, { person_id: person.id });
+                p.onPerson(person.id);
+              }}
             >
               <Face person={person} />
               {status === 'busy' && (
@@ -141,6 +145,7 @@ export function OrbitView(p: Props) {
                   data-count={n}
                   onClick={(e) => {
                     e.stopPropagation();
+                    logTap('hear', screen, { person_id: person.id });
                     p.onHearNewest(person.id);
                   }}
                 >
@@ -152,16 +157,21 @@ export function OrbitView(p: Props) {
             </button>
           );
         })}
-
-        <button className="orbit-me" data-testid="orbit-me" onClick={parent ? p.onBack : p.onBody} aria-label={parent ? 'Back' : 'My body'}>
-          {me && <Face person={me} />}
-        </button>
-        {parent && (
-          <button className={`orbit-parent ${kindClass(parent.kind)}`} data-testid="orbit-parent" onClick={p.onBack}>
-            {parent.photo_url ? <img src={parent.photo_url} alt="" /> : parent.emoji}
-          </button>
-        )}
       </div>
+
+      <button
+        className="orbit-me"
+        data-testid="orbit-me"
+        onClick={p.away ? p.onNow : parent ? p.onBack : () => { logTap('body', screen); p.onBody(); }}
+        aria-label={p.away ? 'Back to now' : parent ? 'Back' : 'My body'}
+      >
+        {me && <Face person={me} />}
+      </button>
+      {parent && !p.away && (
+        <button className={`orbit-parent ${kindClass(parent.kind)}`} data-testid="orbit-parent" onClick={p.onBack}>
+          {parent.photo_url ? <img src={parent.photo_url} alt="" /> : parent.emoji}
+        </button>
+      )}
 
       {parent && nextOpen && nextOpenItem && (
         <div className="next-open" data-testid="next-open">
@@ -180,15 +190,6 @@ export function OrbitView(p: Props) {
         </div>
       )}
 
-      {wherePerson && p.locations && (
-        <button className="globe-pop" data-testid="globe-pop" data-person={wherePerson.id} onClick={() => p.onPerson(wherePerson.id)}>
-          <Globe home={p.locations.home} homePhoto={me?.photo_url ?? null} other={{ place: whereLoc, photo: wherePerson.photo_url, emoji: wherePerson.emoji }} />
-          <span className="gchip">
-            <Face person={wherePerson} />
-            {whereLoc ? <b>{whereLoc.place_label}</b> : <b>❔</b>}
-          </span>
-        </button>
-      )}
     </div>
   );
 }

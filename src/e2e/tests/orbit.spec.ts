@@ -10,25 +10,25 @@ test('the orbit is home: his core things in fixed inner slots, people in fixed o
   await login(page, 'jonatito');
   const orbit = page.getByTestId('orbit');
   await expect(orbit).toHaveAttribute('data-parent', '');
-  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['barney', 4], ['pongo', 5]];
+  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['barney', 4], ['pongo', 5], ['music', 6]];
   for (const [id, slot] of slots) await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
   await expect(orbit.getByTestId('orbit-eat')).toContainText('🍇');
   await expect(orbit.getByTestId('orbit-go')).toContainText('🚗');
   await expect(orbit.getByTestId('orbit-barney').locator('img')).toBeVisible();
+  await expect(orbit.getByTestId('orbit-music')).toContainText('Music');
+  await expect(orbit.getByTestId('orbit-music').locator('img')).toHaveAttribute('src', /\/api\/images\//);
   // Empty slots stay reserved; nothing is spread out to fill them.
-  await expect(orbit.getByTestId('orbit-empty-6')).toBeVisible();
   await expect(orbit.getByTestId('orbit-empty-7')).toBeVisible();
   // People: 12:00 and 6:00 stay empty.
   for (const [id, slot] of [['mommy_joyce', 1], ['lucho', 2], ['pilar', 3], ['larry', 4], ['tintin', 6]] as const) {
     await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
   }
   await expect(orbit.getByTestId('orbit-jonatito')).toHaveCount(0);
-  await expect(page.getByTestId('ground-pin')).toBeVisible();
+  await expect(page.getByTestId('sky')).toBeVisible(); // the earth, sun and moon are drawn on the canvas
 });
 
 test('tapping builds the sentence; Eat opens the foods around him and his face goes back', async ({ page, request }) => {
   await login(page, 'jonatito');
-  await page.getByTestId('orbit-mommy_joyce').click();
   await page.getByTestId('orbit-eat').click();
   await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', 'eat');
   await expect(page.getByTestId('orbit-parent')).toContainText('🍇');
@@ -36,13 +36,14 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   // People stay in the outer orbit, so the whole sentence is one screen.
   await expect(page.getByTestId('orbit-mommy_joyce')).toBeVisible();
   await page.getByTestId('orbit-grapes').click();
-  await expect(page.getByTestId('strip-token')).toHaveCount(3);
+  await expect(page.getByTestId('strip-token')).toHaveCount(2);
 
+  // No person picked: it goes to the caretaker on duty.
   await page.getByTestId('send').click();
-  await expect(page.getByTestId('sentence')).toContainText('Mommy Joyce, I want to eat grapes.');
+  await expect(page.getByTestId('sentence')).toContainText('I want to eat grapes.');
   await page.getByTestId('card-ok').click();
   const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
-  expect(inbox[0].sentence_es).toBe('Mommy Joyce, quiero comer uvas.');
+  expect(inbox[0].sentence_es).toBe('Quiero comer uvas.');
 
   await page.getByTestId('orbit-me').click();
   await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', '');
@@ -95,16 +96,14 @@ test('people who are not available are marked: a clock of when they are free, or
   await expect(page.getByTestId('orbit-mommy_joyce').locator('.not-avail')).toHaveCount(0);
 });
 
-test('tapping a person shows where they are; tapping the globe opens their person screen', async ({ page, request }) => {
+test('tapping a person in the orbit opens their person screen straight away', async ({ page, request }) => {
   await (await apiAs(request, 'pilar')).put('/api/location', { place_label: 'Lima', country_code: 'PE', tz: 'America/Lima', lat: -12.05, lon: -77.05 });
   await login(page, 'jonatito');
   await page.getByTestId('orbit-pilar').click();
-  await expect(page.getByTestId('strip-token')).toHaveCount(1);
-  const pop = page.getByTestId('globe-pop');
-  await expect(pop).toContainText('Lima');
-  await expect(pop.getByTestId('globe')).toHaveAttribute('data-reach', 'abroad');
-  await pop.click();
   await expect(page.getByTestId('person-pilar')).toBeVisible();
+  await expect(page.getByTestId('person-where')).toHaveAttribute('data-reach', 'abroad');
+  await page.getByTestId('me-button').click();
+  await expect(page.getByTestId('strip-token')).toHaveCount(0); // visiting someone is not a word
 });
 
 test('Pongo plays full screen; his face brings him back', async ({ page }) => {

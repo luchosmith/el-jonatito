@@ -3,6 +3,8 @@ import path from 'node:path';
 import type { Deps } from '../app.ts';
 import { requireAuth } from '../auth.ts';
 import { dispatch } from '../dispatcher.ts';
+import { momentSent } from '../moments.ts';
+import { enqueue } from '../notify.ts';
 import { HttpError, jsonBody, rawBody, safeJoin, sendFile } from '../http.ts';
 import { childUserIds, getLog, getMessage, getReply, getVoiceNote, inboxFor, sentBy } from '../repo.ts';
 import { AUDIO_MIME, saveAudio } from '../uploads.ts';
@@ -25,9 +27,15 @@ export function messageRoutes({ router, db, cfg, hub, now }: Deps) {
   const isRecipient = (messageId: number, userId: number) =>
     !!db.get('SELECT 1 FROM message_recipients WHERE message_id = ? AND user_id = ?', messageId, userId);
 
+  // The inbox updates live for everyone; the notification (banner / sound, later push) is batched per person.
   const deliver = (messageId: number, recipients: number[]) => {
     const message = getMessage(db, messageId)!;
     hub.publish([...recipients, message.from_user_id], { type: 'message', message });
+    const summary = message.tokens.length || message.pain ? message.sentence_en : '🔊 voice message';
+    for (const uid of recipients) {
+      if (uid !== message.from_user_id) enqueue(db, hub, now(), uid, message.priority === 'urgent' ? 'urgent' : 'message', summary, { messageId });
+    }
+    momentSent(db, hub, now(), messageId);
     return message;
   };
 
@@ -71,11 +79,14 @@ export function messageRoutes({ router, db, cfg, hub, now }: Deps) {
     if (!getMessage(db, id)) throw new HttpError(404, 'Unknown message');
     if (!isRecipient(id, ctx.user!.id)) throw new HttpError(403, 'This message was not sent to you');
     const body = obj(ctx.body);
-    const kind = oneOf(body, 'kind', ['yes', 'wait', 'no', 'coming'] as const)!;
+    const kind = oneOf(body, 'kind', ['yes', 'wait', 'no', 'coming', 'text'] as const)!;
     const eta = num(body, 'eta_minutes', { optional: true, min: 1, max: 240 });
     const etaAt = eta ? new Date(now().getTime() + eta * 60_000).toISOString() : null;
-    const r = db.run('INSERT INTO replies(message_id, from_user_id, kind, eta_at, created_at) VALUES(?,?,?,?,?)',
-      id, ctx.user!.id, kind, etaAt, now().toISOString());
+    // A typed reply: short, read aloud on his tablet.
+    const text = kind === 'text' ? str(body, 'text', { max: 120 })!.trim() : null;
+    if (kind === 'text' && !text) throw new HttpError(400, 'text is required');
+    const r = db.run('INSERT INTO replies(message_id, from_user_id, kind, eta_at, text, created_at) VALUES(?,?,?,?,?,?)',
+      id, ctx.user!.id, kind, etaAt, text, now().toISOString());
     return publishReply(r.lastId, id);
   });
 

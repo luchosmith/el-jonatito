@@ -143,7 +143,7 @@ interface MessageRow {
 }
 interface ReplyRow {
   id: number; message_id: number; from_user_id: number; from_person_id: string | null; kind: Reply['kind'];
-  eta_at: string | null; audio_file: string | null; created_at: string;
+  eta_at: string | null; audio_file: string | null; text: string | null; created_at: string;
 }
 
 function repliesFor(db: Db, messageId: number): Reply[] {

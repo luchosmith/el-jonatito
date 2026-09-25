@@ -1,13 +1,17 @@
 // Upgrades an older database in place.
 // v2 -> v3: `symbols` and the display fields of `people` become `items`; `limits` become `item_rules`;
 // pictures move to owner_type 'item'; voice replies are copied into `voice_notes`.
-// A full copy of the old database is written next to it first (jonatito.sqlite.v2-backup-<time>).
+// v3 -> v4: adds the Music item (headphones + sound wave) to the inner orbit.
+// v4 -> v5: typed replies (replies.text), event pictures (images.owner_type 'event'); the tap log,
+//           moments, notification queue and calendar tables come from schema.sql.
+// A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
+import path from 'node:path';
 import type { Db } from './db.ts';
 import type { Config } from './config.ts';
-import { applyOrbitDefaults, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
+import { applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 5;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -17,23 +21,83 @@ export function schemaVersion(db: Db): number {
 
 /** Returns the backup file when a migration ran, null when the database was already current. */
 export function migrate(db: Db, cfg: Config): string | null {
-  if (schemaVersion(db) >= SCHEMA_VERSION) return null;
-  if (!tableExists(db, 'symbols')) return null; // a new, empty v3 database: seed() sets the version
+  const isV2 = tableExists(db, 'symbols');
+  const from = isV2 ? 2 : schemaVersion(db);
+  if (from >= SCHEMA_VERSION) return null;
+  if (from === 0) return null; // a new, empty database: seed() creates the current version
 
-  const backup = cfg.dbFile === ':memory:' ? null : `${cfg.dbFile}.v2-backup-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+  const backup = cfg.dbFile === ':memory:' ? null : `${cfg.dbFile}.v${from}-backup-${new Date().toISOString().replace(/[:.]/g, '-')}`;
   if (backup) {
     if (fs.existsSync(backup)) fs.rmSync(backup);
     db.raw.exec(`VACUUM INTO '${backup.replace(/'/g, "''")}'`);
   }
 
-  db.raw.exec('PRAGMA foreign_keys = OFF');
-  try {
-    db.tx(() => migrateV2toV3(db, cfg));
-  } finally {
-    db.raw.exec('PRAGMA foreign_keys = ON');
+  if (from < 3) {
+    db.raw.exec('PRAGMA foreign_keys = OFF');
+    try {
+      db.tx(() => migrateV2toV3(db, cfg));
+    } finally {
+      db.raw.exec('PRAGMA foreign_keys = ON');
+    }
+  }
+  if (from < 4) db.tx(() => migrateV3toV4(db, cfg));
+  if (from < 5) {
+    db.raw.exec('PRAGMA foreign_keys = OFF');
+    try {
+      db.tx(() => migrateV4toV5(db));
+    } finally {
+      db.raw.exec('PRAGMA foreign_keys = ON');
+    }
   }
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
+}
+
+/** v5: SQLite can't relax a CHECK in place, so images and replies are rebuilt with the new values. */
+function migrateV4toV5(db: Db) {
+  db.raw.exec(`
+    CREATE TABLE images_v5 (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_type TEXT NOT NULL CHECK (owner_type IN ('item','media','event')),
+      owner_id TEXT NOT NULL, file TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1,
+      uploaded_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL);
+    INSERT INTO images_v5 SELECT id, owner_type, owner_id, file, is_active, uploaded_by, created_at FROM images;
+    DROP TABLE images;
+    ALTER TABLE images_v5 RENAME TO images;
+    CREATE INDEX images_owner ON images(owner_type, owner_id, is_active);
+
+    CREATE TABLE replies_v5 (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      from_user_id INTEGER NOT NULL REFERENCES users(id),
+      kind TEXT NOT NULL CHECK (kind IN ('yes','wait','no','coming','voice','text')),
+      eta_at TEXT, audio_file TEXT, text TEXT, created_at TEXT NOT NULL);
+    INSERT INTO replies_v5(id, message_id, from_user_id, kind, eta_at, audio_file, created_at)
+      SELECT id, message_id, from_user_id, kind, eta_at, audio_file, created_at FROM replies;
+    DROP TABLE replies;
+    ALTER TABLE replies_v5 RENAME TO replies;`);
+  const broken = db.all<{ table: string }>('PRAGMA foreign_key_check');
+  if (broken.length) throw new Error(`Migration left ${broken.length} broken links (first in ${broken[0].table}); nothing was changed`);
+}
+
+/** v4: the Music item. Takes inner slot 7 (index 6) if free, else the first free one; a caretaker can move it. */
+function migrateV3toV4(db: Db, cfg: Config) {
+  if (db.get("SELECT 1 FROM items WHERE id = 'music'")) return;
+  const vocab = JSON.parse(fs.readFileSync(path.join(cfg.seedDir, 'vocabulary.json'), 'utf8')) as {
+    symbols: { id: string; page: string; row: number; col: number; kind: string; emoji: string; en: string; es: string; photo?: string }[];
+  };
+  const m = vocab.symbols.find((s) => s.id === 'music')!;
+  const now = new Date().toISOString();
+  const slotFree = (slot: number) => !db.get("SELECT 1 FROM items WHERE parent_id IS NULL AND orbit = 'inner' AND orbit_slot = ?", slot);
+  const slot = [6, 7, 0, 1, 2, 3, 4, 5].find(slotFree) ?? null;
+  const cellFree = !db.get('SELECT 1 FROM items WHERE grid_page = ? AND grid_row = ? AND grid_col = ?', m.page, m.row, m.col);
+  db.run(
+    `INSERT INTO items(id, category, kind, label_en, label_es, short_label, emoji, orbit, orbit_slot, grid_page, grid_row, grid_col, updated_at)
+     VALUES('music', 'play', ?, ?, ?, 'Music', ?, ?, ?, ?, ?, ?, ?)`,
+    m.kind, m.en, m.es, m.emoji, slot === null ? null : 'inner', slot,
+    cellFree ? m.page : null, cellFree ? m.row : null, cellFree ? m.col : null, now,
+  );
+  if (m.photo) copySeedImage(db, cfg, m.photo, 'item', 'music', now);
 }
 
 interface V2Person {

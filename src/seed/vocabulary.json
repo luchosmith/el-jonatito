@@ -522,6 +522,17 @@
       "photo": "symbols/pongo.jpg"
     },
     {
+      "id": "music",
+      "page": "play",
+      "row": 1,
+      "col": 2,
+      "kind": "thing",
+      "emoji": "🎧",
+      "en": "music",
+      "es": "música",
+      "photo": "symbols/music.svg"
+    },
+    {
       "id": "yes",
       "page": "core",
       "row": 0,

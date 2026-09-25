@@ -1,11 +1,14 @@
 // Jonatito's tablet (child mode). The orbit is home; parent mode opens on top of it behind the
 // hidden corner + PIN.
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, setElevatedToken } from '../api.ts';
 import { deviceLang, speak, useEvents, useLongPress, useNow } from '../common/hooks.ts';
 import { playClip, sayToken } from '../common/sound.ts';
+import { flushTaps, logTap } from '../common/taplog.ts';
 import { itemToken, personToken, type Board, type StripToken } from '../common/board.ts';
-import { HereNow } from './HereNow.tsx';
+import { TimeBar, PAST_DAYS, FUTURE_DAYS } from './TimeBar.tsx';
+import { EntryCard } from './EntryCard.tsx';
+import { weatherOf } from './Sky.tsx';
 import { BoardView, Strip } from './Board.tsx';
 import { OrbitView } from './OrbitView.tsx';
 import { Dock } from './Dock.tsx';
@@ -18,7 +21,8 @@ import { DayView } from './DayView.tsx';
 import { MediaView, type MediaState } from './MediaView.tsx';
 import { ParentGate } from './ParentGate.tsx';
 import { FamilyApp } from '../family/FamilyApp.tsx';
-import type { DispatchNote, Item, Locations, LogEntry, Message, NowInfo, Reply, ScheduleItem, User, VoiceNote } from '../../../shared/types.ts';
+import type { DispatchNote, Item, Locations, LogEntry, Message, NowInfo, Reply, ScheduleItem, TimelineEntry, User, VoiceNote } from '../../../shared/types.ts';
+import { seasonOf } from '../../../shared/time.ts';
 import { renderSentence } from '../../../shared/grammar.ts';
 
 type View =
@@ -31,6 +35,7 @@ type View =
   | { name: 'media' };
 
 const HOME: View = { name: 'orbit', parent: null };
+const SPRING_BACK_MS = 8000;
 
 export function ChildApp({ user: _user }: { user: User }) {
   const now = useNow();
@@ -49,6 +54,13 @@ export function ChildApp({ user: _user }: { user: User }) {
   const [reply, setReply] = useState<Reply | null>(null);
   const [gate, setGate] = useState(false);
   const [parent, setParent] = useState<User | null>(null);
+  const [entries, setEntries] = useState<TimelineEntry[]>([]);
+  const [entry, setEntry] = useState<TimelineEntry | null>(null);
+  // Time scrubbing: minutes away from now (negative = past). The sky reads timeRef every frame.
+  const [scrub, setScrub] = useState(0);
+  const timeRef = useRef(Date.now());
+  const springTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const springAnim = useRef(0);
   const lang = deviceLang();
 
   const loadBoard = useCallback(() => api.get<Board>('/api/board').then(setBoard), []);
@@ -56,6 +68,34 @@ export function ChildApp({ user: _user }: { user: User }) {
   const loadMedia = useCallback(() => api.get<MediaState>('/api/media').then(setMedia), []);
   const loadVoice = useCallback(() => api.get<VoiceNote[]>('/api/voice-notes').then(setVoice), []);
   const loadLocations = useCallback(() => api.get<Locations>('/api/locations').then(setLocations), []);
+  const loadTimeline = useCallback(() => api.get<TimelineEntry[]>('/api/timeline').then(setEntries).catch(() => undefined), []);
+
+  /** Back to NOW: a short ease, then the orbit wakes up again. */
+  const backToNow = useCallback(() => {
+    if (springTimer.current) clearTimeout(springTimer.current);
+    cancelAnimationFrame(springAnim.current);
+    const step = () => {
+      setScrub((s) => {
+        const next = Math.abs(s) < 1 ? 0 : s * 0.8;
+        if (next !== 0) springAnim.current = requestAnimationFrame(step);
+        return next;
+      });
+    };
+    springAnim.current = requestAnimationFrame(step);
+  }, []);
+  const onScrub = useCallback((minutes: number) => {
+    if (springTimer.current) clearTimeout(springTimer.current);
+    cancelAnimationFrame(springAnim.current);
+    setScrub(Math.max(-PAST_DAYS * 1440, Math.min(FUTURE_DAYS * 1440, minutes)));
+  }, []);
+  const onScrubEnd = useCallback(() => {
+    if (springTimer.current) clearTimeout(springTimer.current);
+    springTimer.current = setTimeout(backToNow, SPRING_BACK_MS);
+  }, [backToNow]);
+  useEffect(() => () => {
+    if (springTimer.current) clearTimeout(springTimer.current);
+    cancelAnimationFrame(springAnim.current);
+  }, []);
 
   useEffect(() => {
     void loadBoard();
@@ -63,9 +103,10 @@ export function ChildApp({ user: _user }: { user: User }) {
     void loadMedia();
     void loadVoice();
     void loadLocations();
+    void loadTimeline();
     api.get<ScheduleItem[]>('/api/schedule').then(setSchedule).catch(() => undefined);
     api.get<NowInfo>('/api/now').then(setInfo).catch(() => undefined);
-  }, [loadBoard, loadLogs, loadMedia, loadVoice, loadLocations]);
+  }, [loadBoard, loadLogs, loadMedia, loadVoice, loadLocations, loadTimeline]);
 
   useEvents((e) => {
     if (e.type === 'people' || e.type === 'symbols' || e.type === 'items') void loadBoard();
@@ -84,6 +125,7 @@ export function ChildApp({ user: _user }: { user: User }) {
       });
     }
     if (e.type === 'location') void loadLocations();
+    if (e.type === 'timeline' || e.type === 'message' || e.type === 'reply' || e.type === 'voice_note') void loadTimeline();
   });
 
   // A closed item (snack time, limit) opens again by itself: refresh when its time comes.
@@ -122,10 +164,19 @@ export function ChildApp({ user: _user }: { user: User }) {
 
   const me = board.people.find((p) => p.is_self);
 
-  const add = (t: StripToken) => {
+  const add = (t: StripToken, screen: string) => {
     if (tokens.length >= 6) return;
+    logTap('add', screen, t.kind === 'person' || t.kind === 'pet' ? { person_id: t.id } : { item_id: t.id });
     setTokens((ts) => [...ts, t]);
     sayToken(t, lang);
+  };
+  const clear = () => {
+    logTap('clear', view.name === 'board' ? 'board' : 'orbit');
+    setTokens([]);
+  };
+  const say = () => {
+    logTap('say', view.name === 'board' ? 'board' : 'orbit');
+    speak(sentence(), lang);
   };
 
   const sentence = () =>
@@ -137,15 +188,18 @@ export function ChildApp({ user: _user }: { user: User }) {
       lang,
     );
 
-  const post = (list: StripToken[], toPersonId?: string) =>
-    api.post<{ message: Message; notes: DispatchNote[] }>('/api/messages', {
+  const post = async (list: StripToken[], toPersonId?: string) => {
+    await flushTaps(); // the moment is complete on the server before the message closes it
+    return api.post<{ message: Message; notes: DispatchNote[] }>('/api/messages', {
       tokens: list.map((t) => ({ kind: t.kind, id: t.id })),
       ...(toPersonId ? { to_person_id: toPersonId } : {}),
     });
+  };
 
   const send = async (toPersonId?: string, override?: StripToken[]) => {
     const list = override ?? tokens;
     if (!list.length) return;
+    if (!override) logTap('send', view.name === 'board' ? 'board' : 'orbit');
     setSending(true);
     try {
       const r = await post(list, toPersonId);
@@ -186,17 +240,35 @@ export function ChildApp({ user: _user }: { user: User }) {
     );
   }
 
-  const strip = (
-    <Strip me={me} tokens={tokens} onClear={() => setTokens([])} onSay={() => speak(sentence(), lang)} onSend={() => void send()} sending={sending} />
+  const strip = <Strip me={me} tokens={tokens} onClear={clear} onSay={say} onSend={() => void send()} sending={sending} />;
+  const onOrbit = view.name === 'orbit';
+  const viewTime = new Date(now.getTime() + (onOrbit ? scrub : 0) * 60_000);
+  timeRef.current = viewTime.getTime();
+  const away = onOrbit && Math.abs(scrub) >= 1;
+  const timeBar = (
+    <TimeBar
+      now={now}
+      view={viewTime}
+      schedule={schedule}
+      info={info}
+      entries={entries}
+      board={board}
+      scrubbable={onOrbit}
+      onScrub={onScrub}
+      onScrubEnd={onScrubEnd}
+      onNow={backToNow}
+      onEntry={setEntry}
+      cornerProps={corner}
+    />
   );
 
   return (
     <div className="tablet" data-testid="child-app">
-      <HereNow now={now} schedule={schedule} info={info} cornerProps={corner} />
+      {(view.name === 'orbit' || view.name === 'board') && strip}
+      {timeBar}
 
       {view.name === 'orbit' && (
         <>
-          {strip}
           <OrbitView
             board={board}
             me={me}
@@ -204,8 +276,12 @@ export function ChildApp({ user: _user }: { user: User }) {
             now={now}
             lang={lang}
             unheard={unheard}
-            locations={locations}
-            onAdd={add}
+            timeRef={timeRef}
+            weather={weatherOf(info?.weather?.code)}
+            season={seasonOf(viewTime)}
+            away={away}
+            onNow={backToNow}
+            onAdd={(t) => add(t, view.parent ? `orbit:${view.parent}` : 'orbit')}
             onOpen={(item: Item) => setView({ name: 'orbit', parent: item.id })}
             onPlay={(item: Item) => {
               sayToken(itemToken(item, lang), lang);
@@ -226,11 +302,12 @@ export function ChildApp({ user: _user }: { user: User }) {
           page={page}
           onPage={setPage}
           tokens={tokens}
-          onAdd={add}
-          onClear={() => setTokens([])}
-          onSay={() => speak(sentence(), lang)}
+          onAdd={(t) => add(t, 'board')}
+          onClear={clear}
+          onSay={say}
           onSend={() => void send()}
           sending={sending}
+          showStrip={false}
         />
       )}
       {view.name === 'person' && person && (
@@ -290,7 +367,8 @@ export function ChildApp({ user: _user }: { user: User }) {
           onResend={(id) => void send(id, sent.tokens)}
         />
       )}
-      {reply && <ReplyToast reply={reply} person={board.people.find((p) => p.id === reply.from_person_id)} now={now} onClose={() => setReply(null)} />}
+      {reply && <ReplyToast reply={reply} person={board.people.find((p) => p.id === reply.from_person_id)} now={now} lang={lang} onClose={() => setReply(null)} />}
+      {entry && <EntryCard entry={entry} board={board} lang={lang} onClose={() => setEntry(null)} />}
       {gate && (
         <ParentGate
           onCancel={() => setGate(false)}
