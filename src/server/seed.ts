@@ -35,6 +35,7 @@ interface FoodSymbol {
   log_trackable?: boolean;
   limit?: { max_per_day?: number; min_interval_min?: number; suggest?: string };
   photo?: string;
+  short_label?: string;
 }
 
 interface VocabSymbol {
@@ -104,6 +105,7 @@ export function seed(db: Db, cfg: Config) {
         f.key, PAGE_CATEGORY[f.category] ?? 'food', 'thing', f.labels.en, f.labels.es, f.placeholder_emoji, 'food', f.grid_row, f.grid_col,
         f.badge_color ?? null, f.log_trackable === false ? 0 : 1, now,
       );
+      if (f.short_label) db.run('UPDATE items SET short_label = ? WHERE id = ?', f.short_label, f.key);
       if (f.photo) copySeedImage(db, cfg, f.photo, 'item', f.key, now);
     }
     for (const s of vocab.symbols) {

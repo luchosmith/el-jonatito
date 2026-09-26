@@ -176,6 +176,22 @@
       "grid_col": 2,
       "is_hidden": false,
       "log_trackable": true
+    },
+    {
+      "key": "cookie",
+      "category": "food",
+      "board_tab": "food",
+      "fitz_color": "orange (thing)",
+      "placeholder_emoji": "🍪",
+      "image": null,
+      "photo": "symbols/cookie.jpg",
+      "labels": { "en": "a cookie", "es": "una galleta" },
+      "short_label": "cookie",
+      "grid_page": "food",
+      "grid_row": 1,
+      "grid_col": 3,
+      "is_hidden": false,
+      "log_trackable": true
     }
   ]
 }

@@ -72,3 +72,13 @@ test('ice cream has the family photo on the Food page and can be asked for', asy
   const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
   expect(inbox[0].sentence_es).toBe('Quiero comer helado.');
 });
+
+test('cookie has the family photo on the Food page and can be asked for', async ({ page, request }) => {
+  await expect(page.getByTestId('sym-cookie')).toHaveAttribute('data-slot', '9');
+  await expect(page.getByTestId('sym-cookie').locator('img')).toHaveAttribute('src', /seed-item-cookie/);
+  await build(page, ['cookie', 'eat_f']);
+  await page.getByTestId('send').click();
+  await expect(page.getByTestId('sentence')).toContainText('I want to eat a cookie.');
+  const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
+  expect(inbox[0].sentence_es).toBe('Quiero comer una galleta.');
+});
