@@ -1,10 +1,15 @@
 // Bottom bar: Jonatito's own face where the Start button would be (back to the orbit), then family
-// (each opens their person screen), then pets, then All words / My day / Media.
+// (each opens their person screen), then his favourite things (Pongo, Barney), then All words / My day / Media.
+// Pets are not in the dock (they stay on the board's People page).
 import { Face, SoundWave } from '../common/Face.tsx';
-import type { Person } from '../../../shared/types.ts';
+import { shownLabel } from '../common/board.ts';
+import { kindClass } from '../common/Token.tsx';
+import type { Item, Person } from '../../../shared/types.ts';
 
-export function Dock({ people, unheard, meActive, boardActive, onMe, onPerson, onBoard, onDay, onMedia }: {
+export function Dock({ people, things, unheard, meActive, boardActive, onMe, onPerson, onThing, onBoard, onDay, onMedia }: {
   people: Person[];
+  things: Item[];
+  onThing: (item: Item) => void;
   unheard: Record<string, number>;
   meActive: boolean;
   boardActive: boolean;
@@ -16,7 +21,6 @@ export function Dock({ people, unheard, meActive, boardActive, onMe, onPerson, o
 }) {
   const me = people.find((p) => p.is_self);
   const family = people.filter((p) => !p.is_self && p.kind === 'person' && p.is_visible);
-  const pets = people.filter((p) => p.kind === 'pet' && p.is_visible);
   const ring = (p: Person) => (p.status === 'busy' ? 'busy' : p.status === 'away' ? 'away' : '');
 
   return (
@@ -39,20 +43,15 @@ export function Dock({ people, unheard, meActive, boardActive, onMe, onPerson, o
             <span>{p.short_label}</span>
           </button>
         ))}
-        {pets.length > 0 && (
+        {things.length > 0 && (
           <>
             <div className="sep" />
-            <div className="pets">
-              <div className="petlbl">🐾</div>
-              <div className="pet-row">
-                {pets.map((p) => (
-                  <button key={p.id} className="av pet" data-testid={`dock-${p.id}`} onClick={() => onPerson(p)}>
-                    <Face person={p} className={p.breed?.includes('grey') ? 'grey' : ''} />
-                    <span>{p.short_label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {things.map((it) => (
+              <button key={it.id} className={`av thing ${kindClass(it.kind)}`} data-testid={`dock-${it.id}`} onClick={() => onThing(it)}
+                aria-label={shownLabel(it)} title={shownLabel(it)}>
+                {it.photo_url ? <img src={it.photo_url} alt="" draggable={false} /> : <b className="thing-emoji">{it.emoji}</b>}
+              </button>
+            ))}
           </>
         )}
       </div>

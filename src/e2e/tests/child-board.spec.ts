@@ -58,9 +58,10 @@ test('the two pastas are told apart by a sauce-colored badge', async ({ page }) 
 
 test('his own face is the Me button, family and pets sit in the dock', async ({ page }) => {
   await expect(page.getByTestId('me-button').locator('img')).toBeVisible();
-  for (const id of ['mommy_joyce', 'lucho', 'pilar', 'larry', 'tintin', 'lexi', 'loki', 'logan']) {
+  for (const id of ['mommy_joyce', 'lucho', 'pilar', 'larry', 'tintin', 'pongo', 'barney']) {
     await expect(page.getByTestId(`dock-${id}`)).toBeVisible();
   }
+  for (const pet of ['lexi', 'loki', 'logan']) await expect(page.getByTestId(`dock-${pet}`)).toHaveCount(0); // saved for later, not in the dock
 });
 
 test('ice cream has the family photo on the Food page and can be asked for', async ({ page, request }) => {

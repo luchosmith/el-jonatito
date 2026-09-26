@@ -9,6 +9,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { Db } from '../server/db.ts';
 import { loadConfig } from '../server/config.ts';
 import { migrate, schemaVersion } from '../server/migrate.ts';
+import { seed } from '../server/seed.ts';
 import { listItems, listPeople } from '../server/repo.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -51,7 +52,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   const db = new Db(cfg.dbFile); // applies the v3 schema next to the old tables, like a real restart
   const backup = migrate(db, cfg);
   assert.ok(backup && fs.existsSync(backup), 'writes a backup copy first');
-  assert.equal(schemaVersion(db), 6);
+  assert.equal(schemaVersion(db), 7);
   const tables = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name);
   assert.ok(!tables.includes('symbols') && !tables.includes('limits'));
   assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
@@ -91,6 +92,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   const voice = db.all<{ audio_file: string; heard_at: string | null; source: string }>('SELECT audio_file, heard_at, source FROM voice_notes');
   assert.deepEqual(voice.map((v) => [v.audio_file, !!v.heard_at, v.source]), [['hola.webm', true, 'reply']]);
   assert.ok(db.all<{ name: string }>('PRAGMA table_info(voice_notes)').some((c) => c.name === 'label'), 'v6: clips can be named');
+  assert.deepEqual(db.setting('dock_items', []), [], 'v7: the dock only lists items that exist (this fixture has no Pongo / Barney)');
 
   // Running it again does nothing.
   assert.equal(migrate(db, cfg), null);
@@ -115,6 +117,25 @@ test('a v3 database gets Music in a free inner slot (and never moves anything el
   // 6 is taken (bath) and 7 too (water, from seed/orbit.json): Music takes the first free slot.
   assert.equal(items.find((i) => i.id === 'water')!.orbit_slot, 7);
   assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 1);
-  assert.equal(schemaVersion(db), 6);
+  assert.equal(schemaVersion(db), 7);
+  db.close();
+});
+
+test('v7: Pongo and Barney leave the orbit for the dock; their spots stay empty', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-migrate7-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  // Pretend it is a v6 database: Pongo and Barney still in the orbit.
+  db.run("UPDATE items SET orbit = 'inner', orbit_slot = 4 WHERE id = 'barney'");
+  db.run("UPDATE items SET orbit = 'inner', orbit_slot = 5 WHERE id = 'pongo'");
+  db.setSetting('dock_items', []);
+  db.raw.exec('PRAGMA user_version = 6');
+  migrate(db, cfg);
+  const items = listItems(db, new Date());
+  for (const id of ['pongo', 'barney']) assert.equal(items.find((i) => i.id === id)!.orbit, null);
+  assert.equal(items.find((i) => i.id === 'pongo')!.tap, 'play');
+  assert.deepEqual(db.setting('dock_items', []), ['pongo', 'barney']);
+  assert.equal(items.filter((i) => i.orbit === 'inner' && !i.parent_id && (i.orbit_slot === 4 || i.orbit_slot === 5)).length, 0);
   db.close();
 });

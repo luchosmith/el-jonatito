@@ -8,6 +8,8 @@ import { BODY_PARTS, bodyItemId } from '../shared/body.ts';
 
 interface OrbitSeed {
   inner: { id: string; slot: number; tap?: string; short_label?: string; emoji?: string; media?: string }[];
+  /** things in the dock after the family, left to right (not in an orbit) */
+  dock?: { id: string; tap?: string; media?: string }[];
   outer_slots: number[];
   /** position in the list = fixed slot; null keeps a slot empty (nothing shifts) */
   sub_orbits: Record<string, (string | null)[]>;
@@ -79,6 +81,9 @@ export function applyOrbitDefaults(db: Db, cfg: Config) {
     );
   }
 
+  // The dock, after the family (e.g. Pongo, Barney).
+  applyDock(db, seed.dock ?? [], mediaId);
+
   // Outer orbit: people (not Jonatito, not pets) by their fixed order, skipping 12:00 and 6:00.
   const people = db.all<{ id: string }>(
     `SELECT i.id FROM items i JOIN people p ON p.id = i.id WHERE p.kind = 'person' AND p.is_self = 0 ORDER BY p.sort_order`,
@@ -117,4 +122,20 @@ export function applyOrbitDefaults(db: Db, cfg: Config) {
 
   if (!db.get("SELECT 1 FROM settings WHERE key = 'pain_policy'")) db.setSetting('pain_policy', seed.pain_policy);
   if (!db.get("SELECT 1 FROM settings WHERE key = 'voice_retention_days'")) db.setSetting('voice_retention_days', seed.voice_retention_days);
+}
+
+/** Puts items in the dock (after the family) and takes them out of any orbit. */
+export function applyDock(db: Db, dock: { id: string; tap?: string; media?: string }[], mediaId: (title: string) => number | null) {
+  const ids: string[] = [];
+  for (const d of dock) {
+    if (!db.get('SELECT 1 FROM items WHERE id = ?', d.id)) continue;
+    const mid = d.media ? mediaId(d.media) : null;
+    db.run(
+      `UPDATE items SET orbit = NULL, orbit_slot = NULL, parent_id = NULL, tap = COALESCE(?, tap), media_id = COALESCE(?, media_id),
+         category = CASE WHEN ? IS NOT NULL THEN 'media' ELSE category END WHERE id = ?`,
+      d.tap ?? null, mid, mid, d.id,
+    );
+    ids.push(d.id);
+  }
+  db.setSetting('dock_items', ids);
 }

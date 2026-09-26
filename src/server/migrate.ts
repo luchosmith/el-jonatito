@@ -5,14 +5,15 @@
 // v4 -> v5: typed replies (replies.text), event pictures (images.owner_type 'event'); the tap log,
 //           moments, notification queue and calendar tables come from schema.sql.
 // v5 -> v6: voice_notes.label (saved clips a caretaker can send again).
+// v6 -> v7: Pongo and Barney move from the orbit into the dock (settings.dock_items).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Db } from './db.ts';
 import type { Config } from './config.ts';
-import { applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
+import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -51,8 +52,14 @@ export function migrate(db: Db, cfg: Config): string | null {
     }
   }
   if (from < 6) db.tx(() => migrateV5toV6(db));
+  if (from < 7) db.tx(() => migrateV6toV7(db));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
+}
+
+/** v7: the dock holds Pongo and Barney (after the family); their orbit spots stay empty. */
+function migrateV6toV7(db: Db) {
+  applyDock(db, [{ id: 'pongo' }, { id: 'barney' }], () => null);
 }
 
 /** v6: saved clips have a label. */

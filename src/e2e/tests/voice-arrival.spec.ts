@@ -52,7 +52,7 @@ test('tapping the face in the pop-up opens her page', async ({ page, request }) 
 
 test('while Pongo plays full screen, the message waits until he comes back', async ({ page, request }) => {
   await login(page, 'jonatito');
-  await page.getByTestId('orbit-pongo').click();
+  await page.getByTestId('dock-pongo').click();
   await expect(page.getByTestId('player')).toBeVisible();
   await (await apiAs(request, 'pilar')).raw('POST', '/api/voice-notes', FAKE_WEBM, 'audio/webm');
   await page.waitForTimeout(1000);

@@ -36,6 +36,7 @@ export function boardRoutes({ router, db, cfg, hub, now }: Deps) {
     people: listPeople(db),
     symbols: listSymbols(db),
     pages: db.setting('pages', []),
+    dock: db.setting<string[]>('dock_items', []),
     items: listItems(db, now()),
   }));
 

@@ -137,11 +137,3 @@ test('LOVE from the person screen reaches her; a busy person gets the usual card
   await page.getByTestId('zone-come-see').click();
   await expect(page.getByTestId('note-busy')).toBeVisible();
 });
-
-test('pets have a person screen with no sending', async ({ page }) => {
-  await login(page, 'jonatito');
-  await page.getByTestId('dock-lexi').click();
-  await expect(page.getByTestId('person-lexi')).toBeVisible();
-  await expect(page.getByTestId('zone-talk')).toHaveCount(0);
-  await expect(page.getByTestId('voice-shelf')).toHaveCount(0);
-});

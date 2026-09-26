@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { AFTERNOON, device, login, resetDb, setClock, TINY_JPEG, openBoard } from './helpers.ts';
+import { AFTERNOON, device, login, resetDb, setClock, TINY_JPEG, openBoard, build } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -61,18 +61,19 @@ test('hiding a word leaves an empty slot — nothing else moves', async ({ page,
 
 test('an admin replaces Lexi\'s picture with a real photo, then reverts it', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  await expect(page.getByTestId('dock-lexi').locator('img')).toHaveCount(0);
+  await build(page, [{ page: 'people' }]); // pets are on the board's People page (not in the dock)
+  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveCount(0);
 
   const joyce = await device(browser, 'joyce', { clock: AFTERNOON });
   await joyce.page.getByTestId('tab-people').click();
   await joyce.page.getByTestId('photo-lexi').setInputFiles({ name: 'lexi.jpg', mimeType: 'image/jpeg', buffer: TINY_JPEG });
   await expect(joyce.page.getByTestId('admin-lexi').locator('img')).toBeVisible();
 
-  // The tablet updates live, same spot in the dock
-  await expect(page.getByTestId('dock-lexi').locator('img')).toHaveAttribute('src', /\/api\/images\//);
+  // The tablet updates live, same spot
+  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveAttribute('src', /\/api\/images\//);
 
   await joyce.page.getByTestId('revert-lexi').click();
-  await expect(page.getByTestId('dock-lexi').locator('img')).toHaveCount(0);
+  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveCount(0);
   await joyce.context.close();
 });
 
@@ -85,6 +86,8 @@ test('an admin can rename a label and hide a person', async ({ page, browser }) 
 
   await login(page, 'jonatito');
   await expect(page.getByTestId('dock-tintin')).toContainText('Tin Tin');
-  await expect(page.getByTestId('dock-loki')).toHaveCount(0);
+  await build(page, [{ page: 'people' }]);
+  await expect(page.getByTestId('sym-loki')).toHaveCount(0);
+  await expect(page.getByTestId('sym-lexi')).toBeVisible();
   await joyce.context.close();
 });

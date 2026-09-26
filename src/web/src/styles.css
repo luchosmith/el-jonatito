@@ -517,3 +517,5 @@ img { display: block; }
 .voice-picker { margin-top: 8px; background: var(--calm); border-radius: 14px; padding: 8px; }
 .voice-picker .rec-new { width: 100%; border: none; border-radius: 12px; padding: 10px; font-weight: 800; }
 .r-voice.sel { outline: 2px solid var(--ink); }
+.av.thing { border-width: 5px; background: #fff1e3; }
+.av.thing .thing-emoji { font-size: 40px; font-weight: normal; display: grid; place-items: center; width: 100%; height: 100%; }

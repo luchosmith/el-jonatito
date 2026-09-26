@@ -12,6 +12,8 @@ export interface Board {
   pages: Page[];
   /** the whole catalog, with orbit slots, sounds and time rules */
   items: Item[];
+  /** item ids shown in the dock after the family (Pongo, Barney) */
+  dock: string[];
 }
 
 /** A picture in the sentence strip. */

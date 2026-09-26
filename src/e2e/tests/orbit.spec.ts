@@ -10,11 +10,15 @@ test('the orbit is home: his core things in fixed inner slots, people in fixed o
   await login(page, 'jonatito');
   const orbit = page.getByTestId('orbit');
   await expect(orbit).toHaveAttribute('data-parent', '');
-  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['barney', 4], ['pongo', 5], ['music', 6], ['water', 7]];
+  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['music', 6], ['water', 7]];
   for (const [id, slot] of slots) await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
   await expect(orbit.getByTestId('orbit-eat').locator('img')).toHaveAttribute('src', /\/api\/images\//); // the family's photo of grapes
   await expect(orbit.getByTestId('orbit-go')).toContainText('🚗');
-  await expect(orbit.getByTestId('orbit-barney').locator('img')).toBeVisible();
+  // Pongo and Barney moved to the dock; their spots stay empty (nothing shifts).
+  await expect(orbit.getByTestId('orbit-empty-4')).toBeVisible();
+  await expect(orbit.getByTestId('orbit-empty-5')).toBeVisible();
+  await expect(orbit.getByTestId('orbit-pongo')).toHaveCount(0);
+  await expect(page.getByTestId('dock-barney').locator('img')).toBeVisible();
   await expect(orbit.getByTestId('orbit-music')).toHaveAttribute('aria-label', 'Music');
   await expect(orbit.getByTestId('orbit-music')).not.toContainText('Music'); // pictures only: no word under them
   await expect(orbit.getByTestId('orbit-music').locator('img')).toHaveAttribute('src', /\/api\/images\//);
@@ -108,9 +112,9 @@ test('tapping a person in the orbit opens their person screen straight away', as
   await expect(page.getByTestId('strip-token')).toHaveCount(0); // visiting someone is not a word
 });
 
-test('Pongo plays full screen; his face brings him back', async ({ page }) => {
+test('Pongo (in the dock) plays full screen; his face brings him back', async ({ page }) => {
   await login(page, 'jonatito');
-  await page.getByTestId('orbit-pongo').click();
+  await page.getByTestId('dock-pongo').click();
   await expect(page.getByTestId('player')).toHaveAttribute('data-state', 'playing');
   await expect(page.getByTestId('player-poster').locator('img')).toBeVisible();
   await expect(page.getByTestId('player-clock')).toContainText('3:55');
@@ -122,6 +126,16 @@ test('Pongo plays full screen; his face brings him back', async ({ page }) => {
 test('at night Pongo shows the sleeping moon instead of playing', async ({ page, request }) => {
   await setClock(request, '2026-09-23T21:30:00-04:00', [page]);
   await login(page, 'jonatito');
-  await page.getByTestId('orbit-pongo').click();
+  await page.getByTestId('dock-pongo').click();
   await expect(page.getByTestId('player-locked')).toContainText('7:00');
+});
+
+test('Barney in the dock adds "Barney" to the sentence', async ({ page, request }) => {
+  await login(page, 'jonatito');
+  await page.getByTestId('dock-barney').click();
+  await expect(page.getByTestId('strip-token')).toHaveCount(1);
+  await page.getByTestId('send').click();
+  await expect(page.getByTestId('sentence')).toContainText('I want Barney.');
+  const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
+  expect(inbox[0].sentence_en).toBe('I want Barney.');
 });

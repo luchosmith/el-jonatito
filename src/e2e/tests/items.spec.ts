@@ -78,7 +78,7 @@ test('a time rule added in the editor closes the item on the tablet, with its cl
 
 test('moving an item asks first, lands in the chosen empty slot, and taken slots cannot be picked', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  const joyce = await openItem(browser, 'barney');
+  const joyce = await openItem(browser, 'go');
   await expect(joyce.page.getByTestId('item-slot-0')).toBeDisabled(); // Eat lives there
   let asked = '';
   joyce.page.on('dialog', (d) => {
@@ -91,9 +91,9 @@ test('moving an item asks first, lands in the chosen empty slot, and taken slots
   await joyce.page.getByTestId('item-slot-0').click();
   await joyce.page.getByTestId('item-move').click();
   expect(asked).toContain('learned where this is');
-  await expect(page.getByTestId('orbit-empty-4')).toBeVisible(); // his old spot stays empty; nothing shifts
+  await expect(page.getByTestId('orbit-empty-3')).toBeVisible(); // its old spot stays empty; nothing shifts
   await page.getByTestId('orbit-eat').click();
-  await expect(page.getByTestId('orbit-barney')).toHaveAttribute('data-slot', '0');
+  await expect(page.getByTestId('orbit-go')).toHaveAttribute('data-slot', '0');
   await joyce.context.close();
 });
 

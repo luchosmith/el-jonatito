@@ -342,6 +342,15 @@ export function ChildApp({ user: _user }: { user: User }) {
 
       <Dock
         people={board.people}
+        things={board.dock.map((id) => board.items.find((i) => i.id === id)).filter((i): i is Item => !!i && !i.is_hidden)}
+        onThing={(item) => {
+          if (item.tap === 'play') {
+            logTap('media', 'dock', { item_id: item.id });
+            sayToken(itemToken(item, lang), lang);
+            void loadMedia();
+            setView({ name: 'player', itemId: item.id });
+          } else add(itemToken(item, lang), 'dock');
+        }}
         unheard={unheard}
         meActive={view.name === 'orbit' && !view.parent}
         boardActive={view.name === 'board'}
