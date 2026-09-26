@@ -22,7 +22,7 @@ test('renaming Bath in the editor changes the orbit label; the spoken words stay
   await joyce.page.getByTestId('item-short').fill('Bubbles');
   await joyce.page.getByTestId('item-label-es').fill('bañito');
   await joyce.page.getByTestId('item-save-words').click();
-  await expect(page.getByTestId('orbit-bath')).toContainText('Bubbles');
+  await expect(page.getByTestId('orbit-bath')).toHaveAttribute('aria-label', 'Bubbles'); // the name is not shown to him, only kept
   await expect(page.getByTestId('orbit-bath')).toHaveAttribute('data-slot', '1');
   await joyce.context.close();
 });

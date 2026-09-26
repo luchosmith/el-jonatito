@@ -15,7 +15,8 @@ test('the orbit is home: his core things in fixed inner slots, people in fixed o
   await expect(orbit.getByTestId('orbit-eat').locator('img')).toHaveAttribute('src', /\/api\/images\//); // the family's photo of grapes
   await expect(orbit.getByTestId('orbit-go')).toContainText('🚗');
   await expect(orbit.getByTestId('orbit-barney').locator('img')).toBeVisible();
-  await expect(orbit.getByTestId('orbit-music')).toContainText('Music');
+  await expect(orbit.getByTestId('orbit-music')).toHaveAttribute('aria-label', 'Music');
+  await expect(orbit.getByTestId('orbit-music')).not.toContainText('Music'); // pictures only: no word under them
   await expect(orbit.getByTestId('orbit-music').locator('img')).toHaveAttribute('src', /\/api\/images\//);
   // People: 12:00 and 6:00 stay empty.
   for (const [id, slot] of [['mommy_joyce', 1], ['lucho', 2], ['pilar', 3], ['larry', 4], ['tintin', 6]] as const) {

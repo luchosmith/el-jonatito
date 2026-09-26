@@ -142,10 +142,9 @@ img { display: block; }
 .orbit-parent img { width: 70%; height: 70%; object-fit: cover; border-radius: 50%; }
 .orb { position: absolute; translate: -50% -50%; aspect-ratio: 1; border-radius: 50%; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px 14px rgba(0,0,0,.14); animation: float 4.5s ease-in-out infinite; z-index: 1; }
 .orb:active { scale: .92; }
-.orb.act { width: clamp(84px, 13vmin, 112px); background: #e6f7ea; border: 5px solid var(--action); }
-.orb.act b.c { font-size: clamp(38px, 6vmin, 50px); font-weight: normal; line-height: 1.05; }
-.orb.act b.c img { width: clamp(52px, 8vmin, 70px); aspect-ratio: 1; object-fit: cover; border-radius: 50%; display: block; }
-.orb.act > span { font-size: 12px; font-weight: 800; }
+.orb.act { width: clamp(88px, 14vmin, 118px); background: #e6f7ea; border: 5px solid var(--action); overflow: visible; }
+.orb.act b.c { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: clamp(48px, 8vmin, 66px); font-weight: normal; line-height: 1; }
+.orb.act b.c img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .orb.act .badge { top: 2px; right: 6px; width: 18px; height: 18px; }
 .orb.empty { width: 64px; border: 2px dashed #dfe5ec; box-shadow: none; background: transparent; animation: none; pointer-events: none; }
 .orb.act.closed { border-color: #cfd8e3 !important; background: #f1f3f5 !important; box-shadow: none; }

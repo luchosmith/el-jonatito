@@ -105,10 +105,12 @@ export function OrbitView(p: Props) {
               data-closed={closed ? closed.toISOString() : ''}
               style={{ ...slotStyle('inner', item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.6}s` }}
               onClick={() => tapItem(item)}
+              aria-label={shownLabel(item)}
+              title={shownLabel(item)}
             >
+              {/* The picture fills the circle; the name is only for screen readers and caretakers (Items). */}
               <b className="c">{item.photo_url ? <img src={item.photo_url} alt="" draggable={false} /> : item.emoji}</b>
               {item.badge_color && <i className="badge" style={{ background: item.badge_color }} />}
-              <span>{shownLabel(item)}</span>
               {closed && <i className="ck"><Clock12 at={closed} from={now} size={30} /></i>}
             </button>
           );

@@ -173,6 +173,7 @@ The orbit is the **default screen**. The picture-board grid (section 7) stays av
 - Both orbits are ellipses sized in percent of the stage (inner 20% × 30%, outer 40% × 38%), so the layout scales from a 10" to a 13" tablet.
 - Items bob gently (±5 px, 4.5 s). The bob is off when `prefers-reduced-motion` is set, and it never changes where a tap lands.
 - Color follows the Fitzgerald key (green actions, orange things, yellow people). An item with a picture shows the picture, and one without shows its emoji.
+- **Inner orbit: pictures only (v0.6).** The picture (or emoji) fills the whole circle; there is no word under it. The coloured ring still shows the word type. The name is kept for screen readers and is shown and edited by caretakers in Items → Words. Family faces in the outer orbit keep their name tags.
 - **Not available:** a busy person gets a yellow ring and a small 12-hour clock of when they're free. An away person is greyed out, with a grey ring and 🚫. *The v0.2 build shows ⏳ for busy, which breaks the "time is always a real clock" principle. v0.3 fixes this.*
 
 ### 5.3 What a tap does
