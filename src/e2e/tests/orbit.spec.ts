@@ -6,7 +6,7 @@ test.beforeEach(async ({ request, page }) => {
   await setClock(request, AFTERNOON, [page]);
 });
 
-test('the orbit is home: his core things in fixed inner slots, people in fixed outer slots', async ({ page }) => {
+test('the orbit is home: his core things in fixed inner slots; people are on the globe and in the taskbar, not the orbit', async ({ page }) => {
   await login(page, 'jonatito');
   const orbit = page.getByTestId('orbit');
   await expect(orbit).toHaveAttribute('data-parent', '');
@@ -22,10 +22,13 @@ test('the orbit is home: his core things in fixed inner slots, people in fixed o
   await expect(orbit.getByTestId('orbit-music')).toHaveAttribute('aria-label', 'Music');
   await expect(orbit.getByTestId('orbit-music')).not.toContainText('Music'); // pictures only: no word under them
   await expect(orbit.getByTestId('orbit-music').locator('img')).toHaveAttribute('src', /\/api\/images\//);
-  // People: 12:00 and 6:00 stay empty.
-  for (const [id, slot] of [['mommy_joyce', 1], ['lucho', 2], ['pilar', 3], ['larry', 4], ['tintin', 6]] as const) {
-    await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
+  for (const id of ['mommy_joyce', 'lucho', 'pilar', 'larry', 'tintin']) {
+    await expect(orbit.getByTestId(`orbit-${id}`)).toHaveCount(0);
+    await expect(page.getByTestId(`dock-${id}`)).toBeVisible();
   }
+  // The places compass on the earth: home in the middle; pets as small pictures next to it.
+  await expect(page.getByTestId('compass-home')).toContainText('HOME · New York');
+  await expect(page.getByTestId('compass-pet-lexi')).toBeVisible();
   await expect(orbit.getByTestId('orbit-jonatito')).toHaveCount(0);
   await expect(page.getByTestId('sky')).toBeVisible(); // the earth, sun and moon are drawn on the canvas
 });
@@ -40,7 +43,7 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   await expect(page.getByTestId('orbit-empty-0')).toBeVisible(); // water moved to the main orbit; its spot stays empty
   await expect(page.getByTestId('orbit-water')).toHaveCount(0);
   // People stay in the outer orbit, so the whole sentence is one screen.
-  await expect(page.getByTestId('orbit-mommy_joyce')).toBeVisible();
+  await expect(page.getByTestId('compass-home')).toBeVisible(); // the globe is still under him
   await page.getByTestId('orbit-grapes').click();
   await expect(page.getByTestId('strip-token')).toHaveCount(2);
 
@@ -96,16 +99,24 @@ test('people who are not available are marked: a clock of when they are free, or
   await (await apiAs(request, 'lucho')).put('/api/availability', { status: 'busy', until_minutes: 30 });
   await (await apiAs(request, 'larry')).put('/api/availability', { status: 'away' });
   await login(page, 'jonatito');
-  await expect(page.getByTestId('orbit-lucho')).toHaveAttribute('data-status', 'busy');
+  await expect(page.getByTestId('dock-lucho')).toHaveAttribute('data-status', 'busy');
   await expect(page.getByTestId('busy-lucho').locator('svg.clock12')).toHaveAttribute('aria-label', '4:10');
   await expect(page.getByTestId('away-larry')).toHaveText('🚫');
-  await expect(page.getByTestId('orbit-mommy_joyce').locator('.not-avail')).toHaveCount(0);
+  await expect(page.getByTestId('dock-mommy_joyce').locator('.dk-status')).toHaveCount(0);
 });
 
-test('tapping a person in the orbit opens their person screen straight away', async ({ page, request }) => {
+test('people are on the globe where they are (near home in the middle, far away at the edges); tapping a face opens their page', async ({ page, request }) => {
   await (await apiAs(request, 'pilar')).put('/api/location', { place_label: 'Lima', country_code: 'PE', tz: 'America/Lima', lat: -12.05, lon: -77.05 });
+  await (await apiAs(request, 'joyce')).put('/api/location', { place_label: 'Newark', country_code: 'US', tz: 'America/New_York', lat: 40.74, lon: -74.17 });
   await login(page, 'jonatito');
-  await page.getByTestId('orbit-pilar').click();
+  const pilar = page.getByTestId('compass-pilar');
+  const joyce = page.getByTestId('compass-mommy_joyce');
+  await expect(page.getByTestId('compass-tintin')).toHaveCount(0); // not shared: not on the globe
+  const px = Number(await pilar.getAttribute('data-x'));
+  const jx = Number(await joyce.getAttribute('data-x'));
+  expect(px).toBeLessThan(25); // Lima: past the ✈️ line, to the west (left)
+  expect(Math.abs(jx - 50)).toBeLessThan(Math.abs(px - 50)); // Newark: much nearer home
+  await pilar.click();
   await expect(page.getByTestId('person-pilar')).toBeVisible();
   await expect(page.getByTestId('person-where')).toHaveAttribute('data-reach', 'abroad');
   await page.getByTestId('me-button').click();

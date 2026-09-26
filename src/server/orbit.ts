@@ -10,7 +10,6 @@ interface OrbitSeed {
   inner: { id: string; slot: number; tap?: string; short_label?: string; emoji?: string; media?: string }[];
   /** things in the dock after the family, left to right (not in an orbit) */
   dock?: { id: string; tap?: string; media?: string }[];
-  outer_slots: number[];
   /** position in the list = fixed slot; null keeps a slot empty (nothing shifts) */
   sub_orbits: Record<string, (string | null)[]>;
   rules: { item: string; kind: 'window'; routine?: string; open_min?: number; start?: string; end?: string; blocks: boolean }[];
@@ -84,13 +83,7 @@ export function applyOrbitDefaults(db: Db, cfg: Config) {
   // The dock, after the family (e.g. Pongo, Barney).
   applyDock(db, seed.dock ?? [], mediaId);
 
-  // Outer orbit: people (not Jonatito, not pets) by their fixed order, skipping 12:00 and 6:00.
-  const people = db.all<{ id: string }>(
-    `SELECT i.id FROM items i JOIN people p ON p.id = i.id WHERE p.kind = 'person' AND p.is_self = 0 ORDER BY p.sort_order`,
-  );
-  people.forEach((p, i) => {
-    if (i < seed.outer_slots.length) db.run("UPDATE items SET orbit = 'outer', orbit_slot = ? WHERE id = ?", seed.outer_slots[i], p.id);
-  });
+  // People are not in the orbit (v0.8): they are in the taskbar and on the globe.
 
   // Sub-orbits (Eat -> foods).
   for (const [parent, children] of Object.entries(seed.sub_orbits)) {

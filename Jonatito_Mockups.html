@@ -384,6 +384,41 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 .cal-form{background:#fff;border:1px solid var(--line);border-radius:14px;margin:8px 10px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:7px}
 .cal-form .f{border:1px solid var(--line);border-radius:10px;padding:7px 9px;color:var(--muted)}
 .cal-form .pick{display:flex;gap:6px;margin:0}.cal-form .pick img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:3px solid transparent}.cal-form .pick img.sel{border-color:var(--action)}
+/* v0.7 places compass: relative space under the earth */
+.pl-strip{height:92px;flex:none;position:relative;background:linear-gradient(#3f7fc4,#2f5f98);overflow:hidden;border-top:2px solid rgba(255,255,255,.35)}
+.pl-zone{position:absolute;top:0;bottom:0}
+.pl-zone.walk{background:rgba(111,190,108,.34)}.pl-zone.car{background:rgba(111,190,108,.16)}
+.pl-mark{position:absolute;top:0;bottom:0;border-left:2px dashed rgba(255,255,255,.45);pointer-events:none}
+.pl-mark b{position:absolute;top:2px;left:0;transform:translateX(-50%);font-size:17px;font-weight:normal;filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.pl-home{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:58px;height:58px;border-radius:16px;background:#fff;border:4px solid var(--urgent);display:grid;place-items:center;font-size:30px;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:pointer;z-index:2}
+.pl-home small{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);background:#fff;border-radius:6px;font-size:10px;font-weight:800;padding:0 5px;white-space:nowrap}
+.pl{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:12px;background:#fff;border:3px solid var(--desc);display:grid;place-items:center;font-size:23px;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);padding:0}
+.pl.person{border-radius:50%;border-color:var(--people)}.pl.person img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.pl.high{top:42%}.pl.low{top:72%}
+.pl .with{position:absolute;right:-12px;top:-10px;width:24px;height:24px;border-radius:50%;overflow:hidden;border:2px solid #fff}
+.pl .with img{width:100%;height:100%;object-fit:cover}
+
+/* places compass drawn on the earth's land band */
+.pl-strip.on-earth{position:absolute;left:0;right:0;bottom:0;height:104px;background:none;border-top:none;z-index:2}
+.pl-strip.on-earth .pl-zone.walk{background:radial-gradient(ellipse at 50% 100%,rgba(255,255,255,.28),rgba(255,255,255,.08) 70%,transparent);border-radius:50% 50% 0 0}
+.pl-strip.on-earth .pl-zone.car{background:rgba(255,255,255,.07)}
+.pl-strip.on-earth .pl-mark{border-left-color:rgba(255,255,255,.55);top:18px}
+.pl-strip.on-earth .pl-mark b{top:-14px}
+.pl-strip.on-earth .pl.high{top:46%}.pl-strip.on-earth .pl.low{top:76%}
+.pl-strip.on-earth .pl-home{top:62%}
+.lv-stage.on-earth .lv-items{bottom:48px}
+
+.pl-strip.on-earth{height:150px}
+.pl-strip.on-earth .pl.person{width:34px;height:34px;border-width:3px}
+.pl-strip.on-earth .pl.high{top:52%}.pl-strip.on-earth .pl.low{top:74%}
+.pl-strip.on-earth .pl-home{top:66%}
+.pl-strip.on-earth .pl-mark{top:44px}
+.lv-stage.on-earth .lv-items{bottom:24px}
+
+.av .tbadge{position:absolute;right:-8px;top:-6px;min-width:28px;height:26px;border-radius:13px;background:#fff;border:3px solid var(--desc);display:flex;align-items:center;justify-content:center;font-size:14px;font-style:normal;box-shadow:0 2px 6px rgba(0,0,0,.25);z-index:2}
+.av .tbadge b{font-size:10px;margin-left:1px}
+.av.thing{border-color:var(--thing);background:#fff1e3;overflow:hidden}.av.thing img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.pl.pet-home{pointer-events:none;cursor:default;width:32px;height:32px;border-radius:50%;border-color:#8fb3d9;background:#eef4fb;font-size:19px}
 </style>
 </head>
 <body>
@@ -568,7 +603,7 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
   <div class="view" id="v-pongo" style="flex:1;min-height:0"></div>
   <div class="view" id="v-items" style="flex:1;min-height:0"></div>
 
-  <div class="view" id="v-living" style="flex:1;min-height:0"></div>
+  <div class="view" id="v-living" style="flex:1;min-height:0;flex-direction:column"></div>
 
   <!-- DOCK (shared) -->
   <div class="dock" id="dock">
@@ -642,6 +677,7 @@ const PEOPLE=[
   {id:'pilar',n:'Abuela Pilar',e:'👵',img:'pilar',s:'ok'},
   {id:'tintin',n:'TinTin',e:'🧑',img:'tintin',s:'ok'}
 ];
+const TEXTS={pilar:1}; // unread typed replies (💬), for the mockup
 const PETS=[
   {id:'lexi',n:'Lexi (SLUT)',e:'🐩',kind:'dog · poodle'},
   {id:'loki',n:'Loki',e:'🐈',kind:'cat · calico'},
@@ -693,8 +729,14 @@ function renderCore(){
   document.getElementById('core').innerHTML=CORE.map(c=>`<div class="sym" style="flex:1;border-color:${COL[c[2]]};background:${BG[c[2]]}" onclick="add('${c[0]}','${c[1]}','${c[2]}')">${c[0]}<span>${c[1]}</span></div>`).join('');
 }
 function renderPeople(){
-  document.getElementById('people').innerHTML=PEOPLE.map(p=>`<div class="av ${p.s==='busy'?'busy':p.s==='away'?'away':''}" onclick="openPerson('${p.id}')">${face(p)}${unheard(p.id)?vbadge(p.id,unheard(p.id)):''}<span>${p.n}</span></div>`).join('');
-  document.getElementById('people').innerHTML+=`<div class="sep"></div><div class="pets"><div class="petlbl">🐾 Pets</div><div style="display:flex;gap:10px">`+PETS.map(p=>`<div class="av pet" title="${p.kind}" onclick="add('${p.e}','${p.n}','people')"><b style="${p.grey?'filter:grayscale(1) brightness(1.1)':''}">${p.e}</b><span>${p.n}</span></div>`).join('')+`</div></div>`;
+  // family, each with a badge when something new is waiting: voice notes (moving wave + count), typed replies (💬)
+  document.getElementById('people').innerHTML=PEOPLE.map(p=>{
+    const v=unheard(p.id), t=TEXTS[p.id]||0;
+    const badges=(v?vbadge(p.id,v):'')+(t?`<i class="tbadge" title="new reply">💬${t>1?`<b>${t}</b>`:''}</i>`:'');
+    return `<div class="av ${p.s==='busy'?'busy':p.s==='away'?'away':''}" onclick="openPerson('${p.id}')">${face(p)}${badges}<span>${p.n}</span></div>`;
+  }).join('');
+  // then his favourite things (as in the live app); pets are on the globe, next to HOME
+  document.getElementById('people').innerHTML+=`<div class="sep"></div>`+['pongo','barney'].map(k=>`<div class="av thing" title="${k}" onclick="${k==='pongo'?"go('pongo')":"add('🦖','Barney','thing','barney')"}">${img(k)}</div>`).join('');
 }
 function personTap(id){
   const p=PEOPLE.find(x=>x.id===id);
@@ -850,7 +892,7 @@ function closedUntil(it){
   return null;
 }
 
-const rings=()=>'<div class="oring in"></div><div class="oring out"></div>';
+const rings=()=>'<div class="oring in"></div>'; // people left the orbit: no outer ring
 function itemOrb(it,onclick,closed){
   const pic=it.img?`<img src="${AVATARS[it.img]}" alt="">`:it.e;
   return `<div class="orb it ${closed?'closed':''}" style="${slotXY('in',it.slot)};border-color:${COL[it.t]};background:${BG[it.t]};animation-delay:${-it.slot*.6}s" onclick="${onclick}"><b class="c">${pic}</b>${it.badge?`<i class="badge" style="background:${it.badge}"></i>`:''}<span>${it.n}</span>${closed?`<i class="ck">${clk(closed,new Date(),30)}</i>`:''}</div>`;
@@ -866,13 +908,13 @@ const emptySlots=used=>[...Array(IN_N).keys()].filter(x=>!used.has(x)).map(x=>`<
 
 function renderOrbit(){
   const tap=it=>it.tap==='open'?`add('🍇','eat','action');go('food')`:it.tap==='play'?`say('Pongo');go('pongo')`:`add('${it.e}','${it.w}','${it.t}',${it.img?`'${it.img}'`:'null'})`;
-  document.getElementById('v-orbit').innerHTML=`<div class="orbitv">${groundHTML()}<div class="dimmable">${rings()}${emptySlots(new Set(INNER.map(i=>i.slot)))}${INNER.map(it=>itemOrb(it,tap(it))).join('')}${PEOPLE.map(whoOrb).join('')}<div class="ome" onclick="go('body')" title="My body"><img src="${AVATARS.jonatito}" alt="Jonatito"></div></div><div class="globecard" onclick="openWhere()"></div></div>`;
+  document.getElementById('v-orbit').innerHTML=`<div class="orbitv">${groundHTML()}<div class="dimmable">${rings()}${emptySlots(new Set(INNER.map(i=>i.slot)))}${INNER.map(it=>itemOrb(it,tap(it))).join('')}<div class="ome" onclick="go('body')" title="My body"><img src="${AVATARS.jonatito}" alt="Jonatito"></div></div><div class="globecard" onclick="openWhere()"></div></div>`;
 }
 function renderFood(){
   document.getElementById('v-food').innerHTML=`<div class="orbitv">${groundHTML()}<div class="dimmable">${rings()}
     <div class="nextsnack">🍇${clk(TT.snack,new Date(),64)}<b>${fmt(TT.snack)}</b></div>
     ${FOODS.map((it,i)=>{const c=closedUntil(it);return itemOrb(it,c?`foodClosed(${i},this)`:`add('${it.e}','${it.n}','thing',null,'${it.badge||''}')`,c)}).join('')}
-    ${PEOPLE.map(whoOrb).join('')}
+    
     <div class="ome" onclick="go('orbit')" title="Back"><img src="${AVATARS.jonatito}" alt="Jonatito"></div><div class="ome-badge" onclick="go('orbit')">🍇</div></div>
     <div class="globecard" onclick="openWhere()"></div><div class="tipclock" id="tip" hidden></div></div>`;
 }
@@ -1229,6 +1271,17 @@ function lvEvents() {
 let LV_EVENTS = [];
 let LV_T0 = 0;
 
+// The live app's inner orbit on the "places on the earth" tab: Pongo and Barney are in the dock now.
+const LIVE_INNER = [
+  { slot: 0, e: '🍇', n: 'Eat', w: 'eat', t: 'action', tap: 'open' },
+  { slot: 1, e: '🛁', n: 'Bath', w: 'take a bath', t: 'action' },
+  { slot: 2, e: '🚽', n: 'Toilet', w: 'toilet', t: 'action' },
+  { slot: 3, e: '🚗', n: 'Go', w: 'go', t: 'action' },
+  { slot: 6, e: '🎧', n: 'Music', w: 'music', t: 'thing' },
+  { slot: 7, e: '💧', n: 'Water', w: 'water', t: 'thing' },
+];
+const lvInner = () => (LV.onEarth ? LIVE_INNER : INNER);
+
 function renderLiving() {
   LV_EVENTS = lvEvents();
   const d0 = new Date(); d0.setHours(0, 0, 0, 0); d0.setDate(d0.getDate() - 3); LV_T0 = d0.getTime();
@@ -1253,12 +1306,13 @@ function renderLiving() {
   }
   document.getElementById('lvtrack').innerHTML = html;
 
-  document.getElementById('v-living').innerHTML = `<div class="lv-stage" id="lvstage">
+  document.getElementById('v-living').innerHTML = `<div class="lv-stage ${LV.onEarth ? 'on-earth' : ''}" id="lvstage">
       <canvas id="lvsky"></canvas>
       <div class="lv-guide"></div>
-      <div class="lv-items">${rings()}${emptySlots(new Set(INNER.map((i) => i.slot)))}${INNER.map((it) => itemOrb(it, `add('${it.e}','${it.w}','${it.t}',${it.img ? `'${it.img}'` : 'null'})`)).join('')}${PEOPLE.map(whoOrb).join('')}</div>
+      <div class="lv-items">${LV.onEarth ? '<div class="oring in"></div>' : rings()}${emptySlots(new Set(lvInner().map((i) => i.slot)))}${lvInner().map((it) => itemOrb(it, `add('${it.e}','${it.w}','${it.t}',${it.img ? `'${it.img}'` : 'null'})`)).join('')}</div>
       <div class="ome lv-me" onclick="lvNow()"><img src="${AVATARS.jonatito}" alt=""></div>
-    </div>`;
+      ${LV.onEarth ? placesStrip() : ''}
+    </div>${LV.onEarth ? '' : placesStrip()}`;
   const wrap = document.getElementById('lvtl');
   wrap.onpointerdown = (e) => { if (e.target.closest('.lv-ev')) return; LV.drag = { x: e.clientX, s: LV.scrub }; LV.returning = false; wrap.setPointerCapture(e.pointerId); };
   wrap.onpointermove = (e) => {
@@ -1300,7 +1354,7 @@ function lvUpdate(force) {
 }
 
 function lvLoop(ts) {
-  if (view !== 'living') { LV.raf = 0; return; }
+  if (vel() !== 'living') { LV.raf = 0; return; }
   if (LV.fast) { LV.scrub += 12; if (LV.scrub > 1440) { LV.scrub = 0; LV.fast = false; } lvUpdate(); }
   else if (LV.returning) { LV.scrub += (0 - LV.scrub) * 0.12; if (Math.abs(LV.scrub) < 0.5) { LV.scrub = 0; LV.returning = false; } lvUpdate(); }
   if (ts - LV.last >= 33) { LV.last = ts; drawSky(ts); } // <= 30 fps, one canvas
@@ -1358,7 +1412,7 @@ function drawSky(idle) {
   }
 
   // sun and moon orbit the earth (an ellipse around it: east horizon at 6, overhead at noon, west at 6)
-  const EH = 74, hy = H - EH, cx = W / 2, rx = W * 0.47, ry = hy - 36;
+  const EH = LV.onEarth ? 172 : 74, hy = H - EH, cx = W / 2, rx = W * 0.47, ry = hy - 36;
   const body = (a) => [cx + rx * Math.sin(a), hy - ry * Math.cos(a)];
   const [sx, sy] = body(th);
   const glow = g.createRadialGradient(sx, sy, 4, sx, sy, 70); glow.addColorStop(0, 'rgba(255,214,102,.55)'); glow.addColorStop(1, 'rgba(255,214,102,0)');
@@ -1381,7 +1435,7 @@ function drawSky(idle) {
   if (season === 'autumn' && wx !== 'snow') { const r = rng(13); g.fillStyle = 'rgba(214,120,40,.7)'; for (let i = 0; i < 6; i++) { const x = (r() * W - idle * 0.02 + W * 3) % W, y = (r() * H + idle * 0.03) % hy; g.beginPath(); g.ellipse(x, y, 5, 3, idle / 600 + i, 0, 7); g.fill(); } }
 
   // earth: a huge sphere peeking at the bottom; it turns once a day (+ a slow idle drift)
-  const ER = W * 1.3, ecy = H + ER - EH;
+  const ER = LV.onEarth ? W * 0.82 : W * 1.3, ecy = H + ER - EH;
   const atm = g.createRadialGradient(cx, ecy, ER - 6, cx, ecy, ER + 26); atm.addColorStop(0, alt > 0 ? 'rgba(170,215,255,.75)' : 'rgba(110,140,210,.45)'); atm.addColorStop(1, 'rgba(170,215,255,0)');
   g.fillStyle = atm; g.beginPath(); g.arc(cx, ecy, ER + 26, 0, Math.PI * 2); g.fill();
   g.save(); g.beginPath(); g.arc(cx, ecy, ER, 0, Math.PI * 2); g.clip();
@@ -1407,6 +1461,50 @@ function renderCalendarPhone(el){
     <p>Events added here appear on the <b>right side</b> of his timeline (the future), with their picture and the faces of who is involved. Only scheduled things can be in the future.</p>
     <p><b>Add a photo to his day</b>: a photo put at a past time (the park at 1:30) appears on the <b>left side</b> of the timeline, next to what he did then.</p>
     <p>The daily routine (breakfast, bath, sleep) is a repeating event. Later, Google Calendar can feed the same list.</p></div>`;
+}
+
+/* ===================== v0.7 — places compass (relative space) ===================== */
+// Distance (km) -> how far from the centre, as a share of half the screen. Not to scale:
+// near things get most of the room; far things bunch towards the edges.
+const PL_CAR = 0.18, PL_PLANE = 0.58;
+function plReach(km) {
+  if (km < 2) return 0.1 + (PL_CAR - 0.13) * (km / 2);
+  if (km < 150) return PL_CAR + 0.06 + (PL_PLANE - PL_CAR - 0.12) * (Math.log(km / 2) / Math.log(75));
+  return PL_PLANE + 0.07 + 0.28 * Math.min(1, Math.log(km / 150) / Math.log(120));
+}
+const PL_HOME = { lat: 40.71, lon: -74.01, name: 'NYC' };
+const PLACES = []; // generic place icons removed; only home and people for now
+const PL_PEOPLE = [
+  { id: 'mama', lat: 40.754, lon: -73.984 },   // at work, Midtown (~5 km)
+  { id: 'tintin', lat: 40.678, lon: -73.944 }, // Brooklyn (~7 km)
+  { id: 'abuelo', lat: 40.86, lon: -74.4 },    // at the doctor in New Jersey (~35 km)
+  { id: 'larry', lat: 25.76, lon: -80.19 },    // Miami
+  { id: 'pilar', lat: -12.05, lon: -77.04 },   // Lima
+];
+function plKm(a, b) { const r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r; const h = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 2 * 6371 * Math.asin(Math.sqrt(h)); }
+function plX(p) { const side = p.lon >= PL_HOME.lon ? 1 : -1; return 50 + side * plReach(plKm(PL_HOME, p)) * 50; }
+function placesStrip() {
+  const zones = `<div class="pl-zone walk" style="left:${50 - PL_CAR * 50}%;width:${PL_CAR * 100}%"></div>
+    <div class="pl-zone car" style="left:${50 - PL_PLANE * 50}%;width:${(PL_PLANE - PL_CAR) * 50}%"></div>
+    <div class="pl-zone car" style="left:${50 + PL_CAR * 50}%;width:${(PL_PLANE - PL_CAR) * 50}%"></div>`;
+  const marks = [-1, 1].map((sd) => `<span class="pl-mark" style="left:${50 + sd * PL_CAR * 50}%"><b>🚗</b></span><span class="pl-mark" style="left:${50 + sd * PL_PLANE * 50}%"><b>✈️</b></span>`).join('');
+  // Lay out on two rows; if a spot is taken on both rows, nudge it outwards (away from home).
+  const things = [
+    ...PLACES.map((p) => ({ x: plX(p), html: (cls, x) => { const who = p.who ? PEOPLE.find((y) => y.id === p.who) : null; return `<button class="pl ${cls}" style="left:${x}%" onclick="add('${p.e}','${p.n}','desc')" title="${p.n}">${p.e}${who ? `<i class="with">${face(who)}</i>` : ''}</button>`; } })),
+    ...PL_PEOPLE.map((q) => { const P = PEOPLE.find((y) => y.id === q.id); return { x: plX(q), html: (cls, x) => `<button class="pl person ${cls}" style="left:${x}%" onclick="openPerson('${q.id}')" title="${P.n}">${face(P)}</button>` }; }),
+  ].sort((a, b) => Math.abs(a.x - 50) - Math.abs(b.x - 50));
+  const rows = { high: [], low: [] };
+  const GAP = 4.2;
+  const html = things.map((t) => {
+    let x = t.x;
+    for (let tries = 0; tries < 20; tries++) {
+      for (const row of ['high', 'low']) if (rows[row].every((o) => Math.abs(o - x) >= GAP)) { rows[row].push(x); return t.html(row, x); }
+      x += x >= 50 ? 1.2 : -1.2;
+    }
+    return t.html('high', x);
+  }).join('');
+  const places = html, people = '';
+  return `<div class="pl-strip ${LV.onEarth ? 'on-earth' : ''}" id="plstrip">${zones}${marks}${places}${people}<div class="pl-home" onclick="say('home')">🏠<small>HOME · ${PL_HOME.name}</small></div>${LV.onEarth ? PETS.map((pt, k) => `<span class="pl pet-home" style="left:${50 + [-5.2, 5.2, 8.6][k]}%;top:${[58, 58, 80][k]}%" title="${pt.n}"><b style="${pt.grey ? 'filter:grayscale(1) brightness(1.1)' : ''}">${pt.e}</b></span>`).join('') : ''}</div>`;
 }
 
 /* NAV */
@@ -1436,12 +1534,13 @@ Object.assign(VIEWS,{
   bridge:['💬 WhatsApp bridge','Abuelo Lucho uses plain WhatsApp: a template when the 24-hour window is closed, then the picture strip and his voice once it opens; Abuelo’s voice note lands on Jonatito’s shelf.']
 });
 Object.assign(VIEWS,{
-  living:['🌍 Living orbit (v0.5)','The sentence row is on top, the time row under it. NOW is fixed in the centre, in line with his head. Drag the timeline: left is the past (what he did, voice notes he played, photos caretakers added), right is the future (only what is scheduled). The sky, sun, moon and earth follow the time you drag to, and snap back to NOW after 8 s (or tap his face / the clock). Tap a picture on the timeline to see it.'],
+  living2:['🌍 Places on the earth','Same as the first tab, but the places compass is drawn ON a bigger earth; home is NYC. Pongo and Barney are in the taskbar after the family (as in the live app); the pets are small pictures next to 🏠 HOME (nothing to tap). Taskbar faces show a badge when something new is waiting (moving sound wave + count for voice notes, 💬 for a typed reply). People are no longer in the orbit: they are in the taskbar and appear as small faces on the globe where they are (Mommy Joyce at work in Midtown, TinTin in Brooklyn, Abuelo Lucho at the doctor in New Jersey past the 🚗, Larry in Miami and Abuela Pilar in Lima past the ✈️). No generic place icons. The walk / 🚗 / ✈️ zones are soft bands on the ground; nearby places sit on the land, far ones by the edges of the sphere.'],
+  living:['🌍 Living orbit + places','The strip under the earth is the places compass (v0.7): 🏠 home under his head; nearby places close to the centre; past the 🚗 places a drive away (Abuelo Lucho is at the doctor); past the ✈️ far places and people (Larry in Miami, Abuela Pilar in Lima) at the edges. West on the left, east on the right; not to scale. Tap a place to add it to the sentence, a face to open their page. The sentence row is on top, the time row under it. NOW is fixed in the centre, in line with his head. Drag the timeline: left is the past (what he did, voice notes he played, photos caretakers added), right is the future (only what is scheduled). The sky, sun, moon and earth follow the time you drag to, and snap back to NOW after 8 s (or tap his face / the clock). Tap a picture on the timeline to see it.'],
   calendar:['📅 Calendar (caretakers)','Caretakers add events with a photo and the people involved. They show on the future side of his timeline; photos added to a past time show on the past side.']
 });
-const ORDER=['living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
+const ORDER=['living2','living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
 const PHONEISH=['phone','timeline','notify','bridge','calendar'];
-const VIEW_EL={where:'orbit'};
+const VIEW_EL={where:'orbit',living2:'living'};
 const vel=()=>VIEW_EL[view]||view;
 function go(v){
   view=v; const el=vel();
@@ -1461,7 +1560,7 @@ function go(v){
   document.getElementById('stripbar').style.display=['home','orbit','food','living'].includes(el)?'flex':'none';
   if(el==='orbit')renderOrbit(); if(el==='food')renderFood(); if(el==='person')renderPerson();
   if(el==='body')renderBody(); if(el==='pongo')renderPongo(); if(el==='items')renderItems();
-  if(el==='living'){ LV.scrub=0; renderLiving();
+  if(el==='living'){ LV.scrub=0; LV.onEarth = v==='living2'; LV.land=null; renderLiving();
     document.getElementById('note').innerHTML=VIEWS[v][1]+' <span id="lvdemo">Demo: <button onclick="LV.weather=\'clear\';lvUpdate(1)">☀️</button><button onclick="LV.weather=\'partly\';lvUpdate(1)">⛅</button><button onclick="LV.weather=\'rain\';lvUpdate(1)">🌧️</button><button onclick="LV.weather=\'snow\';LV.season=\'winter\';lvUpdate(1)">❄️</button><button onclick="LV.season=null;lvUpdate(1)">season: auto</button><button onclick="LV.returning=false;LV.fast=true">⏩ play a whole day</button></span>'; }
   closeCard(); fit(); tick();
   if(v==='where') setTimeout(()=>showWhere('pilar',true),350);
@@ -1473,7 +1572,7 @@ function fit(){
 }
 window.addEventListener('resize',fit);
 document.querySelectorAll('img.ph').forEach(i=>i.src=AVATARS[i.dataset.p]);
-renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('living');setInterval(tick,15000);
+renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('living2');setInterval(tick,15000);
 </script>
 </body>
 </html>

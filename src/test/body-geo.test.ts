@@ -41,3 +41,16 @@ test('city list: search, nearest city, flags', () => {
   assert.equal(nearestCity(-12.1, -77).tz, 'America/Lima');
   assert.equal(flagOf('pe'), '🇵🇪');
 });
+
+test('places compass: nearer is nearer the centre; zones by walk / drive / fly; west left, east right', async () => {
+  const { compassReach, compassX, COMPASS_CAR, COMPASS_PLANE } = await import('../shared/geo.ts');
+  const kms = [0, 0.5, 1.9, 3, 20, 140, 160, 2000, 6000, 20000];
+  const reach = kms.map(compassReach);
+  for (let i = 1; i < reach.length; i++) assert.ok(reach[i] >= reach[i - 1], `monotonic at ${kms[i]} km`);
+  assert.ok(compassReach(1) < COMPASS_CAR && compassReach(3) > COMPASS_CAR, 'the 🚗 line sits between walk and drive');
+  assert.ok(compassReach(100) < COMPASS_PLANE && compassReach(200) > COMPASS_PLANE, 'the ✈️ line sits between drive and fly');
+  assert.ok(compassReach(40000) <= 1, 'never off the screen');
+  const nyc = { lat: 40.71, lon: -74.01 };
+  assert.ok(compassX(nyc, { lat: -12.05, lon: -77.04 }) < 50, 'Lima is to the west (left)');
+  assert.ok(compassX(nyc, { lat: 40.4, lon: -3.7 }) > 50, 'Madrid is to the east (right)');
+});

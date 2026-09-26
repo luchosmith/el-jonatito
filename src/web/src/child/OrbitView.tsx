@@ -1,8 +1,8 @@
-// Jonatito in the middle; his core things in the inner orbit, his people in the outer one, the
-// ground under his feet. Every slot is fixed. Tapping Eat opens the foods around him; tapping a
-// person opens their person screen.
+// Jonatito in the middle, his core things in the inner orbit (every slot fixed), the earth under his
+// feet with the places compass on it (home in the centre, people where they are). Tapping Eat opens
+// the foods around him; tapping a face on the globe opens that person's screen.
 import { useEffect, useState, type MutableRefObject } from 'react';
-import { Face, SoundWave } from '../common/Face.tsx';
+import { Face } from '../common/Face.tsx';
 import { Clock12 } from '../common/Clock12.tsx';
 import { INNER_SLOTS, slotStyle } from '../common/orbit.ts';
 import { itemToken, shownLabel, type Board, type StripToken } from '../common/board.ts';
@@ -10,9 +10,10 @@ import { kindClass } from '../common/Token.tsx';
 import { speak } from '../common/hooks.ts';
 import { logTap } from '../common/taplog.ts';
 import { Sky, type Weather } from './Sky.tsx';
+import { PlacesCompass } from './PlacesCompass.tsx';
 import type { Season } from '../../../shared/time.ts';
 import { fmt12 } from '../../../shared/time.ts';
-import type { Item, Lang, Person } from '../../../shared/types.ts';
+import type { Item, Lang, Locations, Person } from '../../../shared/types.ts';
 
 interface Props {
   board: Board;
@@ -21,14 +22,13 @@ interface Props {
   parentId: string | null;
   now: Date;
   lang: Lang;
-  unheard: Record<string, number>;
+  locations: Locations | null;
   onAdd: (t: StripToken) => void;
   onOpen: (item: Item) => void;
   onPlay: (item: Item) => void;
   onBody: () => void;
   onBack: () => void;
   onPerson: (personId: string) => void;
-  onHearNewest: (personId: string) => void;
   /** the time the sky shows (now, or where he dragged the timeline) */
   timeRef: MutableRefObject<number>;
   weather: Weather;
@@ -52,10 +52,6 @@ export function OrbitView(p: Props) {
 
   const inner = board.items.filter((i) => i.orbit === 'inner' && (i.parent_id ?? null) === parentId && !i.is_hidden && i.orbit_slot != null);
   const used = new Set(inner.map((i) => i.orbit_slot));
-  const outer = board.items
-    .filter((i) => i.orbit === 'outer' && !i.parent_id && !i.is_hidden && i.orbit_slot != null)
-    .map((i) => ({ item: i, person: board.people.find((x) => x.id === i.id) }))
-    .filter((x): x is { item: Item; person: Person } => !!x.person);
 
   const closedUntil = (i: Item) => (i.closed_until && new Date(i.closed_until) > now ? new Date(i.closed_until) : null);
   const nextOpen = inner.map(closedUntil).filter((d): d is Date => !!d).sort((a, b) => a.getTime() - b.getTime())[0];
@@ -88,7 +84,6 @@ export function OrbitView(p: Props) {
 
       <div className={`orbit-layer ${p.away ? 'away' : ''}`}>
         <div className="ring inner" />
-        <div className="ring outer" />
 
         {Array.from({ length: INNER_SLOTS }, (_, s) => s).filter((s) => !used.has(s)).map((s) => (
           <div key={s} className="orb empty" style={slotStyle('inner', s)} data-testid={`orbit-empty-${s}`} />
@@ -116,50 +111,15 @@ export function OrbitView(p: Props) {
           );
         })}
 
-        {outer.map(({ item, person }) => {
-          const status = person.status ?? 'available';
-          const n = p.unheard[person.id] ?? 0;
-          return (
-            <button
-              key={item.id}
-              className={`orb who ${status}`}
-              data-testid={`orbit-${person.id}`}
-              data-status={status}
-              data-slot={item.orbit_slot}
-              style={{ ...slotStyle('outer', item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.9}s` }}
-              onClick={() => {
-                logTap('person', screen, { person_id: person.id });
-                p.onPerson(person.id);
-              }}
-            >
-              <Face person={person} />
-              {status === 'busy' && (
-                <i className="not-avail" data-testid={`busy-${person.id}`}>
-                  {person.status_until ? <Clock12 at={new Date(person.status_until)} from={now} size={26} /> : '🟡'}
-                </i>
-              )}
-              {status === 'away' && <i className="not-avail" data-testid={`away-${person.id}`}>🚫</i>}
-              {n > 0 && (
-                <span
-                  className="vbadge"
-                  role="button"
-                  data-testid={`voice-badge-${person.id}`}
-                  data-count={n}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    logTap('hear', screen, { person_id: person.id });
-                    p.onHearNewest(person.id);
-                  }}
-                >
-                  <SoundWave width={26} />
-                  {n > 1 && <i className="n">{n}</i>}
-                </span>
-              )}
-              <span className="nm">{person.short_label}</span>
-            </button>
-          );
-        })}
       </div>
+
+      {(
+        <PlacesCompass
+          board={board}
+          locations={p.locations}
+          onPerson={p.onPerson}
+        />
+      )}
 
       <button
         className="orbit-me"

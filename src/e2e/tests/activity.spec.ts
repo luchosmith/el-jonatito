@@ -57,7 +57,7 @@ test('a sent sentence is one "sent" moment; friends cannot read the tap log', as
 test('visiting a face without sending: that person gets a 💭, riding along with his next message', async ({ page, browser, request }) => {
   const pilar = await device(browser, 'pilar', { clock: AFTERNOON });
   await login(page, 'jonatito');
-  await page.getByTestId('orbit-pilar').click();
+  await page.getByTestId('dock-pilar').click();
   await page.getByTestId('me-button').click();
   const joyceApi = await apiAs(request, 'joyce');
   await expect.poll(async () => (await (await joyceApi.get('/api/moments')).json()).length, { timeout: 8000 }).toBe(1);
@@ -65,7 +65,7 @@ test('visiting a face without sending: that person gets a 💭, riding along wit
   await tick(request);
   await expect(pilar.page.getByTestId('notify-banner')).toHaveCount(0); // a 💭 alone never buzzes
 
-  await page.getByTestId('orbit-pilar').click();
+  await page.getByTestId('dock-pilar').click();
   await page.getByTestId('zone-love').click();
   const banner = pilar.page.getByTestId('notify-banner');
   await expect(banner).toBeVisible();
@@ -112,6 +112,11 @@ test('a typed reply is shown and read aloud on his tablet', async ({ page, brows
   await msg.getByTestId('reply-text-input').fill('¡Qué bueno, mi amor!');
   await msg.getByTestId('reply-text-send').click();
   await expect(page.getByTestId('reply-text')).toHaveText('“¡Qué bueno, mi amor!”');
+  // Until he opens her page, a 💬 waits on her taskbar face.
+  await expect(page.getByTestId('dock-text-pilar')).toBeVisible();
+  await page.getByTestId('dock-pilar').click();
+  await page.getByTestId('me-button').click();
+  await expect(page.getByTestId('dock-text-pilar')).toHaveCount(0);
   await expect(msg.getByTestId('my-replies')).toContainText('¡Qué bueno, mi amor!');
   await pilar.context.close();
 });

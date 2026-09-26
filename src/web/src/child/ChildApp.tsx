@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, setElevatedToken } from '../api.ts';
 import { deviceLang, speak, useEvents, useLongPress, useNow } from '../common/hooks.ts';
-import { playClip, sayToken } from '../common/sound.ts';
+import { sayToken } from '../common/sound.ts';
 import { flushTaps, logTap } from '../common/taplog.ts';
 import { itemToken, personToken, type Board, type StripToken } from '../common/board.ts';
 import { TimeBar, PAST_DAYS, FUTURE_DAYS } from './TimeBar.tsx';
@@ -59,6 +59,14 @@ export function ChildApp({ user: _user }: { user: User }) {
   const [entry, setEntry] = useState<TimelineEntry | null>(null);
   // New voice messages waiting to pop up and play once (one at a time).
   const [arrivals, setArrivals] = useState<VoiceNote[]>([]);
+  const [textReplies, setTextReplies] = useState<Reply[]>([]);
+  const [seenText, setSeenText] = useState<Record<string, string>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('jt.seenText') ?? '{}') as Record<string, string>;
+    } catch {
+      return {};
+    }
+  });
   // Time scrubbing: minutes away from now (negative = past). The sky reads timeRef every frame.
   const [scrub, setScrub] = useState(0);
   const timeRef = useRef(Date.now());
@@ -107,6 +115,9 @@ export function ChildApp({ user: _user }: { user: User }) {
     void loadVoice();
     void loadLocations();
     void loadTimeline();
+    api.get<Message[]>('/api/messages')
+      .then((ms) => setTextReplies(ms.flatMap((m) => m.replies.filter((r) => r.kind === 'text'))))
+      .catch(() => undefined);
     api.get<ScheduleItem[]>('/api/schedule').then(setSchedule).catch(() => undefined);
     api.get<NowInfo>('/api/now').then(setInfo).catch(() => undefined);
   }, [loadBoard, loadLogs, loadMedia, loadVoice, loadLocations, loadTimeline]);
@@ -120,7 +131,10 @@ export function ChildApp({ user: _user }: { user: User }) {
     if (e.type === 'availability') {
       setBoard((b) => b && { ...b, people: b.people.map((p) => (p.id === e.person_id ? { ...p, status: e.status, status_until: e.until } : p)) });
     }
-    if (e.type === 'reply') setReply(e.reply);
+    if (e.type === 'reply') {
+      setReply(e.reply);
+      if (e.reply.kind === 'text') setTextReplies((rs) => [...rs.filter((r) => r.id !== e.reply.id), e.reply]);
+    }
     if (e.type === 'voice_note') {
       setVoice((vs) => {
         const rest = vs.filter((v) => v.id !== e.note.id);
@@ -142,6 +156,28 @@ export function ChildApp({ user: _user }: { user: User }) {
   }, [now, nextChange, loadBoard]);
 
   const corner = useLongPress(3000, () => setGate(true));
+
+  const unreadText = useMemo(() => {
+    const out: Record<string, number> = {};
+    for (const r of textReplies) {
+      if (!r.from_person_id) continue;
+      if (seenText[r.from_person_id] && r.created_at <= seenText[r.from_person_id]) continue;
+      out[r.from_person_id] = (out[r.from_person_id] ?? 0) + 1;
+    }
+    return out;
+  }, [textReplies, seenText]);
+  // Opening someone's page counts as having seen their typed replies.
+  const openPerson = (id: string, screen = 'dock') => {
+    logTap('person', screen, { person_id: id }); // a visit: if he sends nothing, they get a 💭
+    const next = { ...seenText, [id]: new Date().toISOString() };
+    setSeenText(next);
+    try {
+      localStorage.setItem('jt.seenText', JSON.stringify(next));
+    } catch {
+      /* private mode */
+    }
+    setView({ name: 'person', id });
+  };
 
   const unheard = useMemo(() => {
     const out: Record<string, number> = {};
@@ -219,14 +255,6 @@ export function ChildApp({ user: _user }: { user: User }) {
     api.post<VoiceNote>(`/api/voice-notes/${n.id}/heard`).catch(() => undefined);
   };
 
-  const hearNewest = (personId: string) => {
-    const mine = voice.filter((v) => v.from_person_id === personId);
-    const n = mine.filter((v) => !v.heard_at).sort((a, b) => b.created_at.localeCompare(a.created_at))[0] ?? mine[0];
-    if (!n) return;
-    playClip(n.audio_url);
-    if (!n.heard_at) markHeard(n);
-  };
-
   const person = view.name === 'person' ? board.people.find((p) => p.id === view.id) : undefined;
   const playerItem = view.name === 'player' ? board.items.find((i) => i.id === view.itemId) : undefined;
 
@@ -279,7 +307,7 @@ export function ChildApp({ user: _user }: { user: User }) {
             parentId={view.parent}
             now={now}
             lang={lang}
-            unheard={unheard}
+            locations={locations}
             timeRef={timeRef}
             weather={weatherOf(info?.weather?.code)}
             season={seasonOf(viewTime)}
@@ -294,8 +322,7 @@ export function ChildApp({ user: _user }: { user: User }) {
             }}
             onBody={() => setView({ name: 'body' })}
             onBack={() => setView(HOME)}
-            onPerson={(id) => setView({ name: 'person', id })}
-            onHearNewest={hearNewest}
+            onPerson={(id) => openPerson(id, 'globe')}
           />
         </>
       )}
@@ -352,10 +379,11 @@ export function ChildApp({ user: _user }: { user: User }) {
           } else add(itemToken(item, lang), 'dock');
         }}
         unheard={unheard}
+        unreadText={unreadText}
         meActive={view.name === 'orbit' && !view.parent}
         boardActive={view.name === 'board'}
         onMe={() => setView(HOME)}
-        onPerson={(p) => setView({ name: 'person', id: p.id })}
+        onPerson={(p) => openPerson(p.id)}
         onBoard={() => setView({ name: 'board' })}
         onDay={() => {
           void loadLogs();
@@ -391,7 +419,7 @@ export function ChildApp({ user: _user }: { user: User }) {
           onOpen={() => {
             const pid = arrivals[0].from_person_id;
             setArrivals((a) => a.slice(1));
-            if (pid) setView({ name: 'person', id: pid });
+            if (pid) openPerson(pid, 'voice');
           }}
           onDone={() => setArrivals((a) => a.slice(1))}
         />

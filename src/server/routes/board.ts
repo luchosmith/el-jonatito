@@ -82,7 +82,8 @@ export function boardRoutes({ router, db, cfg, hub, now }: Deps) {
       if (orbit) {
         slot = num(body, 'orbit_slot', { min: 0, max: (orbit === 'inner' ? INNER_SLOTS : OUTER_SLOTS) - 1 })!;
         if (!Number.isInteger(slot)) throw new HttpError(400, 'orbit_slot must be a whole number');
-        if (orbit === 'outer' && (parent || RESERVED_OUTER.includes(slot))) throw new HttpError(400, 'That outer slot stays empty');
+        // People left the orbit (v0.8): they are in the taskbar and on the globe.
+        if (orbit === 'outer') throw new HttpError(400, 'People are not placed in the orbit');
         if (parent) {
           if (parent === id) throw new HttpError(400, 'An item cannot be inside itself');
           const p = db.get<{ tap: string }>('SELECT tap FROM items WHERE id = ?', parent);

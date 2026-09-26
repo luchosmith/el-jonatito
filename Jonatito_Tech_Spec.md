@@ -562,6 +562,52 @@ CREATE TABLE events (
 3. **Photos on the past side:** caretakers only, or can friends add photos to his day too, with a caretaker approving them?
 4. **Night look:** is a dark night sky OK for him, or should night stay light and calm (only a moon and stars)?
 
+### 5.19 Places compass: relative space on the earth (v0.8, built)
+> **Built (September 2026), as chosen in review (mockup tab "🌍 Places on the earth"):** drawn **on a bigger earth** (it rises higher and curves more) instead of a separate band. **People leave the orbit entirely**: they are in the taskbar and appear as **small faces on the globe** where they are; the orbit keeps only the inner ring. **Home = NYC** (the family's home location setting). **No generic place icons** for now (no cart, park, school…): only 🏠 home and people. **Pets** (Lexi, Loki, Logan) appear as small pictures next to 🏠 HOME (not tappable). **Taskbar badges:** each family face shows what is waiting: a moving sound wave with a count for unheard voice notes, 💬 for an unread typed reply. The orbit holds only his inner items (Eat, Bath, Toilet, Go, Music, Water); Pongo and Barney are in the taskbar. Busy / away marks moved from the orbit to the taskbar faces (a small 12-hour clock of when they are free, or 🚫). Opening someone's page from the taskbar or the globe counts as a visit (💭). Schema v8 clears the outer orbit. Not built yet: family places with coordinates, "Jonatito is at…", the compass following the timeline. The notes below describe the fuller design; places can be added later.
+
+**Goal:** the timeline shows *when*; this strip shows *where*. Home (or wherever he is) sits in the middle, under his head. Near things are near the middle; far things go to the edges.
+
+**Layout:** a band between the earth and the dock, the full width of the screen (about 90 px).
+- **Center:** 🏠 **HOME**, or the place he is at now (🏫 at school, 🏡 at Abuela's). It has a red frame, like his pin.
+- **Zones, outward from the center:**
+  - **walk:** under 2 km, the lightest green;
+  - **🚗 line**, then **drive:** 2–150 km;
+  - **✈️ line**, then **fly:** over 150 km, reaching the edges.
+- **Scale:** squeezed, not to scale. Inside the walk zone the position grows with distance; the drive zone uses a log scale; the fly zone bunches far places near the edges. Anything nearby gets most of the room.
+- **Side:** west on the left, east on the right, by rough compass direction, so each place is always on the same side.
+- **Crowding:** pictures sit on two rows. When a spot is taken on both, a picture is nudged outward, away from home, never across the center.
+
+**What appears on it:**
+- **Places:** the Places words (park, school, store, pool, Abuela's house…), each with a location set by a caretaker.
+- **People:** each adult's "Where I am" pin (5.7). If they chose one of the family places ("I'm at the doctor"), their face sits on that place's picture instead.
+- **Not shown:** people who haven't shared where they are.
+
+**Taps:**
+- **a place:** adds its word to the sentence ("I want to go to the park");
+- **a face:** opens their person screen;
+- **HOME:** says "home" and adds it.
+
+**Caretakers:**
+- **Items → a place → Location:** "Set to where this phone is now", or search a city or address. Stored to about 100 m, visible to caretakers and the tablet only.
+- **"Jonatito is at…":** a quick setting on the family app. It moves the center of the compass, and calendar events with a place can set it automatically.
+- **"Where I am":** gains quick buttons for the family places ("At home", "At the doctor").
+
+**Rendering:** plain DOM (a dozen elements, no canvas). It updates on the `location` and `items` events.
+
+**Screen space:** on a 1280×800 tablet the strip takes about 90 px from the orbit. Alternative: draw the strip **on the earth itself** (the land band already there), so the orbit keeps its space.
+
+```sql
+CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE,
+  lat REAL NOT NULL, lon REAL NOT NULL, set_by INTEGER REFERENCES users(id), updated_at TEXT NOT NULL);
+-- settings.current_place = item id (default 'home'); locations.place_item_id = optional family place for "I'm at …"
+```
+
+### 5.20 Decisions to confirm (v0.8)
+1. **Position:** a separate band under the earth (as mocked), or drawn **on** the earth band to keep orbit space?
+2. **Side:** west/east by real direction, or simply alternate left/right?
+3. **Which places:** only places with a location set, or also the other Places words (shown at the edge of the walk zone until a location is set)?
+4. **Timeline link:** when he drags time, should the compass move too (e.g. show him at school at 10:00 from the calendar)?
+
 ---
 
 ## 6. Smart dispatcher (worker)

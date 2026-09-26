@@ -11,7 +11,6 @@
     { "id": "pongo", "tap": "play", "media": "Pongo" },
     { "id": "barney" }
   ],
-  "outer_slots": [1, 2, 3, 4, 6, 7, 8, 9],
   "sub_orbits": {
     "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green"]
   },

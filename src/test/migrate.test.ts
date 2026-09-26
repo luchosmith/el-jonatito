@@ -52,7 +52,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   const db = new Db(cfg.dbFile); // applies the v3 schema next to the old tables, like a real restart
   const backup = migrate(db, cfg);
   assert.ok(backup && fs.existsSync(backup), 'writes a backup copy first');
-  assert.equal(schemaVersion(db), 7);
+  assert.equal(schemaVersion(db), 8);
   const tables = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name);
   assert.ok(!tables.includes('symbols') && !tables.includes('limits'));
   assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
@@ -71,10 +71,10 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   assert.equal(item('come_see').category, 'social');
   assert.match(item('grapes').photo_url ?? '', /grapes\.jpg/);
 
-  // Orbit layout: Eat opens the foods (it shows grapes), people take outer slots skipping 12:00 and 6:00.
+  // Orbit layout: Eat opens the foods (it shows grapes).
   assert.deepEqual([item('eat').orbit, item('eat').orbit_slot, item('eat').tap, item('eat').emoji], ['inner', 0, 'open', '🍇']);
-  assert.equal(item('mommy_joyce').orbit_slot, 1);
-  assert.equal(item('tintin').orbit_slot, 2);
+  assert.equal(item('mommy_joyce').orbit, null); // v8: people are not in the orbit
+  assert.equal(item('tintin').orbit, null);
   assert.equal(item('lexi').orbit, null);
   assert.equal(item('grapes').parent_id, 'eat');
   assert.equal(items.filter((i) => i.category === 'body').length, 12);
@@ -117,7 +117,7 @@ test('a v3 database gets Music in a free inner slot (and never moves anything el
   // 6 is taken (bath) and 7 too (water, from seed/orbit.json): Music takes the first free slot.
   assert.equal(items.find((i) => i.id === 'water')!.orbit_slot, 7);
   assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 1);
-  assert.equal(schemaVersion(db), 7);
+  assert.equal(schemaVersion(db), 8);
   db.close();
 });
 

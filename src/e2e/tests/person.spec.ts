@@ -21,13 +21,13 @@ test('at night a new voice note does not play by itself: a sound wave waits in f
   await pilar.page.getByTestId('voice-send').click();
   await expect(pilar.page.getByTestId('voice-mine-item')).toHaveAttribute('data-heard', 'no');
 
-  // Live on the tablet, in the orbit and in the dock, but nothing pops up or plays.
-  const badge = page.getByTestId('voice-badge-pilar');
+  // Live on the tablet as a badge on her taskbar face, but nothing pops up or plays.
+  const badge = page.getByTestId('dock-voice-pilar');
   await expect(page.getByTestId('voice-arrival')).toHaveCount(0);
   await expect(badge).toBeVisible();
-  await expect(page.getByTestId('dock-voice-pilar')).toBeVisible();
+  await page.getByTestId('dock-pilar').click();
   const played = page.waitForResponse((r) => r.url().includes('/api/audio/') && r.status() < 300);
-  await badge.click();
+  await page.getByTestId('voice-tile').first().click();
   await played;
   await expect(badge).toHaveCount(0);
   await expect(page.getByTestId('strip-token')).toHaveCount(0); // hearing is not a word in the sentence

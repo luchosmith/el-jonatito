@@ -6,6 +6,9 @@
 import { useEffect, useRef, type MutableRefObject } from 'react';
 import type { Season } from '../../../shared/time.ts';
 
+/** How high the earth rises from the bottom of the orbit (px); the places compass is drawn on it. */
+export const EARTH_RISE = 150;
+
 export type Weather = 'clear' | 'partly' | 'cloudy' | 'rain' | 'snow';
 
 /** Open-Meteo weather code -> what the sky shows. */
@@ -101,7 +104,7 @@ export function drawSky(g: CanvasRenderingContext2D, W: number, H: number, t: nu
   }
 
   // Sun and moon travel an ellipse around the earth: east at 6, overhead at noon, west at 6.
-  const EH = 74, hy = H - EH, cx = W / 2, rx = W * 0.47, ry = hy - 36;
+  const EH = EARTH_RISE, hy = H - EH, cx = W / 2, rx = W * 0.47, ry = hy - 36;
   const pos = (a: number): [number, number] => [cx + rx * Math.sin(a), hy - ry * Math.cos(a)];
   const [sx, sy] = pos(th);
   const glow = g.createRadialGradient(sx, sy, 4, sx, sy, 70);
@@ -148,7 +151,7 @@ export function drawSky(g: CanvasRenderingContext2D, W: number, H: number, t: nu
   }
 
   // The earth: a huge sphere peeking at the bottom; it turns once per day (+ a slow drift).
-  const ER = W * 1.3, ecy = H + ER - EH;
+  const ER = W * 0.82, ecy = H + ER - EH; // a bigger, rounder globe (v0.8): the places compass sits on it
   const atm = g.createRadialGradient(cx, ecy, ER - 6, cx, ecy, ER + 26);
   atm.addColorStop(0, alt > 0 ? 'rgba(170,215,255,.75)' : 'rgba(110,140,210,.45)');
   atm.addColorStop(1, 'rgba(170,215,255,0)');

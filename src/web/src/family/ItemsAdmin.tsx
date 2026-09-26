@@ -31,7 +31,6 @@ function groups(items: Item[]): Group[] {
     }).filter((r): r is { item: Item } | { gap: string } => !!r);
   const out: Group[] = [
     { title: 'Main orbit · inner', rows: inOrbit(null, 'inner', INNER_SLOTS) },
-    { title: 'Main orbit · outer (people)', rows: inOrbit(null, 'outer', OUTER_SLOTS, RESERVED_OUTER) },
   ];
   for (const p of items.filter((i) => i.tap === 'open')) out.push({ title: `${p.emoji ?? ''} ${shownLabel(p)} › its orbit`, rows: inOrbit(p.id, 'inner', INNER_SLOTS) });
   out.push({ title: 'My body', rows: items.filter((i) => i.category === 'body').map((item) => ({ item })) });
@@ -254,7 +253,6 @@ function Placement({ item, board, onMove }: { item: Item; board: Board; onMove: 
           <select data-testid="item-orbit" value={orbit} onChange={(e) => { setOrbit(e.target.value as typeof orbit); setSlot(''); }}>
             <option value="">none</option>
             <option value="inner">inner</option>
-            {(item.category === 'person' || item.category === 'pet') && <option value="outer">outer (people)</option>}
           </select>
         </label>
         {orbit === 'inner' && (

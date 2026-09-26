@@ -73,3 +73,26 @@ export function sleepsUntil(until: Date, now: Date): number {
   const b = new Date(until.getFullYear(), until.getMonth(), until.getDate());
   return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86_400_000));
 }
+
+// ---- The places compass (v0.8): relative space on the earth under his feet -----------------------
+/** Where the 🚗 and ✈️ lines sit, as a share of half the screen from the centre. */
+export const COMPASS_CAR = 0.18;
+export const COMPASS_PLANE = 0.58;
+
+/**
+ * Distance (km) -> how far from the centre, as a share of half the screen. Not to scale: under 2 km
+ * (walk) grows with distance, 2–150 km (drive) on a log scale, farther (fly) bunches at the edges.
+ */
+export function compassReach(km: number): number {
+  if (km < 2) return 0.1 + (COMPASS_CAR - 0.13) * (km / 2);
+  if (km < 150) return COMPASS_CAR + 0.06 + (COMPASS_PLANE - COMPASS_CAR - 0.12) * (Math.log(km / 2) / Math.log(75));
+  return COMPASS_PLANE + 0.07 + 0.28 * Math.min(1, Math.log(km / 150) / Math.log(120));
+}
+
+/** Left (-1, west) or right (+1, east) of home. */
+export const compassSide = (home: { lon: number }, p: { lon: number }) => (p.lon >= home.lon ? 1 : -1);
+
+/** Horizontal position in % of the width (50 = home). */
+export function compassX(home: { lat: number; lon: number }, p: { lat: number; lon: number }): number {
+  return 50 + compassSide(home, p) * compassReach(distanceKm(home, p)) * 50;
+}

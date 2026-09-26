@@ -29,7 +29,7 @@ test('Mommy Joyce taps 🎙️, records, sends: her face pops up on his tablet a
   await expect(pop).toHaveAttribute('data-state', 'done', { timeout: 10_000 }); // played to the end
   await expect(pop).toHaveCount(0, { timeout: 12_000 }); // then it goes away by itself
   await expect(page.getByTestId('orbit')).toBeVisible();
-  await expect(page.getByTestId('voice-badge-mommy_joyce')).toHaveCount(0); // already heard
+  await expect(page.getByTestId('dock-voice-mommy_joyce')).toHaveCount(0); // already heard
 
   // Still there to replay on her page.
   await page.getByTestId('dock-mommy_joyce').click();
