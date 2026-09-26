@@ -7,7 +7,8 @@ import { COMPASS_CAR, COMPASS_PLANE, compassX, nearestCity } from '../../../shar
 import type { Locations, Person } from '../../../shared/types.ts';
 
 const GAP = 5.2; // % of the width between two faces on the same row
-const PET_SPOTS: [number, 'high' | 'low'][] = [[-6.5, 'high'], [6.5, 'high'], [10.5, 'low'], [-10.5, 'low']];
+// Pets huddle around the HOME box (px from its centre), overlapping its corners.
+const PET_SPOTS: [number, number][] = [[-38, -10], [38, -10], [0, -42], [-38, 26]];
 
 export function PlacesCompass({ board, locations, onPerson }: { board: Board; locations: Locations | null; onPerson: (id: string) => void }) {
   if (!locations) return null;
@@ -20,7 +21,8 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
     .filter((x): x is { l: (typeof locations.people)[number]; person: Person } => !!x.person)
     .map((x) => ({ ...x, x: compassX(home, x.l) }))
     .sort((a, b) => Math.abs(a.x - 50) - Math.abs(b.x - 50));
-  const rows: Record<'high' | 'low', number[]> = { high: [...PET_SPOTS.filter(([, r]) => r === 'high').map(([d]) => 50 + d), 50], low: [...PET_SPOTS.filter(([, r]) => r === 'low').map(([d]) => 50 + d), 50] };
+  // Home and its pets take the middle on both rows (about ±3.5% of the width).
+  const rows: Record<'high' | 'low', number[]> = { high: [46.5, 50, 53.5], low: [46.5, 50, 53.5] };
   const placed = shown.map((s) => {
     let x = s.x;
     for (let tries = 0; tries < 30; tries++) {
@@ -47,7 +49,7 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
       <div className="cm-walk" />
       <div className="cm-home" data-testid="compass-home">🏠<small>HOME · {city}</small></div>
       {pets.map((pet, k) => (
-        <span key={pet.id} className={`cm-pet ${PET_SPOTS[k][1]}`} style={{ left: `${50 + PET_SPOTS[k][0]}%` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
+        <span key={pet.id} className="cm-pet" style={{ left: `calc(50% + ${PET_SPOTS[k][0]}px)`, top: `calc(70% + ${PET_SPOTS[k][1]}px)` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
           <Face person={pet} className={pet.breed?.includes('grey') ? 'grey' : ''} />
         </span>
       ))}
