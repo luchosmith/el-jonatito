@@ -116,7 +116,8 @@
       "en": "smoothie",
       "es": "batido",
       "log": true,
-      "alias_of": "smoothie"
+      "alias_of": "smoothie",
+      "photo": "symbols/smoothie.jpg"
     },
     {
       "id": "drink_d",

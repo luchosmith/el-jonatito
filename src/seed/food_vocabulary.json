@@ -35,6 +35,7 @@
         "en": "smoothie",
         "es": "batido"
       },
+      "photo": "symbols/smoothie.jpg",
       "grid_page": "food",
       "grid_row": 0,
       "grid_col": 1,
