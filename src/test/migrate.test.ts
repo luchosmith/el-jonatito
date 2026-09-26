@@ -111,7 +111,9 @@ test('a v3 database gets Music in a free inner slot (and never moves anything el
   assert.match(backup ?? '', /\.v3-backup-/);
   const items = listItems(db, new Date());
   assert.equal(items.find((i) => i.id === 'bath')!.orbit_slot, 6);
-  assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 7);
+  // 6 is taken (bath) and 7 too (water, from seed/orbit.json): Music takes the first free slot.
+  assert.equal(items.find((i) => i.id === 'water')!.orbit_slot, 7);
+  assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 1);
   assert.equal(schemaVersion(db), 5);
   db.close();
 });

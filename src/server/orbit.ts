@@ -9,7 +9,8 @@ import { BODY_PARTS, bodyItemId } from '../shared/body.ts';
 interface OrbitSeed {
   inner: { id: string; slot: number; tap?: string; short_label?: string; emoji?: string; media?: string }[];
   outer_slots: number[];
-  sub_orbits: Record<string, string[]>;
+  /** position in the list = fixed slot; null keeps a slot empty (nothing shifts) */
+  sub_orbits: Record<string, (string | null)[]>;
   rules: { item: string; kind: 'window'; routine?: string; open_min?: number; start?: string; end?: string; blocks: boolean }[];
   pain_policy: { notify_from: number; urgent_from: number };
   voice_retention_days: number;
@@ -89,8 +90,8 @@ export function applyOrbitDefaults(db: Db, cfg: Config) {
   // Sub-orbits (Eat -> foods).
   for (const [parent, children] of Object.entries(seed.sub_orbits)) {
     if (!has(parent)) continue;
-    children.filter(has).forEach((child, slot) => {
-      db.run("UPDATE items SET parent_id = ?, orbit = 'inner', orbit_slot = ? WHERE id = ?", parent, slot, child);
+    children.forEach((child, slot) => {
+      if (child && has(child)) db.run("UPDATE items SET parent_id = ?, orbit = 'inner', orbit_slot = ? WHERE id = ?", parent, slot, child);
     });
   }
 

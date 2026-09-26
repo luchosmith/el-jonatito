@@ -85,11 +85,15 @@ test('moving an item asks first, lands in the chosen empty slot, and taken slots
     asked = d.message();
     void d.accept();
   });
-  await joyce.page.getByTestId('item-slot-7').click();
+  // The main orbit is full; the first spot in Eat's orbit is free (water moved out of it).
+  await joyce.page.getByTestId('item-parent').selectOption('eat');
+  await expect(joyce.page.getByTestId('item-slot-1')).toBeDisabled(); // smoothie
+  await joyce.page.getByTestId('item-slot-0').click();
   await joyce.page.getByTestId('item-move').click();
-  await expect(page.getByTestId('orbit-barney')).toHaveAttribute('data-slot', '7');
   expect(asked).toContain('learned where this is');
-  await expect(page.getByTestId('orbit-empty-4')).toBeVisible();
+  await expect(page.getByTestId('orbit-empty-4')).toBeVisible(); // his old spot stays empty; nothing shifts
+  await page.getByTestId('orbit-eat').click();
+  await expect(page.getByTestId('orbit-barney')).toHaveAttribute('data-slot', '0');
   await joyce.context.close();
 });
 

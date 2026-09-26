@@ -10,15 +10,13 @@ test('the orbit is home: his core things in fixed inner slots, people in fixed o
   await login(page, 'jonatito');
   const orbit = page.getByTestId('orbit');
   await expect(orbit).toHaveAttribute('data-parent', '');
-  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['barney', 4], ['pongo', 5], ['music', 6]];
+  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['go', 3], ['barney', 4], ['pongo', 5], ['music', 6], ['water', 7]];
   for (const [id, slot] of slots) await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
   await expect(orbit.getByTestId('orbit-eat').locator('img')).toHaveAttribute('src', /\/api\/images\//); // the family's photo of grapes
   await expect(orbit.getByTestId('orbit-go')).toContainText('🚗');
   await expect(orbit.getByTestId('orbit-barney').locator('img')).toBeVisible();
   await expect(orbit.getByTestId('orbit-music')).toContainText('Music');
   await expect(orbit.getByTestId('orbit-music').locator('img')).toHaveAttribute('src', /\/api\/images\//);
-  // Empty slots stay reserved; nothing is spread out to fill them.
-  await expect(orbit.getByTestId('orbit-empty-7')).toBeVisible();
   // People: 12:00 and 6:00 stay empty.
   for (const [id, slot] of [['mommy_joyce', 1], ['lucho', 2], ['pilar', 3], ['larry', 4], ['tintin', 6]] as const) {
     await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
@@ -34,6 +32,8 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   await expect(page.getByTestId('orbit-parent').locator('img')).toBeVisible();
   await expect(page.getByTestId('orbit-grapes').locator('img')).toHaveAttribute('src', /grapes/);
   await expect(page.getByTestId('orbit-grapes')).toHaveAttribute('data-slot', '4');
+  await expect(page.getByTestId('orbit-empty-0')).toBeVisible(); // water moved to the main orbit; its spot stays empty
+  await expect(page.getByTestId('orbit-water')).toHaveCount(0);
   // People stay in the outer orbit, so the whole sentence is one screen.
   await expect(page.getByTestId('orbit-mommy_joyce')).toBeVisible();
   await page.getByTestId('orbit-grapes').click();
