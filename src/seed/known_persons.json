@@ -200,7 +200,7 @@
         "en": "my pet",
         "es": "mi mascota"
       },
-      "photo": null,
+      "photo": "avatars/loki.jpg",
       "placeholder_emoji": "🐈",
       "order": 11,
       "role": null,

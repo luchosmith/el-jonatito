@@ -6,8 +6,8 @@ import type { Board } from '../common/board.ts';
 import { COMPASS_CAR, COMPASS_PLANE, compassX, nearestCity } from '../../../shared/geo.ts';
 import type { Locations, Person } from '../../../shared/types.ts';
 
-const GAP = 4.2; // % of the width between two faces on the same row
-const PET_SPOTS: [number, 'high' | 'low'][] = [[-5.5, 'high'], [5.5, 'high'], [9, 'low'], [-9, 'low']];
+const GAP = 5.2; // % of the width between two faces on the same row
+const PET_SPOTS: [number, 'high' | 'low'][] = [[-6.5, 'high'], [6.5, 'high'], [10.5, 'low'], [-10.5, 'low']];
 
 export function PlacesCompass({ board, locations, onPerson }: { board: Board; locations: Locations | null; onPerson: (id: string) => void }) {
   if (!locations) return null;

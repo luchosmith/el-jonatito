@@ -525,15 +525,15 @@ img { display: block; }
 .cm-line { position: absolute; top: 34px; bottom: 0; border-left: 2px dashed rgba(255,255,255,.55); pointer-events: none; }
 .cm-line b { position: absolute; top: -14px; left: 0; transform: translateX(-50%); font-size: 18px; font-weight: normal; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
 .cm-walk { position: absolute; left: 32%; right: 32%; top: 30%; bottom: 0; border-radius: 50% 50% 0 0; background: radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.28), rgba(255,255,255,.06) 70%, transparent); pointer-events: none; }
-.cm-home { position: absolute; left: 50%; top: 74%; translate: -50% -50%; width: 58px; height: 58px; border-radius: 16px; background: #fff; border: 4px solid var(--urgent); display: grid; place-items: center; font-size: 30px; box-shadow: 0 3px 10px rgba(0,0,0,.3); pointer-events: none; }
+.cm-home { position: absolute; left: 50%; top: 70%; translate: -50% -50%; width: 58px; height: 58px; border-radius: 16px; background: #fff; border: 4px solid var(--urgent); display: grid; place-items: center; font-size: 30px; box-shadow: 0 3px 10px rgba(0,0,0,.3); pointer-events: none; }
 .cm-home small { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: #fff; border-radius: 6px; font-size: 10px; font-weight: 800; padding: 0 5px; white-space: nowrap; }
-.cm-person { position: absolute; translate: -50% -50%; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--people); background: #f3e9dd; padding: 0; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.cm-person { position: absolute; translate: -50% -50%; width: 54px; height: 54px; border-radius: 50%; border: 3px solid var(--people); background: #f3e9dd; padding: 0; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
 .cm-person img { width: 100%; height: 100%; object-fit: cover; }
-.cm-person .face-emoji { font-size: 22px; }
-.cm-pet { position: absolute; translate: -50% -50%; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #8fb3d9; background: #eef4fb; overflow: hidden; display: grid; place-items: center; pointer-events: none; }
+.cm-person .face-emoji { font-size: 30px; }
+.cm-pet { position: absolute; translate: -50% -50%; width: 44px; height: 44px; border-radius: 50%; border: 2px solid #8fb3d9; background: #eef4fb; overflow: hidden; display: grid; place-items: center; pointer-events: none; }
 .cm-pet img { width: 100%; height: 100%; object-fit: cover; }
-.cm-pet .face-emoji { font-size: 18px; }
-.compass .high { top: 68%; } .compass .low { top: 88%; }
+.cm-pet .face-emoji { font-size: 24px; }
+.compass .high { top: 56%; } .compass .low { top: 80%; }
 .av .tbadge { position: absolute; right: -10px; top: -6px; min-width: 28px; height: 26px; border-radius: 13px; background: #fff; border: 3px solid var(--desc); display: flex; align-items: center; justify-content: center; font-size: 14px; font-style: normal; box-shadow: 0 2px 6px rgba(0,0,0,.25); z-index: 2; padding: 0 3px; }
 .av .tbadge b { font-size: 10px; margin-left: 1px; }
 .av .vbadge .n { right: -10px; top: -10px; }
