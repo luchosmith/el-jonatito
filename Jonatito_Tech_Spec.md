@@ -245,6 +245,7 @@ One screen per person brings together **where they are** (relative to him), **wh
   - *Exception to principle 2 (no auto-playing sound), chosen by the family:* only for new voice notes from the family, and **never during quiet hours** (9 pm–7 am). At night the note waits as a sound-wave badge until he taps it.
   - It never interrupts full-screen media: it waits until he leaves the player. Several notes arrive one after the other.
   - If the tablet's browser refuses to play sound on its own, the pop-up pulses with 👆 until he taps it (30 s).
+- **Saved clips (v0.6).** A recording can be given a name ("I'll be right there", "Te quiero mucho"), when it is recorded or later with ✏️. **My clips** (🎙️ For Jonatito tab) lists each recording once, named ones first; **↻ Send again** sends it as a new message (the same sound file, a new `voice_notes` row, so it pops up and plays once again). **🎙️ Voice reply** in the inbox opens the same list: one tap answers his message with a clip, or **🔴 Record new**. Only the person who recorded a clip can name or resend it. `voice_notes.label` (schema v6); `GET /api/voice-notes/mine`, `POST /api/voice-notes/:id/resend`, `POST /api/messages/:id/replies/clip`.
 - **Unheard badge elsewhere.** An animated sound-wave badge sits in front of the sender's avatar in the orbit and the dock, with a number dot when there's more than one. Tapping it plays the newest unheard note without leaving the orbit.
 - **Rules:**
   - Nothing auto-plays (principle 2).

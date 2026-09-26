@@ -4,6 +4,7 @@
 // v3 -> v4: adds the Music item (headphones + sound wave) to the inner orbit.
 // v4 -> v5: typed replies (replies.text), event pictures (images.owner_type 'event'); the tap log,
 //           moments, notification queue and calendar tables come from schema.sql.
+// v5 -> v6: voice_notes.label (saved clips a caretaker can send again).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,7 +12,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -49,8 +50,15 @@ export function migrate(db: Db, cfg: Config): string | null {
       db.raw.exec('PRAGMA foreign_keys = ON');
     }
   }
+  if (from < 6) db.tx(() => migrateV5toV6(db));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
+}
+
+/** v6: saved clips have a label. */
+function migrateV5toV6(db: Db) {
+  const cols = db.all<{ name: string }>('PRAGMA table_info(voice_notes)').map((c) => c.name);
+  if (!cols.includes('label')) db.raw.exec('ALTER TABLE voice_notes ADD COLUMN label TEXT');
 }
 
 /** v5: SQLite can't relax a CHECK in place, so images and replies are rebuilt with the new values. */

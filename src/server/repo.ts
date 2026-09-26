@@ -201,12 +201,13 @@ export function getReply(db: Db, id: number): Reply | undefined {
 
 interface VoiceRow {
   id: number; from_user_id: number; from_person_id: string | null; audio_file: string; duration_s: number | null;
-  created_at: string; heard_at: string | null; pinned: number; hidden: number; source: VoiceNote['source'];
+  created_at: string; heard_at: string | null; pinned: number; hidden: number; source: VoiceNote['source']; label: string | null;
 }
 
 const toVoice = (r: VoiceRow): VoiceNote => ({
   id: r.id, from_user_id: r.from_user_id, from_person_id: r.from_person_id, audio_url: audioUrl(r.audio_file)!,
   duration_s: r.duration_s, created_at: r.created_at, heard_at: r.heard_at, pinned: !!r.pinned, hidden: !!r.hidden, source: r.source,
+  label: r.label ?? null,
 });
 
 const VOICE_SQL = 'SELECT v.*, u.person_id AS from_person_id FROM voice_notes v JOIN users u ON u.id = v.from_user_id';

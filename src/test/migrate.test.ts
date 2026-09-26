@@ -51,7 +51,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   const db = new Db(cfg.dbFile); // applies the v3 schema next to the old tables, like a real restart
   const backup = migrate(db, cfg);
   assert.ok(backup && fs.existsSync(backup), 'writes a backup copy first');
-  assert.equal(schemaVersion(db), 5);
+  assert.equal(schemaVersion(db), 6);
   const tables = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name);
   assert.ok(!tables.includes('symbols') && !tables.includes('limits'));
   assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
@@ -90,6 +90,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   assert.equal(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM log_entries')!.n, 1);
   const voice = db.all<{ audio_file: string; heard_at: string | null; source: string }>('SELECT audio_file, heard_at, source FROM voice_notes');
   assert.deepEqual(voice.map((v) => [v.audio_file, !!v.heard_at, v.source]), [['hola.webm', true, 'reply']]);
+  assert.ok(db.all<{ name: string }>('PRAGMA table_info(voice_notes)').some((c) => c.name === 'label'), 'v6: clips can be named');
 
   // Running it again does nothing.
   assert.equal(migrate(db, cfg), null);
@@ -114,6 +115,6 @@ test('a v3 database gets Music in a free inner slot (and never moves anything el
   // 6 is taken (bath) and 7 too (water, from seed/orbit.json): Music takes the first free slot.
   assert.equal(items.find((i) => i.id === 'water')!.orbit_slot, 7);
   assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 1);
-  assert.equal(schemaVersion(db), 5);
+  assert.equal(schemaVersion(db), 6);
   db.close();
 });

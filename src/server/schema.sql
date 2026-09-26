@@ -1,4 +1,4 @@
--- El Jonatito schema (SQLite), version 5. Applied idempotently at startup.
+-- El Jonatito schema (SQLite), version 6. Applied idempotently at startup.
 -- Older databases are upgraded by migrate.ts.
 PRAGMA foreign_keys = ON;
 
@@ -177,7 +177,8 @@ CREATE TABLE IF NOT EXISTS voice_notes (
   heard_at      TEXT,
   pinned        INTEGER NOT NULL DEFAULT 0,     -- comfort clips: first on the shelf, never expire
   hidden        INTEGER NOT NULL DEFAULT 0,
-  source        TEXT NOT NULL DEFAULT 'app' CHECK (source IN ('app','reply','whatsapp'))
+  source        TEXT NOT NULL DEFAULT 'app' CHECK (source IN ('app','reply','whatsapp')),
+  label         TEXT                            -- the sender's name for the clip, to send it again
 );
 CREATE INDEX IF NOT EXISTS voice_from ON voice_notes(from_user_id, created_at);
 

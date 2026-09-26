@@ -6,6 +6,11 @@ import { audit, childUserIds, getVoiceNote, listLocations, listVoiceNotes } from
 import { AUDIO_MIME, saveAudio } from '../uploads.ts';
 import { isQuietHours } from '../notify.ts';
 import { bool, num, obj, oneOf, str } from '../validate.ts';
+
+const cleanLabel = (s: string | null | undefined) => {
+  const t = (s ?? '').trim().slice(0, 60);
+  return t || null;
+};
 import { coarse, nearestCity } from '../../shared/geo.ts';
 import type { Locations, Place } from '../../shared/types.ts';
 
@@ -27,13 +32,41 @@ export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
   router.post('/api/voice-notes', requireAuth('caretaker', 'friend'), rawBody(AUDIO_MIME, MAX_NOTE), (ctx) => {
     const d = Number(ctx.url.searchParams.get('duration'));
     const duration = Number.isFinite(d) && d > 0 && d < 600 ? Math.round(d * 10) / 10 : null;
+    const label = cleanLabel(ctx.url.searchParams.get('label'));
     const file = saveAudio(cfg.uploadsDir, ctx.raw!, ctx.req.headers['content-type']);
-    const r = db.run("INSERT INTO voice_notes(from_user_id, audio_file, duration_s, created_at, source) VALUES(?,?,?,?,'app')",
-      ctx.user!.id, file, duration, now().toISOString());
-    const note = getVoiceNote(db, r.lastId)!;
+    const r = db.run("INSERT INTO voice_notes(from_user_id, audio_file, duration_s, created_at, source, label) VALUES(?,?,?,?,'app',?)",
+      ctx.user!.id, file, duration, now().toISOString(), label);
+    return announce(r.lastId, ctx.user!.id);
+  });
+
+  /** A new note reaches the tablet (and plays once there, outside quiet hours). */
+  const announce = (noteId: number, senderId: number) => {
+    const note = getVoiceNote(db, noteId)!;
     const autoplay = !isQuietHours(db, now());
-    hub.publish([...new Set([...childUserIds(db), ...caretakerIds(), ctx.user!.id])], { type: 'voice_note', note, autoplay });
+    hub.publish([...new Set([...childUserIds(db), ...caretakerIds(), senderId])], { type: 'voice_note', note, autoplay });
     return { ...note, autoplay };
+  };
+
+  /** Send one of your saved clips again, as a new message (same sound file, no new recording). */
+  router.post('/api/voice-notes/:id/resend', requireAuth('caretaker', 'friend'), (ctx) => {
+    const src = db.get<{ from_user_id: number; audio_file: string; duration_s: number | null; label: string | null }>(
+      'SELECT from_user_id, audio_file, duration_s, label FROM voice_notes WHERE id = ?', Number(ctx.params.id),
+    );
+    if (!src) throw new HttpError(404, 'Unknown voice note');
+    if (src.from_user_id !== ctx.user!.id) throw new HttpError(403, 'You can only send your own clips');
+    const r = db.run("INSERT INTO voice_notes(from_user_id, audio_file, duration_s, created_at, source, label) VALUES(?,?,?,?,'app',?)",
+      ctx.user!.id, src.audio_file, src.duration_s, now().toISOString(), src.label);
+    return announce(r.lastId, ctx.user!.id);
+  });
+
+  /** Your saved clips: one per recording (resends share the sound), labeled first, then newest. */
+  router.get('/api/voice-notes/mine', requireAuth('caretaker', 'friend'), (ctx) => {
+    const rows = db.all<{ id: number }>(
+      `SELECT MAX(id) AS id FROM voice_notes WHERE from_user_id = ? GROUP BY audio_file
+       ORDER BY MAX(label IS NOT NULL) DESC, MAX(created_at) DESC LIMIT 30`,
+      ctx.user!.id,
+    );
+    return rows.map((r) => getVoiceNote(db, r.id)!);
   });
 
   /** The tablet and caretakers see every note; a friend only their own. */
@@ -52,14 +85,23 @@ export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
     return note;
   });
 
-  /** Caretakers pin comfort clips (first on the shelf, never expire) or hide a note. */
-  router.patch('/api/voice-notes/:id', requireAuth('caretaker'), jsonBody, (ctx) => {
+  /** Caretakers pin comfort clips (first on the shelf, never expire) or hide a note; the sender can label it. */
+  router.patch('/api/voice-notes/:id', requireAuth('caretaker', 'friend'), jsonBody, (ctx) => {
     const id = Number(ctx.params.id);
-    if (!getVoiceNote(db, id)) throw new HttpError(404, 'Unknown voice note');
+    const current = getVoiceNote(db, id);
+    if (!current) throw new HttpError(404, 'Unknown voice note');
     const b = obj(ctx.body);
     const pinned = bool(b, 'pinned');
     const hidden = bool(b, 'hidden');
-    if (pinned === undefined && hidden === undefined) throw new HttpError(400, 'Nothing to change');
+    const hasLabel = 'label' in b;
+    if (pinned === undefined && hidden === undefined && !hasLabel) throw new HttpError(400, 'Nothing to change');
+    if ((pinned !== undefined || hidden !== undefined) && ctx.user!.role !== 'caretaker') throw new HttpError(403, 'Only caretakers can pin or hide');
+    if (hasLabel) {
+      if (current.from_user_id !== ctx.user!.id) throw new HttpError(403, 'You can only label your own clips');
+      const label = b.label === null ? null : cleanLabel(str(b, 'label', { max: 60 })!);
+      // A label names the sound: every copy sent with the same file gets it.
+      db.run('UPDATE voice_notes SET label = ? WHERE from_user_id = ? AND audio_file = (SELECT audio_file FROM voice_notes WHERE id = ?)', label, ctx.user!.id, id);
+    }
     if (pinned !== undefined) db.run('UPDATE voice_notes SET pinned = ? WHERE id = ?', pinned ? 1 : 0, id);
     if (hidden !== undefined) db.run('UPDATE voice_notes SET hidden = ? WHERE id = ?', hidden ? 1 : 0, id);
     audit(db, ctx.user!.id, 'voice.update', String(id), now().toISOString());

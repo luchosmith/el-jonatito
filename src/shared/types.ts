@@ -227,6 +227,8 @@ export interface VoiceNote {
   pinned: boolean;
   hidden: boolean;
   source: 'app' | 'reply' | 'whatsapp';
+  /** the sender's own name for the clip ("I'll be right there"), so it can be sent again */
+  label: string | null;
 }
 
 export interface Place {

@@ -103,6 +103,25 @@ export function messageRoutes({ router, db, cfg, hub, now }: Deps) {
     return publishReply(r.lastId, id);
   });
 
+  /** Answer with one of your saved clips (no new recording). */
+  router.post('/api/messages/:id/replies/clip', requireAuth('caretaker', 'friend'), jsonBody, (ctx) => {
+    const id = Number(ctx.params.id);
+    if (!getMessage(db, id)) throw new HttpError(404, 'Unknown message');
+    if (!isRecipient(id, ctx.user!.id)) throw new HttpError(403, 'This message was not sent to you');
+    const noteId = num(obj(ctx.body), 'note_id', { min: 1 })!;
+    const src = db.get<{ from_user_id: number; audio_file: string; duration_s: number | null; label: string | null }>(
+      'SELECT from_user_id, audio_file, duration_s, label FROM voice_notes WHERE id = ?', noteId,
+    );
+    if (!src) throw new HttpError(404, 'Unknown voice note');
+    if (src.from_user_id !== ctx.user!.id) throw new HttpError(403, 'You can only send your own clips');
+    const r = db.run("INSERT INTO replies(message_id, from_user_id, kind, audio_file, created_at) VALUES(?,?,'voice',?,?)",
+      id, ctx.user!.id, src.audio_file, now().toISOString());
+    const v = db.run("INSERT INTO voice_notes(from_user_id, audio_file, duration_s, created_at, source, label) VALUES(?,?,?,?,'reply',?)",
+      ctx.user!.id, src.audio_file, src.duration_s, now().toISOString(), src.label);
+    hub.publish(childUserIds(db), { type: 'voice_note', note: getVoiceNote(db, v.lastId)! });
+    return publishReply(r.lastId, id);
+  });
+
   /** That person's newest voice note for Jonatito, if any. */
   router.get('/api/people/:id/voice', requireAuth(), (ctx) => {
     const r = db.get<{ id: number }>(

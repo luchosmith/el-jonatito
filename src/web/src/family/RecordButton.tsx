@@ -12,6 +12,7 @@ export function RecordButton({ onSent }: { onSent?: () => void }) {
   const [seconds, setSeconds] = useState(0);
   const [preview, setPreview] = useState<{ blob: Blob; url: string; seconds: number } | null>(null);
   const [error, setError] = useState('');
+  const [label, setLabel] = useState('');
   const rec = useRef<Recording | null>(null);
   const started = useRef(0);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -57,7 +58,9 @@ export function RecordButton({ onSent }: { onSent?: () => void }) {
     if (!preview) return;
     setState('sending');
     try {
-      await api.upload('POST', `/api/voice-notes?duration=${preview.seconds.toFixed(1)}`, preview.blob);
+      const q = `duration=${preview.seconds.toFixed(1)}${label.trim() ? `&label=${encodeURIComponent(label.trim())}` : ''}`;
+      await api.upload('POST', `/api/voice-notes?${q}`, preview.blob);
+      setLabel('');
       URL.revokeObjectURL(preview.url);
       setPreview(null);
       setState('sent');
@@ -77,6 +80,7 @@ export function RecordButton({ onSent }: { onSent?: () => void }) {
             <>
               <b>🎙️ For Jonatito · {Math.max(1, Math.round(preview.seconds))} s</b>
               <audio controls src={preview.url} data-testid="rec-preview" />
+              <input className="clip-label-new" value={label} maxLength={60} placeholder="Name it to send again later (optional)" data-testid="rec-label" onChange={(e) => setLabel(e.target.value)} />
               <div className="btnrow">
                 <button className="save" data-testid="rec-send" onClick={send} disabled={state === 'sending'}>
                   {state === 'sending' ? 'Sending…' : 'Send to Jonatito'}

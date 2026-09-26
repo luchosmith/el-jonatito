@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api.ts';
 import { startRecording, type Recording } from '../common/recorder.ts';
 import { fmt12ampm } from '../../../shared/time.ts';
+import { ClipList, clipName, useMyClips } from './Clips.tsx';
 import type { User, VoiceNote } from '../../../shared/types.ts';
 
 const MAX_MS = 60_000;
@@ -13,6 +14,8 @@ export function VoiceForJonatito({ user, version }: { user: User; version: numbe
   const [preview, setPreview] = useState<{ blob: Blob; url: string; seconds: number } | null>(null);
   const [mine, setMine] = useState<VoiceNote[]>([]);
   const [error, setError] = useState('');
+  const [label, setLabel] = useState('');
+  const clips = useMyClips(version);
   const rec = useRef<Recording | null>(null);
   const started = useRef(0);
 
@@ -47,9 +50,12 @@ export function VoiceForJonatito({ user, version }: { user: User; version: numbe
     if (!preview) return;
     setState('sending');
     try {
-      await api.upload('POST', `/api/voice-notes?duration=${preview.seconds.toFixed(1)}`, preview.blob);
+      const q = `duration=${preview.seconds.toFixed(1)}${label.trim() ? `&label=${encodeURIComponent(label.trim())}` : ''}`;
+      await api.upload('POST', `/api/voice-notes?${q}`, preview.blob);
+      setLabel('');
       discard();
       await load();
+      await clips.reload();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not send');
       setState('preview');
@@ -65,6 +71,7 @@ export function VoiceForJonatito({ user, version }: { user: User; version: numbe
       {preview && (
         <div className="voice-preview">
           <audio controls src={preview.url} data-testid="voice-preview" />
+          <input className="clip-label-new" value={label} maxLength={60} placeholder="Name it to send again later (optional): I'll be right there" data-testid="voice-label" onChange={(e) => setLabel(e.target.value)} />
           <div className="btnrow">
             <button className="save" data-testid="voice-send" onClick={send} disabled={state === 'sending'}>Send to Jonatito</button>
             <button className="btn" data-testid="voice-discard" onClick={discard}>Discard</button>
@@ -73,12 +80,27 @@ export function VoiceForJonatito({ user, version }: { user: User; version: numbe
       )}
       {error && <p className="error">{error}</p>}
 
+      <h3>My clips</h3>
+      <p className="muted small">Send one again as a new message, without recording. ✏️ to name it.</p>
+      {clips.clips && (
+        <ClipList
+          clips={clips.clips}
+          sendLabel="↻ Send again"
+          onChanged={() => { void clips.reload(); void load(); }}
+          onSend={async (n) => {
+            await api.post(`/api/voice-notes/${n.id}/resend`);
+            await load();
+            await clips.reload();
+          }}
+        />
+      )}
+
       <h3>Sent</h3>
       {mine.length === 0 && <p className="muted" data-testid="voice-mine-empty">Nothing yet.</p>}
       <ul className="log-list" data-testid="voice-mine">
         {mine.map((n) => (
           <li key={n.id} data-testid="voice-mine-item" data-heard={n.heard_at ? 'yes' : 'no'}>
-            <span>{n.pinned ? '⭐ ' : ''}〰️ {n.duration_s ? `${Math.round(n.duration_s)} s` : ''}</span>
+            <span>{n.pinned ? '⭐ ' : ''}〰️ {n.label ? `“${n.label}”` : clipName(n)}</span>
             <span className="muted">{n.heard_at ? 'heard ✔' : 'not heard yet'}</span>
             <time>{fmt12ampm(new Date(n.created_at))}</time>
           </li>

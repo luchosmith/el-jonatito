@@ -504,3 +504,17 @@ img { display: block; }
 .rec-sheet audio { width: 100%; }
 .rec-sheet .save { width: auto; flex: 1; }
 .fam-body { padding-bottom: 110px; }
+
+/* saved voice clips */
+.clips { list-style: none; padding: 0; margin: 6px 0; display: flex; flex-direction: column; gap: 6px; }
+.clip { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 6px 8px; }
+.clip.named { border-color: #45c46a; }
+.clip-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-size: 14px; overflow: hidden; }
+.clip-name > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clip-edit { flex: 1; display: flex; gap: 6px; }
+.clip-edit input { flex: 1; min-width: 0; font-size: 15px; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); }
+.clip-send { width: auto; padding: 8px 12px; font-size: 14px; flex: none; }
+.clip-label-new { font-size: 15px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line); }
+.voice-picker { margin-top: 8px; background: var(--calm); border-radius: 14px; padding: 8px; }
+.voice-picker .rec-new { width: 100%; border: none; border-radius: 12px; padding: 10px; font-weight: 800; }
+.r-voice.sel { outline: 2px solid var(--ink); }

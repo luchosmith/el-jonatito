@@ -34,9 +34,10 @@ test('she answers with her voice; he hears it from the reply, then again from he
   await page.getByTestId('card-ok').click();
 
   const msg = pilar.page.getByTestId('inbox-message').first();
-  await msg.getByTestId('reply-voice').click();
+  await msg.getByTestId('reply-voice').click(); // opens her saved clips + "Record new"
+  await msg.getByTestId('reply-voice-record').click();
   await pilar.page.waitForTimeout(1500);
-  await msg.getByTestId('reply-voice').click();
+  await msg.getByTestId('reply-voice-record').click();
   await expect(msg.getByTestId('my-replies')).toContainText('voice');
 
   await expect(page.getByTestId('reply-toast')).toHaveAttribute('data-kind', 'voice');
