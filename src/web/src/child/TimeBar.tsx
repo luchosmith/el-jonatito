@@ -131,9 +131,12 @@ const Track = memo(function Track({ origin, now, schedule, entries, board, onEnt
     schedule.forEach((s, i) => {
       const next = schedule[i + 1]?.start_min ?? 1440;
       const cls = !isToday ? '' : next <= nowMin ? 'done' : i === nextIdx ? 'next' : '';
+      const photo = s.symbol_id ? board.items.find((it) => it.id === s.symbol_id)?.photo_url : null;
+      const bedtime = s.symbol_id === 'bed';
       out.push(
-        <span key={`r${d}-${s.id}`} className={`tl-item tb-rt ${cls}`} style={{ left: x(day + s.start_min * 60_000) }} {...(isToday ? { 'data-testid': `tl-${s.label}` } : {})}>
-          {s.symbol_emoji}
+        <span key={`r${d}-${s.id}`} className={`tl-item tb-rt ${cls} ${bedtime ? 'bedtime' : ''}`} style={{ left: x(day + s.start_min * 60_000) }}
+          {...(isToday ? { 'data-testid': `tl-${s.label}` } : {})}>
+          {photo ? <img src={photo} alt="" draggable={false} /> : s.symbol_emoji}
           <span>{fmtMinutes(s.start_min)}</span>
         </span>,
       );

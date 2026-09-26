@@ -111,6 +111,8 @@ export interface ScheduleItem {
   id: number;
   symbol_emoji: string;
   label: string;
+  /** the word it shows (its photo, when there is one): e.g. bedtime -> bed */
+  symbol_id: string | null;
   /** minutes after midnight, local time */
   start_min: number;
 }

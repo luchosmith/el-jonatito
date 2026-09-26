@@ -67,8 +67,8 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
 
   // ---- Schedule & here-and-now ------------------------------------------------
   router.get('/api/schedule', requireAuth(), (): ScheduleItem[] =>
-    db.all<{ id: number; emoji: string; label: string; start_min: number }>('SELECT * FROM schedule_items ORDER BY start_min')
-      .map((r) => ({ id: r.id, symbol_emoji: r.emoji, label: r.label, start_min: r.start_min })),
+    db.all<{ id: number; emoji: string; label: string; start_min: number; symbol_id: string | null }>('SELECT * FROM schedule_items ORDER BY start_min')
+      .map((r) => ({ id: r.id, symbol_emoji: r.emoji, label: r.label, symbol_id: r.symbol_id, start_min: r.start_min })),
   );
 
   router.get('/api/now', requireAuth(), async () => {

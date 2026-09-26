@@ -158,7 +158,8 @@ export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResul
     // 4. Next meal coming up (within 3 hours)
     const nowMin = minutesOfDay(now);
     const next = db.get<{ start_min: number; symbol_id: string }>(
-      'SELECT start_min, symbol_id FROM schedule_items WHERE symbol_id IS NOT NULL AND start_min > ? ORDER BY start_min LIMIT 1', nowMin,
+      `SELECT s.start_min, s.symbol_id FROM schedule_items s JOIN items i ON i.id = s.symbol_id
+       WHERE i.category IN ('food','drink') AND s.start_min > ? ORDER BY s.start_min LIMIT 1`, nowMin, // next *meal* only (bedtime links the bed)
     );
     if (next && next.start_min - nowMin <= 180) {
       const at = startOfDay(now);

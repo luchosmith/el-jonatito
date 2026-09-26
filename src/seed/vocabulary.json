@@ -292,7 +292,8 @@
       "kind": "thing",
       "emoji": "🏠",
       "en": "home",
-      "es": "casa"
+      "es": "casa",
+      "photo": "symbols/bed.jpg"
     },
     {
       "id": "park",
@@ -332,7 +333,8 @@
       "kind": "thing",
       "emoji": "🛏️",
       "en": "bed",
-      "es": "la cama"
+      "es": "la cama",
+      "photo": "symbols/bed.jpg"
     },
     {
       "id": "abuelas",

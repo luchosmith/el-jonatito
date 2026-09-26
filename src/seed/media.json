@@ -21,6 +21,6 @@
     { "emoji": "📺", "label": "media",     "at": "16:00" },
     { "emoji": "🍲", "label": "dinner",    "at": "18:30", "symbol": "chicken_soup" },
     { "emoji": "🛁", "label": "bath",      "at": "19:30" },
-    { "emoji": "🛏️", "label": "sleep",     "at": "20:30" }
+    { "emoji": "🛏️", "label": "sleep",     "at": "20:30", "symbol": "bed" }
   ]
 }

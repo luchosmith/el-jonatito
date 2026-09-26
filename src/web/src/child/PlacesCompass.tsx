@@ -8,12 +8,13 @@ import type { Locations, Person } from '../../../shared/types.ts';
 
 const GAP = 5.2; // % of the width between two faces on the same row
 // Pets huddle around the HOME box (px from its centre), overlapping its corners.
-const PET_SPOTS: [number, number][] = [[-38, -10], [38, -10], [0, -42], [-38, 26]];
+const PET_SPOTS: [number, number][] = [[-50, -2], [50, -2], [0, -52], [-50, 34]];
 
 export function PlacesCompass({ board, locations, onPerson }: { board: Board; locations: Locations | null; onPerson: (id: string) => void }) {
   if (!locations) return null;
   const home = locations.home;
   const city = nearestCity(home.lat, home.lon).name;
+  const homePhoto = board.items.find((i) => i.id === 'home')?.photo_url ?? null;
 
   // People with a shared location, nearest first; two rows, nudged outwards (never across home) when crowded.
   const shown = locations.people
@@ -47,9 +48,12 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
         </span>
       ))}
       <div className="cm-walk" />
-      <div className="cm-home" data-testid="compass-home">🏠<small>HOME · {city}</small></div>
+      <div className={`cm-home ${homePhoto ? 'photo' : ''}`} data-testid="compass-home">
+        {homePhoto ? <img src={homePhoto} alt="" draggable={false} /> : '🏠'}
+        <small>HOME · {city}</small>
+      </div>
       {pets.map((pet, k) => (
-        <span key={pet.id} className="cm-pet" style={{ left: `calc(50% + ${PET_SPOTS[k][0]}px)`, top: `calc(70% + ${PET_SPOTS[k][1]}px)` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
+        <span key={pet.id} className="cm-pet" style={{ left: `calc(50% + ${PET_SPOTS[k][0]}px)`, top: `calc(66% + ${PET_SPOTS[k][1]}px)` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
           {/* the grey filter only tints the placeholder emoji, never a real photo */}
           <Face person={pet} className={!pet.photo_url && pet.breed?.includes('grey') ? 'grey' : ''} />
         </span>
