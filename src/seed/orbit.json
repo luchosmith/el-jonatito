@@ -7,7 +7,7 @@
     { "id": "barney", "slot": 4 },
     { "id": "pongo", "slot": 5, "tap": "play", "media": "Pongo" },
     { "id": "music", "slot": 6, "short_label": "Music" },
-    { "id": "water", "slot": 7 }
+    { "id": "water", "slot": 7, "short_label": "Water" }
   ],
   "outer_slots": [1, 2, 3, 4, 6, 7, 8, 9],
   "sub_orbits": {
