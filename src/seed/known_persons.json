@@ -220,7 +220,7 @@
         "en": "my pet",
         "es": "mi mascota"
       },
-      "photo": null,
+      "photo": "avatars/logan.jpg",
       "placeholder_emoji": "🐈",
       "order": 12,
       "role": null,

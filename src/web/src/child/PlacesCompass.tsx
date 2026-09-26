@@ -50,7 +50,8 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
       <div className="cm-home" data-testid="compass-home">🏠<small>HOME · {city}</small></div>
       {pets.map((pet, k) => (
         <span key={pet.id} className="cm-pet" style={{ left: `calc(50% + ${PET_SPOTS[k][0]}px)`, top: `calc(70% + ${PET_SPOTS[k][1]}px)` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
-          <Face person={pet} className={pet.breed?.includes('grey') ? 'grey' : ''} />
+          {/* the grey filter only tints the placeholder emoji, never a real photo */}
+          <Face person={pet} className={!pet.photo_url && pet.breed?.includes('grey') ? 'grey' : ''} />
         </span>
       ))}
       {placed.map(({ person, x, row, l }) => (
