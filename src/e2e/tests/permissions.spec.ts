@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { apiAs, resetDb, TINY_JPEG } from './helpers.ts';
+import { apiAs, resetDb, TINY_JPEG, AFTERNOON, setClock } from './helpers.ts';
 
-test.beforeEach(async ({ request }) => resetDb(request));
+// A fixed afternoon: outside quiet hours, messages to friends go to them (not to the caretaker on duty).
+test.beforeEach(async ({ request }) => {
+  await resetDb(request);
+  await setClock(request, AFTERNOON);
+});
 
 test('nothing is readable without signing in', async ({ request }) => {
   for (const url of ['/api/board', '/api/messages', '/api/logs', '/api/media', '/api/events', '/api/images/seed-person-lucho.jpg']) {
