@@ -59,21 +59,22 @@ test('hiding a word leaves an empty slot — nothing else moves', async ({ page,
   await joyce.context.close();
 });
 
-test('an admin replaces Lexi\'s picture with a real photo, then reverts it', async ({ page, browser }) => {
+test('an admin replaces Loki\'s picture with a real photo, then reverts it', async ({ page, browser }) => {
   await login(page, 'jonatito');
   await build(page, [{ page: 'people' }]); // pets are on the board's People page (not in the dock)
-  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveCount(0);
+  await expect(page.getByTestId('sym-loki').locator('img')).toHaveCount(0);
+  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveAttribute('src', /seed-item-lexi/); // Lexi has the family photo
 
   const joyce = await device(browser, 'joyce', { clock: AFTERNOON });
   await joyce.page.getByTestId('tab-people').click();
-  await joyce.page.getByTestId('photo-lexi').setInputFiles({ name: 'lexi.jpg', mimeType: 'image/jpeg', buffer: TINY_JPEG });
-  await expect(joyce.page.getByTestId('admin-lexi').locator('img')).toBeVisible();
+  await joyce.page.getByTestId('photo-loki').setInputFiles({ name: 'loki.jpg', mimeType: 'image/jpeg', buffer: TINY_JPEG });
+  await expect(joyce.page.getByTestId('admin-loki').locator('img')).toBeVisible();
 
   // The tablet updates live, same spot
-  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveAttribute('src', /\/api\/images\//);
+  await expect(page.getByTestId('sym-loki').locator('img')).toHaveAttribute('src', /\/api\/images\//);
 
-  await joyce.page.getByTestId('revert-lexi').click();
-  await expect(page.getByTestId('sym-lexi').locator('img')).toHaveCount(0);
+  await joyce.page.getByTestId('revert-loki').click();
+  await expect(page.getByTestId('sym-loki').locator('img')).toHaveCount(0);
   await joyce.context.close();
 });
 

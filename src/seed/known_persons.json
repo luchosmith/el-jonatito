@@ -180,7 +180,7 @@
         "en": "my pet",
         "es": "mi mascota"
       },
-      "photo": null,
+      "photo": "avatars/lexi.jpg",
       "placeholder_emoji": "🐩",
       "order": 10,
       "role": null,
