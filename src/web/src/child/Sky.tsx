@@ -7,7 +7,7 @@ import { useEffect, useRef, type MutableRefObject } from 'react';
 import type { Season } from '../../../shared/time.ts';
 
 /** How high the earth rises from the bottom of the orbit (px); the places compass is drawn on it. */
-export const EARTH_RISE = 150;
+export const EARTH_RISE = 190;
 
 export type Weather = 'clear' | 'partly' | 'cloudy' | 'rain' | 'snow';
 

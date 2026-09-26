@@ -6,9 +6,9 @@ import type { Board } from '../common/board.ts';
 import { COMPASS_CAR, COMPASS_PLANE, compassX, nearestCity } from '../../../shared/geo.ts';
 import type { Locations, Person } from '../../../shared/types.ts';
 
-const GAP = 5.2; // % of the width between two faces on the same row
+const GAP = 6.2; // % of the width between two faces on the same row
 // Pets huddle around the HOME box (px from its centre), overlapping its corners.
-const PET_SPOTS: [number, number][] = [[-50, -2], [50, -2], [0, -52], [-50, 34]];
+const PET_SPOTS: [number, number][] = [[-72, -10], [72, -10], [92, 42], [-92, 42]];
 
 export function PlacesCompass({ board, locations, onPerson }: { board: Board; locations: Locations | null; onPerson: (id: string) => void }) {
   if (!locations) return null;
@@ -23,7 +23,7 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
     .map((x) => ({ ...x, x: compassX(home, x.l) }))
     .sort((a, b) => Math.abs(a.x - 50) - Math.abs(b.x - 50));
   // Home and its pets take the middle on both rows (about ±3.5% of the width).
-  const rows: Record<'high' | 'low', number[]> = { high: [46.5, 50, 53.5], low: [46.5, 50, 53.5] };
+  const rows: Record<'high' | 'low', number[]> = { high: [44, 47, 50, 53, 56], low: [44, 47, 50, 53, 56] }; // the bed and its pets
   const placed = shown.map((s) => {
     let x = s.x;
     for (let tries = 0; tries < 30; tries++) {
@@ -53,7 +53,7 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
         <small>HOME · {city}</small>
       </div>
       {pets.map((pet, k) => (
-        <span key={pet.id} className="cm-pet" style={{ left: `calc(50% + ${PET_SPOTS[k][0]}px)`, top: `calc(66% + ${PET_SPOTS[k][1]}px)` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
+        <span key={pet.id} className="cm-pet" style={{ left: `calc(50% + ${PET_SPOTS[k][0]}px)`, top: `calc(60% + ${PET_SPOTS[k][1]}px)` }} data-testid={`compass-pet-${pet.id}`} aria-hidden>
           {/* the grey filter only tints the placeholder emoji, never a real photo */}
           <Face person={pet} className={!pet.photo_url && pet.breed?.includes('grey') ? 'grey' : ''} />
         </span>
