@@ -151,3 +151,21 @@ test('Barney in the dock adds "Barney" to the sentence', async ({ page, request 
   const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
   expect(inbox[0].sentence_en).toBe('I want Barney.');
 });
+
+test('relative distance on the globe: at home by the bed, a short drive just past the 🚗, abroad past the ✈️', async ({ page, request }) => {
+  const at = async (u: string, place: string, cc: string, tz: string, lat: number, lon: number) =>
+    (await apiAs(request, u)).put('/api/location', { place_label: place, country_code: cc, tz, lat, lon });
+  await at('joyce', 'Home', 'US', 'America/New_York', 40.71, -74.01);
+  await at('lucho', 'Jersey City', 'US', 'America/New_York', 40.72, -74.08);
+  await at('pilar', 'Madrid', 'ES', 'Europe/Madrid', 40.4, -3.68);
+  await at('larry', 'Madrid', 'ES', 'Europe/Madrid', 40.4, -3.68);
+  await login(page, 'jonatito');
+  await expect(page.getByTestId('compass-mommy_joyce')).toHaveAttribute('data-home', 'yes');
+  const lucho = Number(await page.getByTestId('compass-lucho').getAttribute('data-x'));
+  expect(lucho).toBeLessThan(41); // past the left 🚗 line (41%)
+  expect(lucho).toBeGreaterThan(33); // but close to it
+  const pilar = Number(await page.getByTestId('compass-pilar').getAttribute('data-x'));
+  const larry = Number(await page.getByTestId('compass-larry').getAttribute('data-x'));
+  expect(pilar).toBeGreaterThan(79); // past the right ✈️ line (79%)
+  expect(Math.abs(larry - pilar)).toBeLessThan(3); // side by side
+});

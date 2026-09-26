@@ -81,11 +81,13 @@ export const COMPASS_PLANE = 0.58;
 
 /**
  * Distance (km) -> how far from the centre, as a share of half the screen. Not to scale: under 2 km
- * (walk) grows with distance, 2–150 km (drive) on a log scale, farther (fly) bunches at the edges.
+ * (walk) grows with distance, 2–150 km (drive) on a log scale starting just past the 🚗 line (short
+ * drives hug it; locations are kept to ~10 km, so the nearest "away" is ~8 km), farther (fly) bunches
+ * at the edges.
  */
 export function compassReach(km: number): number {
   if (km < 2) return 0.1 + (COMPASS_CAR - 0.13) * (km / 2);
-  if (km < 150) return COMPASS_CAR + 0.06 + (COMPASS_PLANE - COMPASS_CAR - 0.12) * (Math.log(km / 2) / Math.log(75));
+  if (km < 150) return COMPASS_CAR + 0.03 + (COMPASS_PLANE - COMPASS_CAR - 0.06) * Math.max(0, Math.log(km / 5) / Math.log(30));
   return COMPASS_PLANE + 0.07 + 0.28 * Math.min(1, Math.log(km / 150) / Math.log(120));
 }
 
