@@ -42,14 +42,14 @@ test('a new picture, then one-tap revert', async ({ page, browser }) => {
 
 test('a recorded word plays when he taps; "text-to-speech" goes back to the computer voice', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  const joyce = await openItem(browser, 'go');
+  const joyce = await openItem(browser, 'music');
   const row = joyce.page.getByTestId('item-audio-en');
   await expect(row).toHaveAttribute('data-state', 'tts');
   await joyce.page.getByTestId('item-audio-en-upload').setInputFiles({ name: 'go.webm', mimeType: 'audio/webm', buffer: FAKE_WEBM });
   await expect(row).toHaveAttribute('data-state', 'recorded');
 
   const played = page.waitForRequest((r) => r.url().includes('/api/audio/'));
-  await page.getByTestId('orbit-go').click();
+  await page.getByTestId('orbit-music').click();
   await played;
 
   await joyce.page.getByTestId('item-audio-en-tts').click();
@@ -78,7 +78,7 @@ test('a time rule added in the editor closes the item on the tablet, with its cl
 
 test('moving an item asks first, lands in the chosen empty slot, and taken slots cannot be picked', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  const joyce = await openItem(browser, 'go');
+  const joyce = await openItem(browser, 'music');
   await expect(joyce.page.getByTestId('item-slot-0')).toBeDisabled(); // Eat lives there
   let asked = '';
   joyce.page.on('dialog', (d) => {
@@ -91,9 +91,9 @@ test('moving an item asks first, lands in the chosen empty slot, and taken slots
   await joyce.page.getByTestId('item-slot-0').click();
   await joyce.page.getByTestId('item-move').click();
   expect(asked).toContain('learned where this is');
-  await expect(page.getByTestId('orbit-empty-3')).toBeVisible(); // its old spot stays empty; nothing shifts
+  await expect(page.getByTestId('orbit-empty-6')).toBeVisible(); // its old spot stays empty; nothing shifts
   await page.getByTestId('orbit-eat').click();
-  await expect(page.getByTestId('orbit-go')).toHaveAttribute('data-slot', '0');
+  await expect(page.getByTestId('orbit-music')).toHaveAttribute('data-slot', '0');
   await joyce.context.close();
 });
 
