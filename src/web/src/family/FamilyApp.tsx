@@ -17,6 +17,7 @@ import { WhereIAm } from './WhereIAm.tsx';
 import { TodayTimeline } from './TodayTimeline.tsx';
 import { CalendarAdmin } from './CalendarAdmin.tsx';
 import { NotifyBanner, NotifyPrefsPanel } from './Notify.tsx';
+import { RecordButton } from './RecordButton.tsx';
 
 type Tab = 'inbox' | 'jonatito' | 'status' | 'today' | 'calendar' | 'log' | 'items' | 'voices' | 'people' | 'words' | 'settings';
 
@@ -106,6 +107,7 @@ export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?:
         {board && tab === 'words' && isCaretaker && <WordsAdmin board={board} onChange={loadBoard} />}
         {tab === 'settings' && elevated && <SettingsPanel />}
       </main>
+      {!elevated && <RecordButton onSent={() => setVoiceVersion((v) => v + 1)} />}
     </div>
   );
 }

@@ -18,7 +18,7 @@ export function prefsFor(db: Db, userId: number): NotifyPrefs {
   return { batch_min: r?.batch_min ?? 10, face_taps: r ? !!r.face_taps : true };
 }
 
-function quiet(db: Db, now: Date) {
+export function isQuietHours(db: Db, now: Date) {
   const q = db.setting<{ start_min: number; end_min: number }>('quiet_hours', { start_min: 1260, end_min: 420 });
   return inWindow(minutesOfDay(now), q.start_min, q.end_min);
 }
@@ -35,7 +35,7 @@ export function enqueue(db: Db, hub: EventHub, now: Date, userId: number, kind: 
   db.run('INSERT INTO notify_queue(user_id, kind, message_id, moment_id, summary, created_at) VALUES(?,?,?,?,?,?)',
     userId, kind, ref.messageId ?? null, ref.momentId ?? null, summary, now.toISOString());
   if (kind === 'urgent' || kind === 'panic') return deliver(db, hub, now, userId);
-  if (kind === 'face' || quiet(db, now)) return null; // face taps ride along; nothing buzzes at night
+  if (kind === 'face' || isQuietHours(db, now)) return null; // face taps ride along; nothing buzzes at night
   const last = lastDelivery(db, userId);
   if (prefs.batch_min === 0 || !last || now.getTime() - last.getTime() >= prefs.batch_min * 60_000) return deliver(db, hub, now, userId);
   return null;
@@ -62,7 +62,7 @@ export function deliver(db: Db, hub: EventHub, now: Date, userId: number): Notif
 
 /** Background job (every 15 s): deliver held updates whose window has passed. */
 export function flushNotifications(db: Db, hub: EventHub, now: Date) {
-  if (quiet(db, now)) return;
+  if (isQuietHours(db, now)) return;
   const users = db.all<{ user_id: number; faces_only: number; oldest: string }>(
     "SELECT user_id, MIN(kind = 'face') AS faces_only, MIN(created_at) AS oldest FROM notify_queue WHERE delivered_at IS NULL GROUP BY user_id",
   );

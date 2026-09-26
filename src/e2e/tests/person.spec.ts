@@ -7,9 +7,11 @@ test.beforeEach(async ({ request, page }) => {
   await setClock(request, AFTERNOON, [page]);
 });
 
-test('Abuela Pilar records "For Jonatito"; a sound wave appears in front of her face; he plays it', async ({ page, browser }) => {
+test('at night a new voice note does not play by itself: a sound wave waits in front of her face', async ({ page, browser, request }) => {
+  const NIGHT = '2026-09-23T21:30:00-04:00';
+  await setClock(request, NIGHT, [page]);
   await login(page, 'jonatito');
-  const pilar = await device(browser, 'pilar', { clock: AFTERNOON });
+  const pilar = await device(browser, 'pilar', { clock: NIGHT });
   await pilar.page.getByTestId('tab-jonatito').click();
   await pilar.page.getByTestId('voice-record').click();
   await expect(pilar.page.getByTestId('voice-record')).toHaveAttribute('data-state', 'recording');
@@ -19,8 +21,9 @@ test('Abuela Pilar records "For Jonatito"; a sound wave appears in front of her 
   await pilar.page.getByTestId('voice-send').click();
   await expect(pilar.page.getByTestId('voice-mine-item')).toHaveAttribute('data-heard', 'no');
 
-  // Live on the tablet, in the orbit and in the dock.
+  // Live on the tablet, in the orbit and in the dock, but nothing pops up or plays.
   const badge = page.getByTestId('voice-badge-pilar');
+  await expect(page.getByTestId('voice-arrival')).toHaveCount(0);
   await expect(badge).toBeVisible();
   await expect(page.getByTestId('dock-voice-pilar')).toBeVisible();
   const played = page.waitForResponse((r) => r.url().includes('/api/audio/') && r.status() < 300);

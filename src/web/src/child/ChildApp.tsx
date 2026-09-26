@@ -8,6 +8,7 @@ import { flushTaps, logTap } from '../common/taplog.ts';
 import { itemToken, personToken, type Board, type StripToken } from '../common/board.ts';
 import { TimeBar, PAST_DAYS, FUTURE_DAYS } from './TimeBar.tsx';
 import { EntryCard } from './EntryCard.tsx';
+import { VoiceArrival } from './VoiceArrival.tsx';
 import { weatherOf } from './Sky.tsx';
 import { BoardView, Strip } from './Board.tsx';
 import { OrbitView } from './OrbitView.tsx';
@@ -56,6 +57,8 @@ export function ChildApp({ user: _user }: { user: User }) {
   const [parent, setParent] = useState<User | null>(null);
   const [entries, setEntries] = useState<TimelineEntry[]>([]);
   const [entry, setEntry] = useState<TimelineEntry | null>(null);
+  // New voice messages waiting to pop up and play once (one at a time).
+  const [arrivals, setArrivals] = useState<VoiceNote[]>([]);
   // Time scrubbing: minutes away from now (negative = past). The sky reads timeRef every frame.
   const [scrub, setScrub] = useState(0);
   const timeRef = useRef(Date.now());
@@ -123,6 +126,7 @@ export function ChildApp({ user: _user }: { user: User }) {
         const rest = vs.filter((v) => v.id !== e.note.id);
         return e.note.hidden ? rest : [e.note, ...rest];
       });
+      if (e.autoplay && !e.note.heard_at && !e.note.hidden) setArrivals((a) => (a.some((x) => x.id === e.note.id) ? a : [...a, e.note]));
     }
     if (e.type === 'location') void loadLocations();
     if (e.type === 'timeline' || e.type === 'message' || e.type === 'reply' || e.type === 'voice_note') void loadTimeline();
@@ -369,6 +373,20 @@ export function ChildApp({ user: _user }: { user: User }) {
       )}
       {reply && <ReplyToast reply={reply} person={board.people.find((p) => p.id === reply.from_person_id)} now={now} lang={lang} onClose={() => setReply(null)} />}
       {entry && <EntryCard entry={entry} board={board} lang={lang} onClose={() => setEntry(null)} />}
+      {arrivals[0] && (
+        <VoiceArrival
+          key={arrivals[0].id}
+          note={arrivals[0]}
+          person={board.people.find((p) => p.id === arrivals[0].from_person_id)}
+          onHeard={markHeard}
+          onOpen={() => {
+            const pid = arrivals[0].from_person_id;
+            setArrivals((a) => a.slice(1));
+            if (pid) setView({ name: 'person', id: pid });
+          }}
+          onDone={() => setArrivals((a) => a.slice(1))}
+        />
+      )}
       {gate && (
         <ParentGate
           onCancel={() => setGate(false)}

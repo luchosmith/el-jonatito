@@ -149,7 +149,8 @@ export type ServerEvent =
   | { type: 'people'; }
   | { type: 'symbols'; }
   | { type: 'items'; }
-  | { type: 'voice_note'; note: VoiceNote }
+  /** autoplay: a new note the tablet plays once by itself (never during quiet hours) */
+  | { type: 'voice_note'; note: VoiceNote; autoplay?: boolean }
   | { type: 'location'; person_id: string }
   | { type: 'notify'; batch: NotifyBatch }
   | { type: 'timeline' };

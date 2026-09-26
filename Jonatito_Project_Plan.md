@@ -96,7 +96,7 @@ A band across the top of every screen in child mode:
   - **Where they are**, relative to him: both pins on the globe with a 🚗 or ✈️ between them, their local time if it differs (☀️/🌙), and "back in 3 sleeps" if they're away.
   - **Hear:** a shelf of all their voice notes, with pinned comfort clips (*"Te quiero mucho, mi amor"*) first. He can replay them whenever he needs reassurance.
   - **Send:** 👂 TALK (record his voice to them), 👀 COME SEE, ✋ HELP and ❤️ LOVE. The message visibly travels along the path from his pin to theirs.
-- **Familiar voices, any time.** Family members record voice notes for him from their phones. A **sound-wave badge** in front of their avatar shows something new; tapping it plays it right away.
+- **Familiar voices, any time.** Family members tap the 🎙️ button on their phone and record a message. On his tablet their face pops up and the message **plays once by itself** (not at night: then a sound-wave badge waits for his tap). Afterwards it stays on their page, to replay whenever he wants.
 - Each person can share which city they're in (city-level only).
 
 ### 4.4 Sentence builder

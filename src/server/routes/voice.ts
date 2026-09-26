@@ -4,6 +4,7 @@ import { requireAuth } from '../auth.ts';
 import { HttpError, jsonBody, rawBody } from '../http.ts';
 import { audit, childUserIds, getVoiceNote, listLocations, listVoiceNotes } from '../repo.ts';
 import { AUDIO_MIME, saveAudio } from '../uploads.ts';
+import { isQuietHours } from '../notify.ts';
 import { bool, num, obj, oneOf, str } from '../validate.ts';
 import { coarse, nearestCity } from '../../shared/geo.ts';
 import type { Locations, Place } from '../../shared/types.ts';
@@ -30,8 +31,9 @@ export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
     const r = db.run("INSERT INTO voice_notes(from_user_id, audio_file, duration_s, created_at, source) VALUES(?,?,?,?,'app')",
       ctx.user!.id, file, duration, now().toISOString());
     const note = getVoiceNote(db, r.lastId)!;
-    hub.publish([...new Set([...childUserIds(db), ...caretakerIds(), ctx.user!.id])], { type: 'voice_note', note });
-    return note;
+    const autoplay = !isQuietHours(db, now());
+    hub.publish([...new Set([...childUserIds(db), ...caretakerIds(), ctx.user!.id])], { type: 'voice_note', note, autoplay });
+    return { ...note, autoplay };
   });
 
   /** The tablet and caretakers see every note; a friend only their own. */

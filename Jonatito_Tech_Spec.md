@@ -240,7 +240,11 @@ One screen per person brings together **where they are** (relative to him), **wh
   - **👀 COME SEE, ✋ HELP, ❤️ LOVE** send the social messages in one tap. HELP stays urgent-class.
   - After sending, the message icon **travels along the path from his pin to theirs** and lands with 📬✔. Where they are becomes part of the act of sending.
   - If they're busy, the dispatcher's usual card appears (the clock of when they're free, plus people who are free now).
-- **Recording (family side).** Each adult's app has a big **"🎙️ For Jonatito"** button: hold to record, up to 60 s, listen back, send. It's stored in `voice_notes`. Voice replies to his messages are also saved there, so everything he can hear is in one place. *(Voice notes stay inside the app; WhatsApp is not used.)*
+- **Recording (family side).** Every screen of the family app (Android or iPhone) has a round **🎙️** button: tap to record (up to 60 s), tap to stop, listen back, **Send**. The "🎙️ For Jonatito" tab lists what you sent and whether he heard it. Notes are stored in `voice_notes`; voice replies to his messages are saved there too.
+- **Arrival on the tablet (v0.6).** A new note **pops up**: the sender's face and a moving sound wave, and it **plays once by itself**. It stays about 6 s after it ends, then fades; it is marked heard and stays on the sender's shelf for replay. Tapping the face opens their person screen; tapping the wave plays it again.
+  - *Exception to principle 2 (no auto-playing sound), chosen by the family:* only for new voice notes from the family, and **never during quiet hours** (9 pm–7 am). At night the note waits as a sound-wave badge until he taps it.
+  - It never interrupts full-screen media: it waits until he leaves the player. Several notes arrive one after the other.
+  - If the tablet's browser refuses to play sound on its own, the pop-up pulses with 👆 until he taps it (30 s).
 - **Unheard badge elsewhere.** An animated sound-wave badge sits in front of the sender's avatar in the orbit and the dock, with a number dot when there's more than one. Tapping it plays the newest unheard note without leaving the orbit.
 - **Rules:**
   - Nothing auto-plays (principle 2).
