@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { AFTERNOON, apiAs, login, resetDb, setClock } from './helpers.ts';
 
@@ -133,6 +136,42 @@ test('Pongo (in the dock) plays full screen; his face brings him back', async ({
   await expect(page.getByTestId('here-now')).toHaveCount(0);
   await page.getByTestId('player-exit').click();
   await expect(page.getByTestId('orbit')).toBeVisible();
+});
+
+test('Pongo with a film: full screen until bedtime; a tap pauses and goes on; his face (bottom-left) goes home; it goes on where he left it; it loops', async ({ page, request }) => {
+  const joyce = await apiAs(request, 'joyce');
+  const pongo = (await (await joyce.get('/api/media')).json()).items.find((m: { title: string }) => m.title === 'Pongo');
+  const film = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'film.webm'));
+  expect((await joyce.raw('PUT', `/api/media/${pongo.id}/file`, film, 'video/webm')).ok()).toBeTruthy();
+
+  await login(page, 'jonatito');
+  await page.getByTestId('dock-pongo').click();
+  const video = page.getByTestId('player-video');
+  await expect(page.getByTestId('player-clock')).toContainText('8:30'); // until bedtime, not a 15-minute session
+  expect(await video.evaluate((v: HTMLVideoElement) => v.loop)).toBe(true);
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => !v.paused && v.currentTime > 0.5)).toBe(true);
+  const box = (await page.getByTestId('player').boundingBox())!;
+  const vb = (await video.boundingBox())!;
+  expect(vb.width).toBeGreaterThan(box.width - 2); // the whole screen
+  const home = (await page.getByTestId('player-exit').boundingBox())!;
+  expect(home.x).toBeLessThan(box.x + 40); // bottom-left, where his face is in the taskbar
+  expect(home.y + home.height).toBeGreaterThan(box.y + box.height - 40);
+
+  await page.getByTestId('player-film').click({ position: { x: box.width / 2, y: box.height / 3 } });
+  await expect(page.getByTestId('player-film')).toHaveAttribute('data-paused', 'yes');
+  await expect(page.getByTestId('player-paused')).toBeVisible();
+  const at = await video.evaluate((v: HTMLVideoElement) => v.currentTime);
+  await page.getByTestId('player-film').click({ position: { x: box.width / 2, y: box.height / 3 } });
+  await expect(page.getByTestId('player-film')).toHaveAttribute('data-paused', 'no');
+
+  // Home, then Pongo again: it goes on from where he left it.
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThan(at + 0.5);
+  await page.getByTestId('player-exit').click();
+  await expect(page.getByTestId('orbit')).toBeVisible();
+  const saved = Number(await page.evaluate((k) => localStorage.getItem(k), `jt-media-pos-${pongo.id}`));
+  expect(saved).toBeGreaterThan(at);
+  await page.getByTestId('dock-pongo').click();
+  await expect.poll(() => page.getByTestId('player-video').evaluate((v: HTMLVideoElement) => v.currentTime)).toBeGreaterThanOrEqual(saved - 0.3);
 });
 
 test('at night Pongo shows the sleeping moon instead of playing', async ({ page, request }) => {

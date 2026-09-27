@@ -106,12 +106,18 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
   });
 
   router.post('/api/media/:id/play', requireAuth('child', 'caretaker'), (ctx) => {
-    const m = db.get<{ id: number; bedtime_ok: number }>('SELECT id, bedtime_ok FROM media WHERE id = ?', Number(ctx.params.id));
+    const m = db.get<{ id: number; bedtime_ok: number; kind: string; file: string | null }>('SELECT id, bedtime_ok, kind, file FROM media WHERE id = ?', Number(ctx.params.id));
     if (!m) throw new HttpError(404, 'Unknown media');
     const lock = lockState();
     if (lock.locked && !m.bedtime_ok) throw new HttpError(423, 'Media is sleeping', { unlock_at: lock.unlock_at });
     const start = now();
-    const ends = new Date(start.getTime() + policy().session_max_min * 60_000);
+    // A real film (Pongo: 101 Dalmatians) keeps going until bedtime; everything else gets the media session.
+    let ends = new Date(start.getTime() + policy().session_max_min * 60_000);
+    if (m.file && m.kind === 'movie') {
+      ends = startOfDay(start);
+      ends.setMinutes(policy().sleep_start_min);
+      if (ends <= start) ends.setDate(ends.getDate() + 1);
+    }
     db.run('INSERT INTO media_sessions(media_id, started_at, ends_at) VALUES(?,?,?)', m.id, start.toISOString(), ends.toISOString());
     return { media_id: m.id, started_at: start.toISOString(), ends_at: ends.toISOString() };
   });

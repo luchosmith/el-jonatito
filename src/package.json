@@ -14,6 +14,7 @@
     "dev": "tsx watch server/index.ts",
     "seed:reset": "tsx server/reset.ts",
     "set-pin": "tsx server/set-pin.ts",
+    "media:add": "tsx server/add-media.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "tsx --test test/*.test.ts",
     "e2e:server": "node scripts/build-web.mjs && tsx server/index.ts",

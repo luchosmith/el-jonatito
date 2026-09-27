@@ -230,9 +230,16 @@ img { display: block; }
 .player video.frame { aspect-ratio: auto; width: auto; }
 .player .frame img { width: 100%; height: 100%; object-fit: cover; animation: kb 12s ease-in-out infinite alternate; }
 @keyframes kb { from { transform: scale(1); } to { transform: scale(1.15) translate(-3%, 2%); } }
-.player-exit { position: absolute; left: 18px; top: 18px; width: 88px; height: 88px; border-radius: 50%; overflow: hidden; border: 4px solid #fff; box-shadow: 0 0 0 4px var(--people); padding: 0; background: #ffe3c4; }
+.player-exit { position: absolute; left: 14px; bottom: 14px; width: 88px; height: 88px; border-radius: 50%; overflow: hidden; border: 4px solid #fff; box-shadow: 0 0 0 5px #ffd166, 0 4px 14px rgba(0,0,0,.6); padding: 0; background: #ffe3c4; z-index: 3; }
+/* a film fills the screen; a tap pauses it or goes on */
+.player .film { position: absolute; inset: 0; background: #000; cursor: pointer; }
+.player .film video { width: 100%; height: 100%; object-fit: contain; display: block; transition: filter .2s; }
+.player .film[data-paused="yes"] video { filter: brightness(.45); }
+.film-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 150px; height: 150px; border-radius: 50%; background: rgba(255,255,255,.9); display: grid; place-items: center; font-size: 70px; padding-left: 12px; box-sizing: border-box; pointer-events: none; }
+.film-bar { position: absolute; left: 120px; right: 24px; bottom: 34px; height: 8px; border-radius: 4px; background: rgba(255,255,255,.2); overflow: hidden; pointer-events: none; }
+.film-bar i { display: block; height: 100%; background: #fff; }
 .player-exit img { width: 100%; height: 100%; object-fit: cover; }
-.player-clock { position: absolute; right: 18px; top: 18px; background: rgba(255,255,255,.92); border-radius: 18px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 800; }
+.player-clock { position: absolute; right: 18px; top: 18px; z-index: 2; opacity: .9; background: rgba(255,255,255,.92); border-radius: 18px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 800; }
 .player-locked { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #fff; }
 .player-locked .time { color: #fff; }
 

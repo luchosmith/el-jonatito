@@ -254,6 +254,18 @@ nav.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .pclock{position:absolute;right:18px;top:18px;background:rgba(255,255,255,.92);border-radius:18px;padding:8px 12px;display:flex;align-items:center;gap:8px;font-size:22px;font-weight:800}
 .pbar{position:absolute;left:130px;right:130px;bottom:22px;height:8px;border-radius:4px;background:rgba(255,255,255,.2);overflow:hidden}
 .pbar i{display:block;height:100%;width:35%;background:#fff;animation:pb 60s linear infinite}
+/* v0.9 Pongo movie: the whole screen is the film; his face floats where it sits in the dock */
+.pgv{flex:1;background:#000;position:relative;overflow:hidden;cursor:pointer}
+.pgv .film{position:absolute;inset:0;display:grid;place-items:center}
+.pgv .film img{height:100%;aspect-ratio:720/478;max-width:100%;object-fit:cover}
+.pgv.paused .film img{filter:brightness(.45)}
+.pgv .pplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.9);display:none;place-items:center;font-size:70px;padding-left:12px;box-sizing:border-box}
+.pgv.paused .pplay{display:grid}
+.pgv .phome{position:absolute;left:12px;bottom:12px;width:76px;height:76px;border-radius:50%;overflow:hidden;border:4px solid #fff;box-shadow:0 0 0 5px #ffd166,0 4px 14px rgba(0,0,0,.6);cursor:pointer;z-index:2}
+.pgv .phome img{width:100%;height:100%;object-fit:cover}
+.pgv .pbar{left:110px;right:24px;bottom:30px}
+.pgv .pbar i{animation:none}
+.pgv .pclock{transform:scale(.8);transform-origin:top right;opacity:.85}
 @keyframes pb{from{width:35%}to{width:100%}}
 /* voice shelf */
 .shelf{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px}
@@ -1107,7 +1119,17 @@ function painTap(l){
 }
 
 /* ---------- full-screen media ---------- */
+const PG = { paused: false, at: 0.35 };
 function renderPongo(){
+  document.getElementById('v-pongo').innerHTML=`<div class="pgv ${PG.paused ? 'paused' : ''}" onclick="PG.paused=!PG.paused;renderPongo()">
+    <div class="film"><img src="${AVATARS.pongo_full}" alt="101 Dalmatians"></div>
+    <div class="pplay">▶</div>
+    <div class="pclock">🎬 ${clk(TT.media,new Date(),60)}${fmt(TT.media)}</div>
+    <div class="pbar"><i style="width:${PG.at * 100}%"></i></div>
+    <div class="phome" onclick="event.stopPropagation();PG.paused=true;go('living2')" title="Home (the movie waits here)"><img src="${AVATARS.jonatito}" alt=""></div>
+  </div>`;
+}
+function renderPongoOld(){
   document.getElementById('v-pongo').innerHTML=`<div class="pongov"><div class="frame"><img src="${AVATARS.pongo_full}" alt="Pongo"></div><div class="pexit" onclick="go('orbit')" title="Back to me"><img src="${AVATARS.jonatito}" alt=""></div><div class="pclock">🎬 ${clk(TT.media,new Date(),60)}${fmt(TT.media)}</div><div class="pbar"><i></i></div></div>`;
 }
 
@@ -1522,7 +1544,7 @@ Object.assign(VIEWS,{
   food:['🍇 Eat → foods','Tapping Eat adds “eat” and opens the foods around him; the people stay in the outer orbit. Foods outside their time are dimmed with a clock. Tap one to hear and see when it opens. The next snack is shown top-left. Tap his face or the 🍇 badge to go back.'],
   where:['🌍 Where is…','Tapping a person zooms the ground out to show where they are. Abuela Pilar is in Lima, so a plane flies between the pins. Try Mommy Joyce (same city, 🚗), Larry (Miami, 🚗 across the country) or TinTin (location not shared, ❔). Tap the globe to close it; it also closes by itself after 6 seconds.'],
   body:['🩹 My body','Tap his face in the orbit to get here. He points to where it hurts (his own photo is the head), then picks a face from smiling to crying. Levels 3–5 go out as urgent to everyone on duty, 1–2 go to the caretaker on duty, and 0 is only logged. A caretaker can hide the dashed potty zone.'],
-  pongo:['🐶 Pongo full screen','Media items open full screen, with no controls to get lost in. His face (top-left) brings him back to the orbit. The media clock shows when media time ends. During the sleep lock the item shows a moon and does not open.'],
+  pongo:['🐶 Pongo movie','v0.9 (proposed): Pongo plays 101 Dalmatians on the whole screen. Tap anywhere on the film to pause (it dims and shows a big ▶); tap again to go on. His face floats bottom-left, in the same spot as in the taskbar: it pauses the film and goes home. Next time he taps Pongo, the film goes on from where he left it; at the end it starts again from the beginning. Try tapping the film. — Before: Media items open full screen, with no controls to get lost in. His face (top-left) brings him back to the orbit. The media clock shows when media time ends. During the sleep lock the item shows a moon and does not open.'],
   items:['🧩 Item editor','Parent mode → Items. One database entry for everything he can touch. Pick an item on the left: its picture (with history and revert), words in English and Spanish, recorded sound, what a tap does, its fixed slot, the linked account or media file, and time rules.']
 });
 VIEWS.person=['📍 Person: where · hear · talk','One screen per person, opened by tapping their face in the orbit or the dock. Left: where they are compared with him (both pins, 🚗 or ✈️, their local time with ☀️/🌙 if it differs, and “back in 3 sleeps” as moons). Right: their voice notes (⭐ pinned comfort clips first, red dot = not heard yet), then TALK, COME SEE, HELP and LOVE. Played notes travel from their pin to his; sent messages travel from his pin to theirs. Try Abuela Pilar (Lima ✈️), Mommy Joyce (same city 🚗) and TinTin (not shared ❔) in the dock.'];
@@ -1572,7 +1594,7 @@ function fit(){
 }
 window.addEventListener('resize',fit);
 document.querySelectorAll('img.ph').forEach(i=>i.src=AVATARS[i.dataset.p]);
-renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('living2');setInterval(tick,15000);
+renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('pongo');setInterval(tick,15000);
 </script>
 </body>
 </html>

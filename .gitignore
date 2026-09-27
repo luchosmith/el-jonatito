@@ -18,3 +18,6 @@ src/playwright-report/
 .env.*
 .DS_Store
 Thumbs.db
+
+# films and other big media live on the server, not in git
+/*.mp4

@@ -608,6 +608,34 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 3. **Which places:** only places with a location set, or also the other Places words (shown at the edge of the walk zone until a location is set)?
 4. **Timeline link:** when he drags time, should the compass move too (e.g. show him at school at 10:00 from the calendar)?
 
+### 5.21 Pongo plays the movie (v0.9, built)
+> Mockup tab **"🐶 Pongo movie"**. **Built (September 2026)** as mocked. A film (a media item of kind *movie* with a video file) **plays until bedtime** instead of a 15-minute session; the media clock shows bedtime. His face is **bottom-left**.
+
+**Goal:** tapping 🐶 Pongo in the taskbar plays *101 Dalmatians (1961)*, the family's copy, in full screen.
+
+**On the tablet:**
+- **Full screen:** the film fills the screen (letterboxed; it is 720×478). There are no player controls.
+- **Home:** his face floats over the film, bottom-left, in the same spot as in the taskbar. It pauses the film and goes back home.
+- **Pause:** tapping anywhere on the film pauses it (the picture dims and a big ▶ shows). Tapping again goes on.
+- **Resume:** the next time he taps Pongo, the film goes on from where he left it. The spot is remembered on the tablet (per film).
+- **Loop:** when the film ends it starts again from the beginning.
+- **Unchanged:**
+  - the media clock (top-right);
+  - the sleep lock (🌙 after bedtime);
+  - the tap log ("watched Pongo").
+
+**The file:**
+- The film is 765 MB, bigger than the 300 MB upload limit. It is copied into the server's media folder directly, not uploaded.
+- It is re-packed so it can start playing before it has all downloaded ("faststart"). The picture and sound are not re-encoded.
+- The server already streams it in pieces (range requests), so seeking and resuming work.
+- A small command links a video file on the server to a media item: `npm run media:add -- "Pongo" <file>`.
+
+**Later: a copy on his tablet.** This removes the lag of streaming over the internet. One way is the Tablet settings "⬇️ Keep on this tablet" option, which saves the film in the browser's storage (the Cache API) and plays it from there. The other is a file copied onto the device, if the kiosk browser can read local files.
+
+### 5.22 Decisions (Pongo movie, answered)
+1. **Media time:** the film keeps playing until bedtime; the sleep lock still applies.
+2. **Home button:** bottom-left, where his face is in the taskbar.
+
 ---
 
 ## 6. Smart dispatcher (worker)

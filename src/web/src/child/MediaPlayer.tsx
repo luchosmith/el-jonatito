@@ -1,6 +1,9 @@
-// A media item (e.g. Pongo) full screen: nothing to get lost in. His face (top-left) brings him
-// back; the media clock shows when media time ends. During the sleep lock it shows the moon instead.
-import { useEffect, useState } from 'react';
+// A media item (e.g. Pongo) full screen: nothing to get lost in. His face (bottom-left, where it is in
+// the taskbar) brings him back; the media clock shows when media time ends. During the sleep lock it
+// shows the moon instead.
+// A film (Pongo: 101 Dalmatians) fills the screen and plays until bedtime: a tap anywhere pauses it or
+// goes on, it goes on next time from where he left it (remembered on this tablet), and it loops.
+import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api.ts';
 import { Clock12 } from '../common/Clock12.tsx';
 import { Face } from '../common/Face.tsx';
@@ -33,6 +36,25 @@ export function MediaPlayer({ item, media, me, now, onExit }: {
   }, [now, state]);
 
   const poster = media?.cover_url ?? item.photo_url;
+  const video = useRef<HTMLVideoElement>(null);
+  const [paused, setPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const posKey = media ? `jt-media-pos-${media.id}` : '';
+  const savePos = () => {
+    const v = video.current;
+    if (!v || !posKey || !v.duration) return;
+    try {
+      localStorage.setItem(posKey, String(v.currentTime));
+    } catch { /* private mode: it just starts from the beginning next time */ }
+  };
+  // Leaving (home, bedtime) keeps his spot.
+  useEffect(() => () => savePos(), [posKey]);
+  const toggle = () => {
+    const v = video.current;
+    if (!v) return;
+    if (v.paused) void v.play().catch(() => setPaused(true));
+    else v.pause();
+  };
   const isAudio = media?.file_url && media.kind === 'song';
 
   return (
@@ -54,7 +76,25 @@ export function MediaPlayer({ item, media, me, now, onExit }: {
             <audio src={media.file_url} autoPlay onEnded={onExit} data-testid="player-audio" />
           </div>
         ) : (
-          <video className="frame" src={media.file_url} poster={poster ?? undefined} autoPlay playsInline onEnded={onExit} data-testid="player-video" />
+          <div className="film" data-testid="player-film" data-paused={paused ? 'yes' : 'no'} onClick={toggle}>
+            <video ref={video} src={media.file_url} poster={poster ?? undefined} autoPlay loop playsInline data-testid="player-video"
+              onLoadedMetadata={(e) => {
+                const v = e.currentTarget;
+                let at = 0;
+                try { at = Number(localStorage.getItem(posKey)) || 0; } catch { /* no storage */ }
+                if (at > 0 && at < v.duration - 5) v.currentTime = at;
+                void v.play().catch(() => setPaused(true)); // no sound without a tap: wait for one
+              }}
+              onPlay={() => setPaused(false)}
+              onPause={() => { setPaused(true); savePos(); }}
+              onTimeUpdate={(e) => {
+                const v = e.currentTarget;
+                setProgress(v.duration ? v.currentTime / v.duration : 0);
+                if (Math.floor(v.currentTime) % 5 === 0) savePos();
+              }} />
+            {paused && <div className="film-play" data-testid="player-paused">▶</div>}
+            <div className="film-bar"><i style={{ width: `${progress * 100}%` }} /></div>
+          </div>
         )
       ) : (
         <div className="frame" data-testid="player-poster">
@@ -62,7 +102,7 @@ export function MediaPlayer({ item, media, me, now, onExit }: {
         </div>
       )}
 
-      <button className="player-exit" data-testid="player-exit" onClick={onExit} aria-label="Back to me">
+      <button className="player-exit" data-testid="player-exit" onClick={() => { video.current?.pause(); savePos(); onExit(); }} aria-label="Back to me">
         {me && <Face person={me} />}
       </button>
       {state.kind === 'playing' && (

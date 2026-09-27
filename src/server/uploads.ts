@@ -60,3 +60,22 @@ export function saveMedia(uploadsDir: string, buf: Buffer, contentType: string |
   fs.writeFileSync(path.join(dir, file), buf);
   return file;
 }
+
+/** Copies a video / song already on the server (too big to upload) into the media folder. Returns the stored name. */
+export function copyMediaFile(uploadsDir: string, src: string): string {
+  const head = Buffer.alloc(16);
+  const fd = fs.openSync(src, 'r');
+  try {
+    fs.readSync(fd, head, 0, 16, 0);
+  } finally {
+    fs.closeSync(fd);
+  }
+  const ext = path.extname(src).toLowerCase();
+  const t = Object.values(MEDIA_TYPES).find((x) => x.ext === ext && x.magic(head));
+  if (!t) throw new Error('Not an MP4 / WebM video or MP3 / M4A song');
+  const file = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${t.ext}`;
+  const dir = path.join(uploadsDir, 'media');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.copyFileSync(src, path.join(dir, file));
+  return file;
+}
