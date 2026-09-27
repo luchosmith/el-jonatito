@@ -33,6 +33,8 @@ interface Props {
   timeRef: MutableRefObject<number>;
   weather: Weather;
   season: Season;
+  /** the time under the NOW line: the sky clock shows it */
+  view: Date;
   /** dragged away from NOW: the orbit dims; his face brings him back */
   away: boolean;
   onNow: () => void;
@@ -81,6 +83,11 @@ export function OrbitView(p: Props) {
     <div className="orbit" data-testid="orbit" data-parent={parentId ?? ''}>
       <Sky timeRef={p.timeRef} weather={p.weather} season={p.season} />
       <div className="now-guide" aria-hidden />
+      {/* The clock, in the sky under NOW: numbers and hands only, like the clock on his wall. Dragged
+          away from now, the span between now and then is shaded; a tap brings it back to now. */}
+      <button className="sky-clock" data-testid="sky-clock" onClick={p.onNow} aria-label="Back to now">
+        <Clock12 at={p.view} from={p.away ? now : null} size={104} numbers testId="main-clock" />
+      </button>
 
       <div className={`orbit-layer ${p.away ? 'away' : ''}`}>
         <div className="ring inner" />

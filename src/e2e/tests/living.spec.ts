@@ -17,6 +17,17 @@ test('the sentence row is on top, the time row under it, and NOW is in line with
   expect(Math.abs(now.x + now.width / 2 - (head.x + head.width / 2))).toBeLessThan(4);
   const sky = (await page.getByTestId('sky').boundingBox())!;
   expect(sky.width).toBeGreaterThan(800);
+  // The timeline runs the full width of the screen.
+  expect((await page.getByTestId('timeline').boundingBox())!.width).toBeGreaterThan(1200);
+  // The clock is in the sky, under NOW, above his head: numbers and hands, no written time.
+  const clock = (await page.getByTestId('main-clock').boundingBox())!;
+  expect(Math.abs(clock.x + clock.width / 2 - (now.x + now.width / 2))).toBeLessThan(4);
+  expect(clock.y).toBeGreaterThan(time.y + time.height - 4);
+  expect(clock.y + clock.height).toBeLessThan(head.y);
+  expect(clock.width).toBeGreaterThan(80);
+  await expect(page.getByTestId('main-clock')).toHaveAttribute('aria-label', '3:40');
+  await expect(page.getByTestId('main-clock').locator('text')).toHaveCount(12);
+  await expect(page.getByTestId('digital-time')).toHaveCount(0);
   // Today's routine is still on the line (lunch done, media next).
   await expect(page.getByTestId('tl-lunch')).toHaveClass(/done/);
   await expect(page.getByTestId('tl-media')).toHaveClass(/next/);
@@ -32,10 +43,10 @@ test('dragging the timeline goes back in time; the orbit dims; his face brings h
   await page.mouse.move(line.x + line.width / 2 + 198, y, { steps: 5 }); // 198 px = 3 hours
   await page.mouse.up();
   await expect(page.getByTestId('here-now')).toHaveAttribute('data-away', 'yes');
-  await expect(page.getByTestId('digital-time')).toHaveText('12:40 PM');
+  await expect(page.getByTestId('main-clock')).toHaveAttribute('aria-label', '12:40');
   await expect(page.locator('.orbit-layer')).toHaveClass(/away/);
   await page.getByTestId('orbit-me').click();
-  await expect(page.getByTestId('digital-time')).toHaveText('3:40 PM');
+  await expect(page.getByTestId('main-clock')).toHaveAttribute('aria-label', '3:40');
   await expect(page.getByTestId('here-now')).toHaveAttribute('data-away', 'no');
   await expect(page.getByTestId('body-view')).toHaveCount(0); // it went back to now, not into My body
 });

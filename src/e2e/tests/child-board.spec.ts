@@ -8,12 +8,8 @@ test.beforeEach(async ({ request, page }) => {
   await openBoard(page);
 });
 
-test('the Here & Now bar shows real 12-hour time, day, season, weather and his routine', async ({ page }) => {
-  await expect(page.getByTestId('digital-time')).toHaveText('3:40 PM');
-  await expect(page.getByTestId('main-clock')).toHaveAttribute('aria-label', '3:40');
-  await expect(page.getByTestId('chip-day')).toContainText('Wednesday');
-  await expect(page.getByTestId('chip-season')).toContainText('Autumn');
-  await expect(page.getByTestId('chip-weather')).toContainText('18°C');
+test('the time row is only the timeline (no written time, date or chips) with his routine', async ({ page }) => {
+  for (const id of ['digital-time', 'chip-day', 'chip-season', 'chip-weather']) await expect(page.getByTestId(id)).toHaveCount(0);
   // Lunch is done, media (4:00) is next; times are 12-hour.
   await expect(page.getByTestId('tl-lunch')).toHaveClass(/done/);
   await expect(page.getByTestId('tl-media')).toHaveClass(/next/);

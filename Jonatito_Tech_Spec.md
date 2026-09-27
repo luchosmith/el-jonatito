@@ -496,6 +496,7 @@ A small job runs every minute. It delivers each person's held items once their w
 5. **Tap history:** is keeping 60 days of raw taps OK?
 
 ### 5.17 Living orbit: sky, earth and a timeline he can scrub (v0.5)
+> **v0.9 (built):** the time row is only the timeline, the full width of the screen. The clock is in the sky, centred under NOW, just under the timeline and above the inner orbit (104 px, all twelve numbers, hands only; no written time or date). It follows the scrubbed time, with the span from now shaded, and a tap brings it back to now. The day / season / weather / place chips are removed; the sky, the earth and the places compass show them.
 **Goal:** the main screen shows time passing without words. The earth turns under him, and the sun and moon travel around it. The sky follows the weather and the season. He can drag time back to see what happened, and forward to see what is coming.
 
 **Layout change**

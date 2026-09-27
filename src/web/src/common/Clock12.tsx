@@ -44,11 +44,13 @@ export function Clock12({ at, from, size = 40, numbers, testId }: Props) {
       <circle cx="50" cy="50" r="46" fill="#fff" stroke="#1f2a37" strokeWidth="5" />
       {wedge}
       {Array.from({ length: 12 }, (_, i) => (
-        <line key={i} x1="50" y1="6" x2="50" y2={i % 3 ? 12 : 15} stroke="#1f2a37" strokeWidth={i % 3 ? 2 : 4} transform={`rotate(${i * 30} 50 50)`} />
+        <line key={i} x1="50" y1="6" x2="50" y2={showNumbers ? (i % 3 ? 9 : 11) : i % 3 ? 12 : 15} stroke="#1f2a37" strokeWidth={i % 3 ? 2 : 4} transform={`rotate(${i * 30} 50 50)`} />
       ))}
+      {/* all twelve numbers, like the clock on his wall */}
       {showNumbers &&
-        ([[12, 50, 27], [3, 77, 56], [6, 50, 83], [9, 23, 56]] as const).map(([n, x, y]) => (
-          <text key={n} x={x} y={y} fontSize="12" fontWeight="700" textAnchor="middle" fill="#1f2a37">{n}</text>
+        Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+          <text key={n} x={50 + 32 * Math.sin((n * Math.PI) / 6)} y={50 - 32 * Math.cos((n * Math.PI) / 6)} dy="0.36em"
+            fontSize="13" fontWeight="800" textAnchor="middle" fill="#1f2a37">{n}</text>
         ))}
       <line x1="50" y1="50" x2="50" y2="26" stroke="#1f2a37" strokeWidth="7" strokeLinecap="round" transform={`rotate(${hourDeg} 50 50)`} />
       <line x1="50" y1="50" x2="50" y2="14" stroke="#5aa4e6" strokeWidth="5" strokeLinecap="round" transform={`rotate(${minDeg} 50 50)`} />

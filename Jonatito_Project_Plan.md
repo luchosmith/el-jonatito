@@ -57,6 +57,8 @@ These come from established AAC (augmentative and alternative communication) pra
 
 *v0.5: the bar moves under the sentence row. Its timeline scrolls under a fixed NOW line centred above his head, and he can drag it into the past and the future (Tech Spec 5.17).*
 
+*v0.9: the bar is only the timeline, the full width of the screen. The clock moves into the sky, centred under NOW above his head: a bigger face with all twelve numbers and no written time or date, matching the real clock on his wall. The day, weather, season and place chips are gone; the main view shows them in its own way.*
+
 A band across the top of every screen in child mode:
 
 - **Analog + digital clock.** The analog face helps with time as a visual "shape".

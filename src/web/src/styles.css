@@ -31,11 +31,6 @@ img { display: block; }
 .digital small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
 .timeline { flex: 1; position: relative; height: 88px; background: linear-gradient(#e8f3ff, #fff); border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }
 /* v0.5 time row: the timeline moves under a fixed NOW line in the centre of the screen */
-.tbar .tb-clock { width: 216px; flex: none; display: flex; align-items: center; gap: 10px; border: none; background: none; padding: 0; text-align: left; }
-.tbar .tb-clock .digital { font-size: 24px; }
-.tbar .tb-chips { width: 216px; flex: none; grid-template-columns: repeat(2, 1fr); }
-.tbar .tb-chips .chip { font-size: 12px; padding: 4px 7px; overflow: hidden; }
-.tbar .tb-chips .chip b { font-size: 17px; }
 .tb-line { touch-action: none; }
 .tb-line.scrub { cursor: grab; }
 .tbar.away .tb-line { background: linear-gradient(#eef0f7, #fbfbfd); }
@@ -125,6 +120,9 @@ img { display: block; }
 
 /* ---------- orbit: he is in the middle (home) ---------- */
 .orbit .sky { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* the clock, in the sky under NOW (numbers and hands only) */
+.sky-clock { position: absolute; left: 50%; top: 4px; translate: -50% 0; padding: 0; border: none; background: none; border-radius: 50%; z-index: 3; cursor: pointer; filter: drop-shadow(0 3px 8px rgba(0,0,0,.18)); }
+.sky-clock svg { display: block; }
 .now-guide { position: absolute; left: 50%; top: 0; height: calc(50% - clamp(55px, 9vmin, 80px)); border-left: 2px dashed rgba(228,87,87,.55); transform: translateX(-1px); pointer-events: none; }
 .orbit-layer.away { opacity: .3; pointer-events: none; }
 .entry-photo { width: 100%; max-height: 300px; object-fit: cover; border-radius: 16px; }

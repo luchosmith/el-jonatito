@@ -389,6 +389,9 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 .lv-stage.scrubbed .lv-items{opacity:.3;pointer-events:none}
 .lv-guide{position:absolute;left:50%;top:0;height:calc(50% - 75px);border-left:2px dashed rgba(228,87,87,.55);transform:translateX(-1px)}
 .lv-me{z-index:3}
+/* v0.9: the clock in the sky under NOW; the time row is only the timeline */
+.lv-skyclock{position:absolute;left:50%;top:4px;transform:translateX(-50%);z-index:3;cursor:pointer;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18))}
+.here2 .lv-clock,.here2 #lvchips{display:none}
 #lvdemo{display:inline-flex;gap:6px;flex-wrap:wrap;margin-left:6px}#lvdemo button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 9px;font-size:13px;cursor:pointer}
 .cal-ev{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin:6px 10px;font-size:13px}
 .cal-ev img{width:54px;height:40px;object-fit:cover;border-radius:8px}.cal-ev .av2{width:30px;height:30px;border-radius:50%;object-fit:cover}
@@ -812,8 +815,8 @@ function clk(target,from,size){
     wedge=`<path d="M50 50 L${x0} ${y0} A${R} ${R} 0 ${hi-lo>180?1:0} 1 ${x1} ${y1} Z" fill="#ffd166" opacity=".8"/>`;
   }
   const h=((target.getHours()%12)+target.getMinutes()/60)*30, m=target.getMinutes()*6;
-  const ticks=[...Array(12)].map((_,i)=>`<line x1="50" y1="6" x2="50" y2="${i%3?12:15}" stroke="#1f2a37" stroke-width="${i%3?2:4}" transform="rotate(${i*30} 50 50)"/>`).join('');
-  const nums=size>=100?[[12,50,27],[3,77,56],[6,50,83],[9,23,56]].map(([n,x,y])=>`<text x="${x}" y="${y}" font-size="12" font-weight="700" text-anchor="middle" fill="#1f2a37">${n}</text>`).join(''):'';
+  const ticks=[...Array(12)].map((_,i)=>`<line x1="50" y1="6" x2="50" y2="${size>=100?(i%3?9:11):(i%3?12:15)}" stroke="#1f2a37" stroke-width="${i%3?2:4}" transform="rotate(${i*30} 50 50)"/>`).join('');
+  const nums=size>=100?[...Array(12)].map((_,i)=>i+1).map(n=>`<text x="${50+32*Math.sin(n*Math.PI/6)}" y="${50-32*Math.cos(n*Math.PI/6)}" dy="0.36em" font-size="13" font-weight="800" text-anchor="middle" fill="#1f2a37">${n}</text>`).join(''):'';
   return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="flex:none"><circle cx="50" cy="50" r="46" fill="#fff" stroke="#1f2a37" stroke-width="5"/>${wedge}${ticks}${nums}<line x1="50" y1="50" x2="50" y2="26" stroke="#1f2a37" stroke-width="7" stroke-linecap="round" transform="rotate(${h} 50 50)"/><line x1="50" y1="50" x2="50" y2="14" stroke="#5aa4e6" stroke-width="5" stroke-linecap="round" transform="rotate(${m} 50 50)"/><circle cx="50" cy="50" r="5" fill="#e45757"/></svg>`;
 }
 const TT={};
@@ -1331,6 +1334,7 @@ function renderLiving() {
   document.getElementById('v-living').innerHTML = `<div class="lv-stage ${LV.onEarth ? 'on-earth' : ''}" id="lvstage">
       <canvas id="lvsky"></canvas>
       <div class="lv-guide"></div>
+      <div class="lv-skyclock" id="lvskyclock" onclick="lvNow()"></div>
       <div class="lv-items">${LV.onEarth ? '<div class="oring in"></div>' : rings()}${emptySlots(new Set(lvInner().map((i) => i.slot)))}${lvInner().map((it) => itemOrb(it, `add('${it.e}','${it.w}','${it.t}',${it.img ? `'${it.img}'` : 'null'})`)).join('')}</div>
       <div class="ome lv-me" onclick="lvNow()"><img src="${AVATARS.jonatito}" alt=""></div>
       ${LV.onEarth ? placesStrip() : ''}
@@ -1368,6 +1372,7 @@ function lvUpdate(force) {
   if (m === LV.minute && !force) return;
   LV.minute = m;
   const d = new Date(t);
+  const sc = document.getElementById('lvskyclock'); if (sc) sc.innerHTML = clk(d, away ? new Date() : null, 104);
   document.getElementById('lvclock').innerHTML = `${clk(d, away ? new Date() : null, 80)}<div class="digital">${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}<small>${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</small></div>`;
   const S = { winter: ['❄️', 'Winter'], spring: ['🌸', 'Spring'], summer: ['☀️', 'Summer'], autumn: ['🍂', 'Autumn'] }[lvSeason(t)];
   const W = { clear: ['☀️', '21°C'], partly: ['⛅', '18°C'], cloudy: ['☁️', '15°C'], rain: ['🌧️', '12°C'], snow: ['❄️', '-2°C'] }[LV.weather];

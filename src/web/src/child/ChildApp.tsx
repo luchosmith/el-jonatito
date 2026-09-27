@@ -282,7 +282,6 @@ export function ChildApp({ user: _user }: { user: User }) {
       now={now}
       view={viewTime}
       schedule={schedule}
-      info={info}
       entries={entries}
       board={board}
       scrubbable={onOrbit}
@@ -311,6 +310,7 @@ export function ChildApp({ user: _user }: { user: User }) {
             timeRef={timeRef}
             weather={weatherOf(info?.weather?.code)}
             season={seasonOf(viewTime)}
+            view={viewTime}
             away={away}
             onNow={backToNow}
             onAdd={(t) => add(t, view.parent ? `orbit:${view.parent}` : 'orbit')}

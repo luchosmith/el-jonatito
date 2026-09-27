@@ -1,14 +1,14 @@
-// The time row (under the sentence row): clock, a timeline that moves under a fixed NOW line in the
-// centre of the screen (in line with his head), and day / season / weather / place.
+// The time row (under the sentence row): a timeline, the full width of the screen, that moves under a
+// fixed NOW line in the centre (in line with his head). The clock is in the sky (OrbitView); day,
+// season, weather and place are shown in the main view itself.
 // On the orbit he can drag it: left is the past (what he did, voices he heard, photos from his day),
 // right is the future (only what is scheduled).
 import { memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Clock12 } from '../common/Clock12.tsx';
 import { Face } from '../common/Face.tsx';
 import { PainFace } from '../common/PainFace.tsx';
-import { DAY_COLORS, SEASON_EMOJI, WEATHER_EMOJI, type Board } from '../common/board.ts';
-import { fmt12, fmtMinutes, minutesOfDay, seasonOf, startOfDay } from '../../../shared/time.ts';
-import type { NowInfo, ScheduleItem, TimelineEntry } from '../../../shared/types.ts';
+import { DAY_COLORS, type Board } from '../common/board.ts';
+import { fmtMinutes, minutesOfDay, startOfDay } from '../../../shared/time.ts';
+import type { ScheduleItem, TimelineEntry } from '../../../shared/types.ts';
 
 export const PX_PER_MIN = 1.1;
 export const PAST_DAYS = 3;
@@ -20,7 +20,6 @@ interface Props {
   /** the time under the NOW line (now, or where he dragged to) */
   view: Date;
   schedule: ScheduleItem[];
-  info: NowInfo | null;
   entries: TimelineEntry[];
   board: Board;
   scrubbable: boolean;
@@ -32,7 +31,7 @@ interface Props {
 }
 
 export function TimeBar(p: Props) {
-  const { now, view, schedule, info, board } = p;
+  const { now, view, schedule, board } = p;
   const drag = useRef<{ x: number; from: number } | null>(null);
   const line = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(640);
@@ -52,7 +51,6 @@ export function TimeBar(p: Props) {
   }, [now.toDateString()]);
   const x = (t: number) => ((t - origin) / 60_000) * PX_PER_MIN;
   const shift = width / 2 - x(view.getTime());
-  const season = seasonOf(view);
   const scrubbedMin = (view.getTime() - now.getTime()) / 60_000;
 
   const pointer = p.scrubbable
@@ -76,14 +74,6 @@ export function TimeBar(p: Props) {
 
   return (
     <header className={`here tbar ${away ? 'away' : ''}`} data-testid="here-now" data-away={away ? 'yes' : 'no'}>
-      <button className="tb-clock" data-testid="tb-clock" onClick={p.onNow} aria-label="Back to now">
-        <Clock12 at={view} from={away ? now : null} size={80} numbers={false} testId="main-clock" />
-        <span className="digital">
-          <span data-testid="digital-time">{fmt12(view)} {view.getHours() < 12 ? 'AM' : 'PM'}</span>
-          <small>{view.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</small>
-        </span>
-      </button>
-
       <div className={`timeline tb-line ${p.scrubbable ? 'scrub' : ''}`} data-testid="timeline" ref={line} {...pointer}>
         <div className="tb-track" style={{ transform: `translateX(${shift}px)` }}>
           <Track origin={origin} now={now} schedule={schedule} entries={p.entries} board={board} onEntry={p.onEntry} />
@@ -91,17 +81,6 @@ export function TimeBar(p: Props) {
         <div className="now-marker" data-testid="now-marker" onClick={p.onNow} />
       </div>
 
-      <div className="chips tb-chips">
-        <div className="chip" data-testid="chip-day">
-          <b className="daydot" style={{ background: DAY_COLORS[view.getDay()] }} />
-          {view.toLocaleDateString('en-US', { weekday: 'long' })}
-        </div>
-        <div className="chip" data-testid="chip-season"><b>{SEASON_EMOJI[season]}</b>{season[0].toUpperCase() + season.slice(1)}</div>
-        <div className="chip" data-testid="chip-weather">
-          {info?.weather ? <><b>{WEATHER_EMOJI(info.weather.code)}</b>{info.weather.temp_c}°C</> : <b>·</b>}
-        </div>
-        <div className="chip"><b>🏠</b>{info?.place ?? 'Home'}</div>
-      </div>
       <div className="parent-corner" data-testid="parent-corner" {...p.cornerProps} />
     </header>
   );
