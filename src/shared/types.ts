@@ -305,7 +305,9 @@ export type TimelineEntry =
   | { kind: 'pain'; at: string; part: string; level: number; message_id: number | null }
   | { kind: 'voice'; at: string; person_id: string | null; note_id: number; audio_url: string }
   | { kind: 'media'; at: string; title: string; cover_url: string | null; emoji: string | null }
-  | { kind: 'log'; at: string; type: string; label: string; emoji: string | null; amount: number | null; by: string }
+  | { kind: 'log'; at: string; type: string; label: string; emoji: string | null; amount: number | null; by: string; symbol_id?: string | null; photo_url?: string | null }
+  /** his tablet only: someone answered what he sent (a voice answer comes as 'voice') */
+  | { kind: 'reply'; at: string; person_id: string | null; reply: 'yes' | 'wait' | 'no' | 'coming' | 'text'; text: string | null }
   | { kind: 'photo'; at: string; event: CalendarEvent }
   | { kind: 'event'; at: string; event: CalendarEvent };
 

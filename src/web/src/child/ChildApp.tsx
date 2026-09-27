@@ -12,6 +12,7 @@ import { VoiceArrival } from './VoiceArrival.tsx';
 import { weatherOf } from './Sky.tsx';
 import { BoardView, Strip } from './Board.tsx';
 import { OrbitView } from './OrbitView.tsx';
+import { FlyAway } from './FlyAway.tsx';
 import { Dock } from './Dock.tsx';
 import { DispatchCard, type SentState } from './DispatchCard.tsx';
 import { ReplyToast } from './ReplyToast.tsx';
@@ -42,6 +43,7 @@ export function ChildApp({ user: _user }: { user: User }) {
   const now = useNow();
   const [board, setBoard] = useState<Board | null>(null);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
+  const [fly, setFly] = useState<{ token: StripToken; n: number } | null>(null);
   const [info, setInfo] = useState<NowInfo | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [media, setMedia] = useState<MediaState>({ items: [], locked: false, unlock_at: null });
@@ -126,6 +128,7 @@ export function ChildApp({ user: _user }: { user: User }) {
     if (e.type === 'people' || e.type === 'symbols' || e.type === 'items') void loadBoard();
     if (e.type === 'log') {
       void loadLogs();
+      void loadTimeline(); // a logged meal shows on his history strip
       void loadBoard(); // a logged food can close it (limits, intervals)
     }
     if (e.type === 'availability') {
@@ -209,6 +212,7 @@ export function ChildApp({ user: _user }: { user: User }) {
     logTap('add', screen, t.kind === 'person' || t.kind === 'pet' ? { person_id: t.id } : { item_id: t.id });
     setTokens((ts) => [...ts, t]);
     sayToken(t, lang);
+    setFly((f) => ({ token: t, n: (f?.n ?? 0) + 1 })); // a transient echo of the tap: big in the middle, then off to the left
   };
   const clear = () => {
     logTap('clear', view.name === 'board' ? 'board' : 'orbit');
@@ -266,7 +270,10 @@ export function ChildApp({ user: _user }: { user: User }) {
           media={media.items.find((m) => m.id === playerItem.media_id)}
           me={me}
           now={now}
-          onExit={() => setView(HOME)}
+          onExit={() => {
+            setView(HOME);
+            void loadTimeline(); // what he watched shows on his history strip
+          }}
         />
       </div>
     );
@@ -295,6 +302,7 @@ export function ChildApp({ user: _user }: { user: User }) {
 
   return (
     <div className="tablet" data-testid="child-app">
+      {fly && <FlyAway key={fly.n} token={fly.token} onDone={() => setFly(null)} />}
       {(view.name === 'orbit' || view.name === 'board') && strip}
       {timeBar}
 

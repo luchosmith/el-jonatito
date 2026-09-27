@@ -41,6 +41,23 @@ export function EntryCard({ entry, board, lang, onClose }: { entry: TimelineEntr
   } else if (entry.kind === 'pain') {
     const part = board.items.find((i) => i.id === `body_${entry.part}`);
     body = <div className="row"><PainFace level={entry.level} size={84} /><b>● {part?.labels[lang] ?? entry.part}</b></div>;
+  } else if (entry.kind === 'log') {
+    body = (
+      <div className="row">
+        {entry.photo_url ? <img className="entry-photo" src={entry.photo_url} alt="" /> : <span className="big-emoji">{entry.emoji ?? '🍽️'}</span>}
+        <b>{entry.label}</b><span className="muted">📝 {entry.by}</span>
+      </div>
+    );
+  } else if (entry.kind === 'reply') {
+    const who = person(entry.person_id);
+    const mark = { yes: '✅', wait: '⏳', no: '❌', coming: '🏃', text: '💬' }[entry.reply];
+    body = (
+      <div className="row ok">
+        {who && <span className="big"><Face person={who} /></span>}
+        <span className="big-emoji">{mark}</span>
+        {entry.text && <b>“{entry.text}”</b>}
+      </div>
+    );
   } else if (entry.kind === 'photo' || entry.kind === 'event') {
     const e = entry.event;
     body = (

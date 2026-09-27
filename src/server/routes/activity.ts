@@ -116,21 +116,32 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
     for (const p of db.all<{ at: string; body_part: string; level: number; message_id: number | null }>(
       'SELECT at, body_part, level, message_id FROM pain_reports WHERE at >= ? AND at < ?', fromIso, toIso,
     )) out.push({ kind: 'pain', at: p.at, part: p.body_part, level: p.level, message_id: p.message_id });
-    for (const v of db.all<{ id: number; heard_at: string; person_id: string | null; audio_file: string }>(
-      'SELECT v.id, v.heard_at, u.person_id, v.audio_file FROM voice_notes v JOIN users u ON u.id = v.from_user_id WHERE v.hidden = 0 AND v.heard_at >= ? AND v.heard_at < ?',
+    // Caretakers see when he heard a voice note; his own timeline shows when it reached him.
+    const voiceAt = who === 'child' ? 'created_at' : 'heard_at';
+    for (const v of db.all<{ id: number; at: string; person_id: string | null; audio_file: string }>(
+      `SELECT v.id, v.${voiceAt} AS at, u.person_id, v.audio_file FROM voice_notes v JOIN users u ON u.id = v.from_user_id WHERE v.hidden = 0 AND v.${voiceAt} >= ? AND v.${voiceAt} < ?`,
       fromIso, toIso,
-    )) out.push({ kind: 'voice', at: v.heard_at, person_id: v.person_id, note_id: v.id, audio_url: audioUrl(v.audio_file)! });
+    )) out.push({ kind: 'voice', at: v.at, person_id: v.person_id, note_id: v.id, audio_url: audioUrl(v.audio_file)! });
+    if (who === 'child') {
+      // Answers to what he sent (voice answers are voice notes, above).
+      for (const r of db.all<{ created_at: string; person_id: string | null; kind: 'yes' | 'wait' | 'no' | 'coming' | 'text'; text: string | null }>(
+        `SELECT r.created_at, u.person_id, r.kind, r.text FROM replies r JOIN users u ON u.id = r.from_user_id JOIN messages m ON m.id = r.message_id
+         JOIN users mu ON mu.id = m.from_user_id WHERE mu.role = 'child' AND r.kind != 'voice' AND r.created_at >= ? AND r.created_at < ?`, fromIso, toIso,
+      )) out.push({ kind: 'reply', at: r.created_at, person_id: r.person_id, reply: r.kind, text: r.text });
+    }
     for (const s of db.all<{ started_at: string; title: string; emoji: string | null; cover: string | null }>(
       `SELECT ms.started_at, m.title, m.emoji,
          (SELECT file FROM images im WHERE im.owner_type='media' AND im.owner_id=CAST(m.id AS TEXT) AND im.is_active=1 ORDER BY im.id DESC LIMIT 1) AS cover
        FROM media_sessions ms JOIN media m ON m.id = ms.media_id WHERE ms.started_at >= ? AND ms.started_at < ?`, fromIso, toIso,
     )) out.push({ kind: 'media', at: s.started_at, title: s.title, emoji: s.emoji, cover_url: imageUrl(s.cover) });
-    if (who === 'caretaker') {
-      for (const l of db.all<{ at: string; type: string; label: string | null; emoji: string | null; amount: number | null; note: string | null; by: string }>(
-        `SELECT l.at, l.type, i.label_en AS label, i.emoji, l.amount, l.note, COALESCE(pi.short_label, u.username) AS by
+    {
+      // Caretakers see everything logged; his timeline shows what he ate and drank.
+      for (const l of db.all<{ at: string; type: string; label: string | null; emoji: string | null; amount: number | null; note: string | null; by: string; symbol_id: string | null; photo: string | null }>(
+        `SELECT l.at, l.type, i.label_en AS label, i.emoji, l.amount, l.note, COALESCE(pi.short_label, u.username) AS by, l.symbol_id,
+           (SELECT file FROM images im WHERE im.owner_type = 'item' AND im.owner_id = l.symbol_id AND im.is_active = 1 ORDER BY im.id DESC LIMIT 1) AS photo
          FROM log_entries l JOIN users u ON u.id = l.entered_by LEFT JOIN items i ON i.id = l.symbol_id LEFT JOIN items pi ON pi.id = u.person_id
-         WHERE l.at >= ? AND l.at < ? AND u.role = 'caretaker'`, fromIso, toIso,
-      )) out.push({ kind: 'log', at: l.at, type: l.type, label: l.label ?? l.note ?? l.type, emoji: l.emoji, amount: l.amount, by: l.by });
+         WHERE l.at >= ? AND l.at < ? AND u.role = 'caretaker' ${who === 'child' ? "AND l.type IN ('food','drink')" : ''}`, fromIso, toIso,
+      )) out.push({ kind: 'log', at: l.at, type: l.type, label: l.label ?? l.note ?? l.type, emoji: l.emoji, amount: l.amount, by: l.by, symbol_id: l.symbol_id, photo_url: imageUrl(l.photo) });
     }
     // A block counts while any of it is in the range (it may have started before).
     for (const e of db.all<EventRow>(`${EVENT_SQL} WHERE e.hidden = 0 AND e.starts_at < ? AND COALESCE(e.ends_at, e.starts_at) >= ?`, toIso, fromIso)) {

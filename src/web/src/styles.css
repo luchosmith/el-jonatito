@@ -31,8 +31,28 @@ img { display: block; }
 .digital small { display: block; font-size: 13px; font-weight: 500; color: var(--muted); }
 .timeline { flex: 1; position: relative; height: 88px; background: linear-gradient(#e8f3ff, #fff); border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }
 /* v0.5 time row: the timeline moves under a fixed NOW line in the centre of the screen */
-.tb-line { touch-action: none; }
-.tb-line.scrub { cursor: grab; }
+/* v0.9 two strips moving together: his schedule on top, his history (what really happened) under it */
+.tbar { height: 158px; }
+.tb-strips { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; touch-action: none; }
+.tb-strips.scrub { cursor: grab; }
+.tb-strips .timeline { flex: none; }
+.tb-hist { position: relative; height: 42px; border-radius: 12px; border: 1px solid var(--line); overflow: hidden; background: linear-gradient(#fff8ef, #fff); }
+.tbar.away .tb-hist { background: linear-gradient(#f3f0ec, #fbfbfd); }
+.hist-future { position: absolute; top: 0; bottom: 0; width: 20000px; background: repeating-linear-gradient(135deg, rgba(31,42,55,.04) 0 6px, transparent 6px 12px); }
+.hist { position: absolute; top: 4px; transform: translateX(-50%); width: 32px; height: 32px; padding: 0; border: 3px solid #f39a45; border-radius: 8px; background: #fff; box-sizing: border-box; display: grid; place-items: center; z-index: 1; }
+.hist.h-face { border-color: var(--people); border-radius: 50%; }
+.hist img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; display: block; }
+.hist.h-face img { border-radius: 50%; }
+.hist b { font-size: 16px; font-weight: normal; }
+.hist .face-emoji { font-size: 16px; }
+.hist > i { position: absolute; right: -8px; bottom: -6px; font-style: normal; font-size: 10px; background: #fff; border-radius: 50%; width: 16px; height: 16px; display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.25); overflow: hidden; }
+.hist > i.face-badge img, .hist > i.face-badge .face-emoji { width: 100%; height: 100%; border-radius: 50%; font-size: 10px; }
+/* every tap: big in the middle, then off to the left (the past) */
+.fly-away { position: absolute; left: 50%; top: 50%; width: 140px; height: 140px; margin: -70px 0 0 -70px; border-radius: 28px; background: #fff; box-shadow: 0 8px 30px rgba(0,0,0,.3);
+  display: grid; place-items: center; overflow: hidden; z-index: 50; pointer-events: none; animation: fly-away 1.4s cubic-bezier(.5,0,.75,.2) forwards; }
+.fly-away img { width: 100%; height: 100%; object-fit: cover; }
+.fly-away b { font-size: 84px; font-weight: normal; }
+@keyframes fly-away { 0% { transform: scale(.4); opacity: 0; } 15% { transform: scale(1.1); opacity: 1; } 30% { transform: scale(1); } 100% { transform: translateX(-700px) scale(.3); opacity: 0; } }
 .tbar.away .tb-line { background: linear-gradient(#eef0f7, #fbfbfd); }
 .tb-track { position: absolute; left: 0; top: 0; height: 100%; will-change: transform; }
 .tb-night { position: absolute; top: 0; bottom: 0; background: rgba(39,49,61,.10); }

@@ -60,7 +60,7 @@ export function TimeBar(p: Props) {
   const pointer = p.scrubbable
     ? {
         onPointerDown: (e: React.PointerEvent) => {
-          if ((e.target as HTMLElement).closest('.tl-entry')) return;
+          if ((e.target as HTMLElement).closest('.tl-entry, .hist')) return;
           drag.current = { x: e.clientX, from: scrubbedMin };
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
         },
@@ -78,11 +78,21 @@ export function TimeBar(p: Props) {
 
   return (
     <header className={`here tbar ${away ? 'away' : ''}`} data-testid="here-now" data-away={away ? 'yes' : 'no'}>
-      <div className={`timeline tb-line ${p.scrubbable ? 'scrub' : ''}`} data-testid="timeline" ref={line} {...pointer}>
-        <div className="tb-track" style={{ transform: `translateX(${shift}px)` }}>
-          <Track origin={origin} now={now} schedule={schedule} entries={p.entries} board={board} onEntry={p.onEntry} />
+      {/* Two strips that move together: on top his schedule (what should happen), under it, thinner, his
+          history (what did happen: what he watched, ate, sent, and who reached him). */}
+      <div className={`tb-strips ${p.scrubbable ? 'scrub' : ''}`} ref={line} {...pointer}>
+        <div className="timeline tb-line" data-testid="timeline">
+          <div className="tb-track" style={{ transform: `translateX(${shift}px)` }}>
+            <Track origin={origin} now={now} schedule={schedule} entries={p.entries} board={board} onEntry={p.onEntry} />
+          </div>
+          <div className="now-marker" data-testid="now-marker" onClick={p.onNow} />
         </div>
-        <div className="now-marker" data-testid="now-marker" onClick={p.onNow} />
+        <div className="tb-hist" data-testid="history">
+          <div className="tb-track" style={{ transform: `translateX(${shift}px)` }}>
+            <History origin={origin} now={now} entries={p.entries} board={board} onEntry={p.onEntry} />
+          </div>
+          <div className="now-marker" onClick={p.onNow} />
+        </div>
       </div>
 
       <div className="parent-corner" data-testid="parent-corner" {...p.cornerProps} />
@@ -148,31 +158,14 @@ const Track = memo(function Track({ origin, now, schedule, entries, board, onEnt
   }
 
   const person = (id: string | null | undefined) => (id ? board.people.find((pp) => pp.id === id) : undefined);
+  // The schedule strip: calendar events and the photos caretakers put on his day. What happened is on the history strip.
   for (const e of entries) {
+    if (e.kind !== 'photo' && e.kind !== 'event') continue;
     const t = new Date(e.at).getTime();
-    let pic: ReactNode = null;
-    let badge: string | null = null;
-    let cls = '';
-    if (e.kind === 'moment') {
-      const who = person(e.moment.sent_to[0]) ?? person(e.moment.chips.find((c) => c.kind === 'person')?.id);
-      const thing = e.moment.chips.find((c) => c.kind !== 'person' && c.kind !== 'pet');
-      pic = who ? <Face person={who} /> : thing?.photo_url ? <img src={thing.photo_url} alt="" /> : <b>{thing?.emoji ?? '💬'}</b>;
-      badge = who ? thing?.emoji ?? null : null;
-    } else if (e.kind === 'voice') {
-      const who = person(e.person_id);
-      pic = who ? <Face person={who} /> : <b>〰️</b>;
-      badge = '〰️';
-    } else if (e.kind === 'media') {
-      pic = e.cover_url ? <img src={e.cover_url} alt="" /> : <b>{e.emoji ?? '🎬'}</b>;
-    } else if (e.kind === 'pain') {
-      pic = <PainFace level={e.level} size={28} />;
-    } else if (e.kind === 'photo' || e.kind === 'event') {
-      cls = e.event.photo_url ? 'photo' : '';
-      const who = person(e.event.person_ids[0]);
-      pic = e.event.photo_url ? <img src={e.event.photo_url} alt="" /> : who ? <Face person={who} /> : <b>{e.event.emoji ?? '📅'}</b>;
-      badge = e.event.photo_url ? null : e.event.emoji;
-      if (e.kind === 'event') cls += ' future';
-    } else continue;
+    const who = person(e.event.person_ids[0]);
+    const pic: ReactNode = e.event.photo_url ? <img src={e.event.photo_url} alt="" /> : who ? <Face person={who} /> : <b>{e.event.emoji ?? '📅'}</b>;
+    const badge = e.event.photo_url ? null : e.event.emoji;
+    const cls = `${e.event.photo_url ? 'photo' : ''} ${e.kind === 'event' ? 'future' : ''}`;
     const ends = e.kind === 'event' && e.event.ends_at ? new Date(e.event.ends_at).getTime() : null;
     if (ends && ends > t) {
       // A block: its picture repeats from its start, the last one cut off at its end, along a thin line.
@@ -196,6 +189,56 @@ const Track = memo(function Track({ origin, now, schedule, entries, board, onEnt
         onClick={() => onEntry?.(e)}>
         {pic}
         {badge && <i>{badge}</i>}
+      </button>,
+    );
+  }
+  return <>{out}</>;
+});
+
+/** Something that really happened, as a small icon: a square for a thing, a round face for a person. */
+function historyIcon(e: TimelineEntry, board: Board): { shape: 'thing' | 'face'; pic: ReactNode; badge: ReactNode } | null {
+  const person = (id: string | null | undefined) => (id ? board.people.find((pp) => pp.id === id) : undefined);
+  const face = (id: string | null | undefined) => { const p = person(id); return p ? <Face person={p} /> : <b>🙂</b>; };
+  const REPLY: Record<string, string> = { yes: '✅', wait: '⏳', no: '❌', coming: '🏃', text: '💬' };
+  switch (e.kind) {
+    case 'moment': { // a message he sent: what he asked for, with who he sent it to
+      const thing = e.moment.chips.find((c) => c.kind !== 'person' && c.kind !== 'pet' && c.action === 'add');
+      const to = person(e.moment.sent_to[0]);
+      return {
+        shape: 'thing',
+        pic: thing?.photo_url ? <img src={thing.photo_url} alt="" /> : thing ? <b>{thing.emoji ?? '💬'}</b> : to ? <Face person={to} /> : <b>💬</b>,
+        badge: to && thing ? <i className="face-badge"><Face person={to} /></i> : null,
+      };
+    }
+    case 'media': return { shape: 'thing', pic: e.cover_url ? <img src={e.cover_url} alt="" /> : <b>{e.emoji ?? '🎬'}</b>, badge: <i>▶</i> };
+    case 'log': return { shape: 'thing', pic: e.photo_url ? <img src={e.photo_url} alt="" /> : <b>{e.emoji ?? '🍽️'}</b>, badge: <i>📝</i> };
+    case 'pain': return { shape: 'thing', pic: <PainFace level={e.level} size={24} />, badge: <i>🩹</i> };
+    case 'voice': return { shape: 'face', pic: face(e.person_id), badge: <i>〰️</i> };
+    case 'reply': return { shape: 'face', pic: face(e.person_id), badge: <i>{REPLY[e.reply]}</i> };
+    default: return null;
+  }
+}
+
+const HIST_PITCH = 36;
+
+/** The history strip: newest next to NOW, each nudged left so none overlap (roughly at its time). Right of NOW stays empty. */
+const History = memo(function History({ origin, now, entries, board, onEntry }: {
+  origin: number; now: Date; entries: TimelineEntry[]; board: Board; onEntry?: (e: TimelineEntry) => void;
+}) {
+  const x = (t: number) => ((t - origin) / 60_000) * PX_PER_MIN;
+  const nowT = now.getTime();
+  const out: ReactNode[] = [<div key="future" className="hist-future" style={{ left: x(nowT) }} />];
+  let last = Infinity;
+  const past = entries.filter((e) => new Date(e.at).getTime() <= nowT).sort((a, b) => b.at.localeCompare(a.at));
+  for (const e of past) {
+    const icon = historyIcon(e, board);
+    if (!icon) continue;
+    const left = Math.min(x(new Date(e.at).getTime()), last - HIST_PITCH);
+    last = left;
+    out.push(
+      <button key={`h-${e.kind}-${e.at}-${out.length}`} className={`hist h-${icon.shape}`} style={{ left }} data-testid="tl-hist" data-kind={e.kind} onClick={() => onEntry?.(e)}>
+        {icon.pic}
+        {icon.badge}
       </button>,
     );
   }
