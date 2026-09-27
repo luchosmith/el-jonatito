@@ -16,11 +16,10 @@ import { VoiceForJonatito } from './VoiceForJonatito.tsx';
 import { WhereIAm } from './WhereIAm.tsx';
 import { TodayTimeline } from './TodayTimeline.tsx';
 import { CalendarAdmin } from './CalendarAdmin.tsx';
-import { DayPlan } from './DayPlan.tsx';
 import { NotifyBanner, NotifyPrefsPanel } from './Notify.tsx';
 import { RecordButton } from './RecordButton.tsx';
 
-type Tab = 'inbox' | 'jonatito' | 'status' | 'today' | 'plan' | 'calendar' | 'log' | 'items' | 'voices' | 'people' | 'words' | 'settings';
+type Tab = 'inbox' | 'jonatito' | 'status' | 'today' | 'calendar' | 'log' | 'items' | 'voices' | 'people' | 'words' | 'settings';
 
 export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?: boolean; onLogout: () => void }) {
   const isCaretaker = user.role === 'caretaker';
@@ -48,7 +47,7 @@ export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?:
     if (e.type === 'reply') setMessages((ms) => ms.map((m) => (m.id === e.message_id ? { ...m, replies: [...m.replies.filter((r) => r.id !== e.reply.id), e.reply] } : m)));
     if (e.type === 'people' || e.type === 'symbols' || e.type === 'items' || e.type === 'availability') void loadBoard();
     if (e.type === 'voice_note') setVoiceVersion((v) => v + 1);
-    if (e.type === 'timeline' || e.type === 'message' || e.type === 'reply' || e.type === 'schedule') setTimelineVersion((v) => v + 1);
+    if (e.type === 'timeline' || e.type === 'message' || e.type === 'reply') setTimelineVersion((v) => v + 1);
     if (e.type === 'notify' && !elevated) setBanner(e.batch);
   });
 
@@ -57,7 +56,7 @@ export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?:
     ...(elevated ? [] : ([['jonatito', '🎙️ For Jonatito']] as [Tab, string][])),
     ['status', '🟢 My status'],
     ...(isCaretaker
-      ? ([['today', '🕒 Today'], ['plan', '🗓️ His day'], ['calendar', '📅 Calendar'], ['log', '📝 Log'], ['items', '🧩 Items'], ['voices', '〰️ Voices'], ['people', '👪 People'], ['words', '🔤 Words']] as [Tab, string][])
+      ? ([['today', '🕒 Today'], ['calendar', '📅 Calendar'], ['log', '📝 Log'], ['items', '🧩 Items'], ['voices', '〰️ Voices'], ['people', '👪 People'], ['words', '🔤 Words']] as [Tab, string][])
       : []),
     ...(elevated ? ([['settings', '⚙️ Tablet']] as [Tab, string][]) : []),
   ];
@@ -100,7 +99,6 @@ export function FamilyApp({ user, elevated, onLogout }: { user: User; elevated?:
           </>
         )}
         {board && tab === 'today' && isCaretaker && <TodayTimeline board={board} version={timelineVersion} />}
-        {board && tab === 'plan' && isCaretaker && <DayPlan board={board} version={timelineVersion} />}
         {board && tab === 'calendar' && isCaretaker && <CalendarAdmin board={board} version={timelineVersion} />}
         {board && tab === 'items' && isCaretaker && <ItemsAdmin board={board} onChange={loadBoard} />}
         {board && tab === 'voices' && isCaretaker && <VoicesAdmin board={board} version={voiceVersion} />}

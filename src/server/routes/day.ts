@@ -5,15 +5,13 @@ import { canonicalSymbol } from '../dispatcher.ts';
 import path from 'node:path';
 import { HttpError, jsonBody, rawBody, safeJoin, sendFile } from '../http.ts';
 import { audit, getLog, imageUrl, logsBetween } from '../repo.ts';
-import { IMAGE_MIME, MEDIA_MIME, saveImage, saveMedia } from '../uploads.ts';
+import { MEDIA_MIME, saveMedia } from '../uploads.ts';
 import { num, obj, oneOf, str } from '../validate.ts';
-import { inWindow, localDay, minutesOfDay, seasonOf, startOfDay } from '../../shared/time.ts';
-import type { LogEntry, MediaItem, MediaPolicy, ScheduleDay, ScheduleItem } from '../../shared/types.ts';
+import { inWindow, minutesOfDay, seasonOf, startOfDay } from '../../shared/time.ts';
+import type { LogEntry, MediaItem, MediaPolicy, ScheduleItem } from '../../shared/types.ts';
 
 const LOG_TYPES = ['food', 'drink', 'meds', 'sleep', 'toilet', 'mood', 'activity'] as const;
 const MAX_MEDIA = 300 * 1024 * 1024;
-const MAX_PHOTO = 8 * 1024 * 1024;
-const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
   // ---- Daily log -------------------------------------------------------------
@@ -69,85 +67,9 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
 
   // ---- Schedule & here-and-now ------------------------------------------------
   router.get('/api/schedule', requireAuth(), (): ScheduleItem[] =>
-    db.all<{ id: number; emoji: string; label: string; start_min: number; symbol_id: string | null; choices: string | null }>('SELECT * FROM schedule_items ORDER BY start_min')
-      .map((r) => ({ id: r.id, symbol_emoji: r.emoji, label: r.label, symbol_id: r.symbol_id, start_min: r.start_min, choices: r.choices ? JSON.parse(r.choices) as string[] : [] })),
+    db.all<{ id: number; emoji: string; label: string; start_min: number; symbol_id: string | null }>('SELECT * FROM schedule_items ORDER BY start_min')
+      .map((r) => ({ id: r.id, symbol_emoji: r.emoji, label: r.label, symbol_id: r.symbol_id, start_min: r.start_min })),
   );
-
-  // ---- A day's pick for a routine slot ("breakfast tomorrow: eggs", or a photo for that day only) ----
-  const DAY_SQL = `SELECT d.schedule_id, d.day, d.item_id, d.label,
-      (SELECT file FROM images im WHERE im.owner_type = 'schedule_day' AND im.owner_id = d.schedule_id || ':' || d.day AND im.is_active = 1 ORDER BY im.id DESC LIMIT 1) AS photo,
-      (SELECT COALESCE(i.short_label, u.username) FROM users u LEFT JOIN items i ON i.id = u.person_id WHERE u.id = d.set_by) AS by
-    FROM schedule_days d`;
-  type DayRow = { schedule_id: number; day: string; item_id: string | null; label: string | null; photo: string | null; by: string | null };
-  const toDay = (r: DayRow): ScheduleDay => ({ schedule_id: r.schedule_id, day: r.day, item_id: r.item_id, label: r.label, photo_url: imageUrl(r.photo), set_by: r.by });
-  const dayParam = (v: string | null | undefined) => {
-    if (!v || !DAY_RE.test(v) || Number.isNaN(new Date(`${v}T12:00:00`).getTime())) throw new HttpError(400, 'day must be YYYY-MM-DD');
-    return v;
-  };
-  const slot = (id: string) => {
-    const r = db.get<{ id: number }>('SELECT id FROM schedule_items WHERE id = ?', Number(id));
-    if (!r) throw new HttpError(404, 'Unknown routine item');
-    return r.id;
-  };
-  const getDay = (id: number, day: string) => {
-    const r = db.get<DayRow>(`${DAY_SQL} WHERE d.schedule_id = ? AND d.day = ?`, id, day);
-    return r ? toDay(r) : null;
-  };
-  const dayChanged = (userId: number, action: string, id: number, day: string) => {
-    audit(db, userId, action, `${id}:${day}`, now().toISOString());
-    hub.publish('all', { type: 'schedule' });
-  };
-
-  router.get('/api/schedule/days', requireAuth(), (ctx): ScheduleDay[] => {
-    const from = dayParam(ctx.url.searchParams.get('from') ?? localDay(new Date(now().getTime() - 2 * 86_400_000)));
-    const to = dayParam(ctx.url.searchParams.get('to') ?? localDay(new Date(now().getTime() + 31 * 86_400_000)));
-    return db.all<DayRow>(`${DAY_SQL} WHERE d.day >= ? AND d.day <= ? ORDER BY d.day`, from, to).map(toDay);
-  });
-
-  /** Pick one of his foods for that day ({item_id}), or just words for a custom photo ({label}). */
-  router.put('/api/schedule/:id/days/:day', requireAuth('caretaker'), jsonBody, (ctx) => {
-    const id = slot(ctx.params.id);
-    const day = dayParam(ctx.params.day);
-    const b = obj(ctx.body);
-    const itemId = str(b, 'item_id', { optional: true, max: 60 }) ?? null;
-    const label = str(b, 'label', { optional: true, max: 60 })?.trim() || null;
-    if (!itemId && !label) throw new HttpError(400, 'Pick a food (item_id) or give words (label)');
-    if (itemId && !db.get("SELECT 1 FROM items WHERE id = ? AND category IN ('food','drink')", itemId)) throw new HttpError(400, 'Pick one of his foods or drinks');
-    db.run(
-      `INSERT INTO schedule_days(schedule_id, day, item_id, label, set_by, updated_at) VALUES(?,?,?,?,?,?)
-       ON CONFLICT(schedule_id, day) DO UPDATE SET item_id = excluded.item_id, label = excluded.label, set_by = excluded.set_by, updated_at = excluded.updated_at`,
-      id, day, itemId, label, ctx.user!.id, now().toISOString(),
-    );
-    // A food replaces that day's custom photo.
-    if (itemId) db.run("UPDATE images SET is_active = 0 WHERE owner_type = 'schedule_day' AND owner_id = ?", `${id}:${day}`);
-    dayChanged(ctx.user!.id, 'schedule.pick', id, day);
-    return getDay(id, day);
-  });
-
-  router.put('/api/schedule/:id/days/:day/image', requireAuth('caretaker'), rawBody(IMAGE_MIME, MAX_PHOTO), (ctx) => {
-    const id = slot(ctx.params.id);
-    const day = dayParam(ctx.params.day);
-    const file = saveImage(cfg.uploadsDir, ctx.raw!, ctx.req.headers['content-type']);
-    const t = now().toISOString();
-    db.run(
-      `INSERT INTO schedule_days(schedule_id, day, item_id, label, set_by, updated_at) VALUES(?,?,NULL,NULL,?,?)
-       ON CONFLICT(schedule_id, day) DO UPDATE SET item_id = NULL, set_by = excluded.set_by, updated_at = excluded.updated_at`,
-      id, day, ctx.user!.id, t,
-    );
-    db.run("INSERT INTO images(owner_type, owner_id, file, is_active, uploaded_by, created_at) VALUES('schedule_day',?,?,1,?,?)", `${id}:${day}`, file, ctx.user!.id, t);
-    dayChanged(ctx.user!.id, 'schedule.photo', id, day);
-    return getDay(id, day);
-  });
-
-  /** Back to the everyday picture. */
-  router.delete('/api/schedule/:id/days/:day', requireAuth('caretaker'), (ctx) => {
-    const id = slot(ctx.params.id);
-    const day = dayParam(ctx.params.day);
-    db.run('DELETE FROM schedule_days WHERE schedule_id = ? AND day = ?', id, day);
-    db.run("UPDATE images SET is_active = 0 WHERE owner_type = 'schedule_day' AND owner_id = ?", `${id}:${day}`);
-    dayChanged(ctx.user!.id, 'schedule.default', id, day);
-    return { ok: true };
-  });
 
   router.get('/api/now', requireAuth(), async () => {
     const t = now();

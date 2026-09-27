@@ -1,7 +1,6 @@
 // v0.5: sentence row on top, NOW centred over his head, the sky, and dragging time.
 import { expect, test } from '@playwright/test';
 import { AFTERNOON, apiAs, device, login, resetDb, setClock, TINY_JPEG } from './helpers.ts';
-import { timeOffsetPx } from '../../shared/timescale.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -29,12 +28,11 @@ test('dragging the timeline goes back in time; the orbit dims; his face brings h
   const y = line.y + line.height - 10;
   await page.mouse.move(line.x + line.width / 2, y);
   await page.mouse.down();
-  const threeHours = timeOffsetPx(180, (line.width - 2) / 2); // the scale is not linear: 3 hours is in the "hours" zone
-  await page.mouse.move(line.x + line.width / 2 + threeHours / 2, y, { steps: 5 });
-  await page.mouse.move(line.x + line.width / 2 + threeHours, y, { steps: 5 });
+  await page.mouse.move(line.x + line.width / 2 + 110, y, { steps: 5 });
+  await page.mouse.move(line.x + line.width / 2 + 198, y, { steps: 5 }); // 198 px = 3 hours
   await page.mouse.up();
   await expect(page.getByTestId('here-now')).toHaveAttribute('data-away', 'yes');
-  await expect(page.getByTestId('digital-time')).toHaveText(/^12:(39|40|41) PM$/);
+  await expect(page.getByTestId('digital-time')).toHaveText('12:40 PM');
   await expect(page.locator('.orbit-layer')).toHaveClass(/away/);
   await page.getByTestId('orbit-me').click();
   await expect(page.getByTestId('digital-time')).toHaveText('3:40 PM');

@@ -384,25 +384,6 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 .cal-form{background:#fff;border:1px solid var(--line);border-radius:14px;margin:8px 10px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:7px}
 .cal-form .f{border:1px solid var(--line);border-radius:10px;padding:7px 9px;color:var(--muted)}
 .cal-form .pick{display:flex;gap:6px;margin:0}.cal-form .pick img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:3px solid transparent}.cal-form .pick img.sel{border-color:var(--action)}
-/* v0.9 relative time: minutes near NOW get the room, hours / days / seasons bunch at the edges */
-.lv-tl.rel{height:112px}
-.here2:has(.lv-tl.rel) .lv-clock{width:190px}.here2:has(.lv-tl.rel) #lvchips{width:150px;grid-template-columns:1fr 1fr;gap:4px}.here2:has(.lv-tl.rel) #lvchips .chip{font-size:10px;padding:3px 4px;flex-direction:column;gap:0}
-.rz{position:absolute;top:0;bottom:0}.rz.min{background:rgba(255,209,102,.22)}.rz.hr{background:rgba(90,164,230,.08)}.rz.day{background:rgba(31,42,55,.05)}.rz.sea{background:rgba(31,42,55,.10)}
-.rz-lab{position:absolute;bottom:1px;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap;pointer-events:none}
-.rt-tick{position:absolute;bottom:12px;width:1px;height:10px;background:rgba(31,42,55,.25)}.rt-tick.maj{height:16px;background:rgba(31,42,55,.45)}
-.rt-hr{position:absolute;bottom:12px;transform:translateX(3px);font-size:9px;color:var(--muted)}
-.rt-day{position:absolute;bottom:14px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%}
-.rt-it{position:absolute;transform:translateX(-50%);padding:0;border:3px solid #fff;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;overflow:visible;display:grid;place-items:center;line-height:1}
-.rt-it img{width:100%;height:100%;object-fit:cover;border-radius:9px}
-.rt-it.future{border-color:#5aa4e6;border-style:dashed}.rt-it.past{opacity:.8}.rt-it.face{border-radius:50%;border-color:var(--people)}.rt-it.face img{border-radius:50%}
-.rt-it.bedtime{border-color:#27313d}
-.rt-it>i{position:absolute;right:-9px;bottom:-7px;font-style:normal;font-size:12px;background:#fff;border-radius:50%;width:19px;height:19px;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.rt-it>u{position:absolute;left:-12px;top:-10px;text-decoration:none;background:#fff;border-radius:999px;padding:1px 4px 1px 1px;font-size:10px;font-weight:800;color:#b5471b;display:flex;align-items:center;gap:2px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
-.rt-lead{position:absolute;height:2px;background:rgba(90,164,230,.7)}
-.rt-stem{position:absolute;width:2px;margin-left:-1px;bottom:12px;background:rgba(31,42,55,.45)}
-.bk-pick{display:flex;gap:8px;flex-wrap:wrap}.bk-pick span{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;width:54px}
-.bk-pick span b{width:50px;height:50px;border-radius:12px;border:3px solid var(--line);display:grid;place-items:center;font-size:28px;font-weight:normal;overflow:hidden}.bk-pick span b img{width:100%;height:100%;object-fit:cover}
-.bk-pick span.sel b{border-color:#45c46a}.bk-pick span.cam b{border-style:dashed}
 /* v0.7 places compass: relative space under the earth */
 .pl-strip{height:92px;flex:none;position:relative;background:linear-gradient(#3f7fc4,#2f5f98);overflow:hidden;border-top:2px solid rgba(255,255,255,.35)}
 .pl-zone{position:absolute;top:0;bottom:0}
@@ -1260,8 +1241,7 @@ function renderPhones(v){
 // the things he taps stay as DOM on top. Scrubbing the timeline just changes `time`.
 const LV = { scrub: 0, returning: false, idle: 0, drag: null, ppm: 1.1, weather: 'partly', season: null, raf: 0, last: 0, minute: -1, land: null, landSeason: '', fast: false };
 const DAY = 86400000, MIN = 60000;
-const lvNowT = () => Date.now() + (LV.shift || 0) * MIN; // the demo can pretend it is another time
-const lvTime = () => lvNowT() + LV.scrub * MIN;
+const lvTime = () => Date.now() + LV.scrub * MIN;
 const lvSeason = (t) => LV.season || ['winter', 'spring', 'summer', 'autumn'][Math.floor(((new Date(t).getMonth() + 1) % 12) / 3)];
 
 // Placeholder "photos" caretakers added (tiny SVGs).
@@ -1271,8 +1251,8 @@ const PHOTO_CAKE = svgUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 
 const PHOTO_DENTIST = svgUri('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#e3f1fb"/><path d="M40 30 Q60 18 80 30 Q86 50 76 74 Q70 78 66 64 Q60 54 54 64 Q50 78 44 74 Q34 50 40 30Z" fill="#fff" stroke="#5aa4e6" stroke-width="3"/></svg>');
 
 function lvEvents() {
-  const n = lvNowT(), h = 3600000;
-  const d0 = new Date(n); d0.setHours(0, 0, 0, 0);
+  const n = Date.now(), h = 3600000;
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
   const dayAt = (d, hh, mm = 0) => { const x = new Date(d0); x.setDate(x.getDate() + d); x.setHours(hh, mm, 0, 0); return x.getTime(); };
   const ev = [
     { t: n - 18 * MIN, lane: 'past', img: 'pilar', badge: '🍇', title: 'Sent to Abuela Pilar: “I want to eat grapes.” She answered ✅' },
@@ -1296,6 +1276,7 @@ const LIVE_INNER = [
   { slot: 0, e: '🍇', n: 'Eat', w: 'eat', t: 'action', tap: 'open' },
   { slot: 1, e: '🛁', n: 'Bath', w: 'take a bath', t: 'action' },
   { slot: 2, e: '🚽', n: 'Toilet', w: 'toilet', t: 'action' },
+  { slot: 3, e: '🚗', n: 'Go', w: 'go', t: 'action' },
   { slot: 6, e: '🎧', n: 'Music', w: 'music', t: 'thing' },
   { slot: 7, e: '💧', n: 'Water', w: 'water', t: 'thing' },
 ];
@@ -1323,10 +1304,7 @@ function renderLiving() {
     const pic = e.photo ? `<img src="${e.photo}" alt="">` : e.img ? `<img src="${AVATARS[e.img]}" alt="">` : `<b>${e.emoji}</b>`;
     html += `<button class="lv-ev ${e.lane} ${e.photo ? 'photo' : ''}" style="left:${x(e.t)}px" onclick="lvShow(${e.id})">${pic}${e.badge ? `<i>${e.badge}</i>` : ''}</button>`;
   }
-  document.getElementById('lvtrack').innerHTML = LV.rel ? '' : html;
-  document.getElementById('lvtl').classList.toggle('rel', !!LV.rel);
-  if (LV.rel) document.getElementById('lvtrack').style.transform = '';
-  if (LV.rel) LV_EVENTS = relEvents();
+  document.getElementById('lvtrack').innerHTML = html;
 
   document.getElementById('v-living').innerHTML = `<div class="lv-stage ${LV.onEarth ? 'on-earth' : ''}" id="lvstage">
       <canvas id="lvsky"></canvas>
@@ -1336,13 +1314,11 @@ function renderLiving() {
       ${LV.onEarth ? placesStrip() : ''}
     </div>${LV.onEarth ? '' : placesStrip()}`;
   const wrap = document.getElementById('lvtl');
-  wrap.onpointerdown = (e) => { if (e.target.closest('.lv-ev,.rt-it')) return; LV.drag = { x: e.clientX, s: LV.scrub }; LV.returning = false; wrap.setPointerCapture(e.pointerId); };
+  wrap.onpointerdown = (e) => { if (e.target.closest('.lv-ev')) return; LV.drag = { x: e.clientX, s: LV.scrub }; LV.returning = false; wrap.setPointerCapture(e.pointerId); };
   wrap.onpointermove = (e) => {
     if (!LV.drag) return;
     const scale = document.getElementById('tablet').getBoundingClientRect().width / document.getElementById('tablet').offsetWidth;
-    const dx = (e.clientX - LV.drag.x) / scale;
-    LV.scrub = LV.rel ? Math.max(-365 * 1440, Math.min(365 * 1440, LV.drag.s - relInv(dx, wrap.offsetWidth / 2)))
-      : Math.max(-3 * 1440, Math.min(7 * 1440, LV.drag.s - dx / LV.ppm));
+    LV.scrub = Math.max(-3 * 1440, Math.min(7 * 1440, LV.drag.s - (e.clientX - LV.drag.x) / scale / LV.ppm));
     lvUpdate();
   };
   wrap.onpointerup = () => { LV.drag = null; clearTimeout(LV.idle); LV.idle = setTimeout(() => (LV.returning = true), 8000); };
@@ -1350,177 +1326,11 @@ function renderLiving() {
   if (!LV.raf) LV.raf = requestAnimationFrame(lvLoop);
 }
 
-const PHOTOS={"bath": "data:image/jpeg;base64,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", "smoothie": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAkGBwgHBgkIBwgKCgkLDRYPDQwMDRsUFRAWIB0iIiAdHx8kKDQsJCYxJx8fLT0tMTU3Ojo6Iys/RD84QzQ5Ojf/2wBDAQoKCg0MDRoPDxo3JR8lNzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzc3Nzf/wAARCABwAHADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDhX/suRgcz2zjp1GKyNb2rMgS5NwNud5OSPaumNjqMUylrWKVQegfr+dc74qUpepm1+zfJ90d/euem/eN5p8pmwXDwuHjYqw6EV13h/wAUCFwlyfLOMCRen4iuIBqVGNdFrmB7NDrown7xSCMgjlTWqNT+3xiL5VbGMjqa8Z0zUJrZ1VW3R55Q9K67TtRLIrxtgA9O4qHEdzoL8bdwIB/DmsK+kMdhKyEqzOBWq88dxFvYAtj0rE1Zv3EMa/xSE8V3YBfvL9kZV/hsYl+ckk9TWLcHrWtfdcA1kXBxkVyt3dzToSaecM3Na+lzrHIu/lCxVuOqkYNY1gcF/pVu3f8Ac5JwMmqiBSuQkFxJCXGUYqcA9qdEqOwHmdskhT8tUblmku5CMkljU8CA8ZO/P4UWHc7G4eJHK2l9LsHIbzMGub8QySSTIZZmmIXAZiCcV1Bkk6tZR8dcutYPi+ZJ7qGRLeOAGIfLGcjqa5KfxG8/hOeHWpY0Y9MUxcE1pabHbtcxC6LrAXHmGMAsFzzjPfFdJzhaRMvzMM10+iTaVGEGoC6HOWMWK6/R/Anh/VYUk06/1B1YAgSBFP8AKrt18NbC2GXurtR7mM1Dkh2ZgXWo6D5SiwgvPMGcmQjn071i6ozyvCIx82wsAe2a6efwrokOVOsupHZttTDwzpl65kj1gjC4yqBgK68NVhTjJt62M6kJNo84uknwAygHuc1kXQcHkD8K7fxdo9jpSwm01UXkkhO9PK27AO+c1xd8ffmua9yxLKVfnHlkYQ8g9TU9s6ssavhcvyWPGKq2Qwkp9qidsn5VOAMHvk5qkBdutMi+1zMNQtNpc4xvP8hRJafZ4DJFNFMoTcxjP3ecYIPP/wCuqxTyVAkDLn1FXLKJpobmJOWeP5ffkUkM7u9vHu7VY105IC5+ZkcBlA/xriPE0csU8YmBB2cZfdxmtprmUkrI8270LgfoKy/F10909pvBHlw7ASpGQD79a56atI2m7o50HBq3bSYIql3qaFua64q5znsHgrxFFpVtCZYHkG0H5GA/nXTap45066Rh9nulJHcKf615ho8mbKD3QCrdw3FetLLaEoqVvxMI4iadh2r6tbyyMyCQZPcU3SvEFrao6uspJGBhR/jWFfHrVKJvmrneCpp2L9tJ6mlrt+ly8bKrKOetc7euGY4NW9TY/u/oazJCTmuSvCMJtIuLbV2WbU4gepNPQtPwoY7gAD0JzUVtxbPkZGat2GY4vNKB8Nnae+O1YlGz4pmuJtMtY72C1trlpmYxQdNuOD7Vl+HA0kroOpjYD8qTVLw6hHE62MVvtzkxjlvrVnwfGX1aGMdWbb+dC2H1PRjqPhqx+ZJLeR+7DnNcR8RdVs9VurSSyVVSOIqcY65zUBRJEysKD3K1iasBuUKMVhBJM1nJ2M0kZqSM1HjmpEFdUTBnZaI2dOh9hj9avTnK1meHzmwX2JH61oynivpIO9KPocLXvMxb3qapxD5qvXo5NU4h81c0/iNFsVdUP75B6IKokZq9qfN5j0UCq2zivIxD/eM6YL3SW3UmAj1NdFpFlP8AZoZbaJpJUfcqqu4k/TvWNaJmMD3r0nwNbs17ZohwA+5j6YFc7dkaJXZzesf2lfGFryznjWIbdi27JnPWs7wwjW+vWx+6RMBlh05r6ClnCSqpD4zgEg5z+VZV3pumXMr3M1pF5y9HaABsj8KyVXyNHT8zxZUYxDewA6AZqtPYpInyrg+uP6V07aLLG20qTkZ9qjks3Qfcx+GaEI4p9ImLYj2t7VE2nXCkbkIruorFm6JznnAqWHTxNKyJt3r94ZyR9RWinYlxMHw/G0doyuCCHPX8K0JelXbizW1wFYtu5JxxVOUcV9FhqnNQizhnG02ZN2M5qG2iy4+tWrheabaxneMVjN+8XFaGRfoWvpT2BxUYhOfauovPDFzuM0cm4yHdtMZ4zVZNB1LdgWcrfSM141SalJs6UrIp6dal2Ve2eleg+Fl1bTVaa1037RG67VJHb2qh4f8ACd49zH9vie3hI3Z2nJH9K9Mhto7XBUMrIgROSVVenTOKxlNGkYs5/wD4SPXUJEmiPge5GK14L2e7sQ0sckErLu2HB4HvVy4lyMc7SccLyPwrI1iTyrC7nQEeTbyNu3YIODxiodmaLQeNKSQZRCxU4O45wPwp76LbW6GS4cLlgf3gG0VsXkNrbyKY4wGUEiQkAZPUmsi6tlvApnIkRD8oGfm9vpUOTDQkTT7I8h0bBxmMipG03T4wMFEcqM5wWH41VHlIoRIxDjPCDA/L1poIILNFsz2kGSfw9KQrmV4xtrd7S3Nvs3CQg7RzyP8A61cZc2cyAEqMHpz1/Ou41a0afTZEhU+bGwZePvEelcm96RAbeTIAWRdjA8Fu/wCH0r2cFVkqVl0OStG87nPToQxBGCOMVPp0BeeNAOWYAfiafcgPM7DoWJFXtEgY3sUmCEhIkdsZwBzWtWoldsUI30PUUQQK2QuxVGMLyalWYzxqVlj8sdV25OayrbVTff6hshRz8hGfxNX2UxxrM5MYZgu5SOc14R3E7SMwHBD5xmpvN3gEMD6+pNRR24wpkywx0Gc4qGOyWRhdbSGOUU9Pl9CD9PrTAe5lvZS+9BEv8LcNu+p7VjeLryOy8P30yxxySFAjI65VskDkdxWim2aNxax+QyEqA4IUt6/5Ncv4w82bSHttSu4bYSTKFfyyQcZODjn8cU46sUtEdUIomuHYxl3bqzE4H0FQXMrfMEIQngyJjcPpWrNp8vmkebu3fxIMBR6Ypv8AYzNKvzEgfeAx81ZgYZD+ciwyP5bZMhlBJOPQ8Yqw2FQHDBz36kfhWqNJhsyv+skZySUPO0/Wla1QKwiRREv3uOTS5gsZTFpNoVSxHJYgH8qqz6AmotultxI47ng/mK6PFvb2xkSPL4yUJG4ntUNrNcPJP5UDlh829lwCfT3q1UcXoLkT3MCDwbYR7pZLdnKt/qw5OBWrFYWNuiC3tlhG0/JtyAferkEkzRJJMPKdieijB9KncphSyEt1LetQ6kpbspRS2RDbQ20cGYNhVv4xjOPp/hWZcwtPbQA7EdZgfKLEA5Pv1PtWjbwrDIZZpCrPJgBehP8AjVSdZri9DTIEt1cHccFiR0IxQtB7mjbwncd6sGXk4IPapFdAMOOQeh4qE7YJfMMmUQbWWpFltzG7bgURf4jnb+FFxkTqW+SMujD24/XrXmfxLedDbQSltpdmXOOcfT613er3DpFBcWqtNEAMNE/61538Rp5JtStUlzlId2D7n/61aUviIqfCf//Z", "bed": "data:image/jpeg;base64,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", "grapes": "data:image/jpeg;base64,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", "rice_bowl": "data:image/jpeg;base64,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", "toilet": "data:image/jpeg;base64,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", "water": "data:image/jpeg;base64,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"};
-
-/* ===================== v0.9 — relative time on the timeline ===================== */
-// Like the places compass, but for time: minutes -> hours -> days -> seasons, NOT to scale.
-// Offset (minutes from the focus) -> share of half the width. Monotonic, so dragging stays natural.
-const RZ = { min: 0.40, hr: 0.66, day: 0.84 }; // zone edges
-function relF(a) { // a = |minutes|
-  if (a <= 60) return RZ.min * a / 60;                                           // minutes: linear, ~2.5 px per minute
-  if (a <= 1440) return RZ.min + (RZ.hr - RZ.min) * Math.log(a / 60) / Math.log(24);           // hours
-  if (a <= 14 * 1440) return RZ.hr + (RZ.day - RZ.hr) * Math.log(a / 1440) / Math.log(14);     // days (two weeks)
-  return RZ.day + (0.985 - RZ.day) * Math.min(1, Math.log(a / (14 * 1440)) / Math.log(26));    // weeks -> a year: seasons
-}
-const relPx = (dm, half) => Math.sign(dm) * relF(Math.abs(dm)) * half;
-function relInv(px, half) { // inverse by bisection (the scale is monotonic)
-  const f = Math.min(0.985, Math.abs(px) / half); let lo = 0, hi = 365 * 1440;
-  for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; relF(mid) < f ? (lo = mid) : (hi = mid); }
-  return Math.sign(px) * lo;
-}
-function relPhrase(ms) {
-  const m = Math.round(ms / MIN), a = Math.abs(m), fut = m > 0;
-  if (a < 1) return 'now';
-  const txt = a < 60 ? `${a} min` : a < 1440 ? `${Math.round(a / 60)} h` : a < 14 * 1440 ? `${Math.round(a / 1440)} sleeps` : a < 60 * 1440 ? `${Math.round(a / 10080)} weeks` : `${Math.round(a / 43200)} months`;
-  return fut ? `in ${txt}` : `${txt} ago`;
-}
-// A tiny clock that fills up as the thing gets closer (the last hour).
-const minClock = (mins) => { const f = Math.max(0, Math.min(1, mins / 60)), a = f * 2 * Math.PI, x = 8 + 7 * Math.sin(a), y = 8 - 7 * Math.cos(a);
-  return `<svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.5" fill="#fff" stroke="#b5471b"/>${f >= 1 ? '<circle cx="8" cy="8" r="7" fill="#ffb877"/>' : f > 0 ? `<path d="M8 8 L8 1 A7 7 0 ${f > 0.5 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z" fill="#ffb877"/>` : ''}<line x1="8" y1="8" x2="8" y2="3" stroke="#1f2a37" stroke-width="1.5"/></svg>`; };
-
-// The day with a morning bath at 7:30, breakfast right after (today Mommy Joyce picked the smoothie).
-const REL_ROUTINE = [
-  { at: 7, e: '🌅', label: 'wake up' },
-  { at: 7.5, photo: 'bath', label: 'bath' },
-  { at: 7.75, photo: 'smoothie', label: 'breakfast', pick: 'smoothie', note: 'Breakfast today: smoothie (picked by Mommy Joyce)' },
-  { at: 8.5, e: '🏫', label: 'school' },
-  { at: 12.5, photo: 'rice_bowl', label: 'lunch' },
-  { at: 15, photo: 'grapes', label: 'snack' },
-  { at: 18.5, e: '🍲', label: 'dinner' },
-  { at: 19.5, photo: 'bath', label: 'bath' },
-  { at: 20.5, photo: 'bed', label: 'sleep', big: true },
-];
-const BREAKFAST = { smoothie: ['smoothie', PHOTOS.smoothie], pancakes: ['pancakes', '🥞'], eggs: ['eggs', '🍳'], cereal: ['cereal', '🥣'] };
-function relEvents() {
-  const n = lvNowT(), d0 = new Date(n); d0.setHours(0, 0, 0, 0);
-  const dayAt = (d, hh, mm = 0) => { const x = new Date(d0); x.setDate(x.getDate() + d); x.setHours(hh, mm, 0, 0); return x.getTime(); };
-  const Y = d0.getFullYear();
-  const ev = [
-    { t: n - 18 * MIN, img: 'pilar', badge: '🍇', title: 'Sent to Abuela Pilar: “I want to eat grapes.”' },
-    { t: n - 47 * MIN, img: 'mommy_joyce', badge: '〰️', title: 'He played Mommy Joyce’s voice note' },
-    { t: dayAt(-1, 17, 20), photo: PHOTO_CAKE, title: 'Yesterday: cousin’s birthday (photo from Larry)', keep: true },
-    { t: dayAt(1, 10), photo: PHOTO_DENTIST, img2: 'mommy_joyce', title: 'Dentist with Mommy Joyce (custom photo)', keep: true },
-    { t: dayAt(3, 15), e: '🧸', img2: 'tintin', title: 'Play date with TinTin (default picture)', keep: true },
-    { t: dayAt(6, 11), e: '🩺', title: 'Doctor check-up (default picture)', keep: true },
-    { t: dayAt(9, 12), img: 'pilar', badge: '✈️', title: 'Abuela Pilar comes home', keep: true },
-    { t: new Date(Y, 9, 31, 17).getTime(), e: '🎃', title: 'Halloween', keep: true },
-    { t: new Date(Y, 11, 21, 12).getTime(), e: '❄️', title: 'Winter starts', season: true },
-    { t: new Date(Y, 11, 25, 9).getTime(), e: '🎄', title: 'Christmas', keep: true },
-    { t: new Date(Y + 1, 2, 20, 12).getTime(), e: '🌸', title: 'Spring starts', season: true },
-    { t: new Date(Y, 8, 22, 12).getTime(), e: '🍂', title: 'Autumn started', season: true },
-    { t: new Date(Y, 5, 21, 12).getTime(), e: '☀️', title: 'Summer started', season: true },
-  ];
-  for (let d = -2; d <= 2; d++) for (const r of REL_ROUTINE) {
-    const pick = r.pick && d === 0 ? BREAKFAST[LV.breakfast || 'smoothie'] : null;
-    const photo = pick ? (pick[1].startsWith('data:') ? pick[1] : null) : r.photo ? PHOTOS[r.photo] : null;
-    ev.push({ t: dayAt(d, Math.floor(r.at), Math.round((r.at % 1) * 60)), routine: true, photo, e: pick && !photo ? pick[1] : r.e, big: r.big, label: r.label,
-      title: pick ? `Breakfast today: ${pick[0]} (picked by Mommy Joyce)` : r.label });
-  }
-  return ev.map((e, i) => ({ ...e, lane: e.t < n ? 'past' : 'future', id: i }));
-}
-
-/** Lays the items out around the focus time t: the closest keep their exact spot (icon centre on its tick),
- *  the others are pushed outwards next to them, with a short line back to their time. */
-function relLayout(t, w) {
-  const half = w / 2, X = (tm) => half + relPx((tm - t) / MIN, half), now = lvNowT();
-  let h = '';
-  // zones (both sides) + labels
-  const Z = [['min', 0, RZ.min, '⏱️ minutes'], ['hr', RZ.min, RZ.hr, 'hours'], ['day', RZ.hr, RZ.day, 'days'], ['sea', RZ.day, 1, 'seasons']];
-  for (const [c, a, b, lab] of Z) for (const sd of [-1, 1]) {
-    const l = sd < 0 ? half - b * half : half + a * half;
-    h += `<div class="rz ${c}" style="left:${l}px;width:${(b - a) * half}px"></div><span class="rz-lab" style="left:${l + (b - a) * half / 2}px">${lab}</span>`;
-  }
-  // ticks: every 15 min in the minutes zone, every hour up to a day, a coloured dot per day up to two weeks
-  const f0 = Math.floor(t / (15 * MIN)) * 15 * MIN, ticks = [], labels = [];
-  for (let k = 0; k <= 192; k++) { const kk = k % 2 ? -(k + 1) / 2 : k / 2; // closest first
-    const tm0 = f0 + kk * 15 * MIN; if (false) void tm0;
-    const tm = tm0, dm = Math.abs(tm - t) / MIN, dd = new Date(tm), hr = dd.getMinutes() === 0;
-    if (dm > 1440 || (!hr && dm > 60)) continue;
-    const x = X(tm);
-    if (ticks.some((o) => Math.abs(o - x) < 3)) continue;
-    ticks.push(x);
-    h += `<i class="rt-tick ${hr ? 'maj' : ''}" style="left:${x}px"></i>`;
-    if (hr && labels.every((o) => Math.abs(o - x) >= 30)) { labels.push(x); h += `<span class="rt-hr" style="left:${x}px">${dd.getHours() % 12 || 12}${dd.getHours() < 12 ? 'am' : 'pm'}</span>`; }
-  }
-  const d0 = new Date(t); d0.setHours(0, 0, 0, 0);
-  const dots = [];
-  for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 10, -10, 13, -13]) { // noon of each day
-    const x = new Date(d0); x.setDate(x.getDate() + d); x.setHours(12); const px = X(x.getTime());
-    if (dots.some((o) => Math.abs(o - px) < 12)) continue; dots.push(px);
-    h += `<b class="rt-day" style="left:${px}px;background:${DAYCOL[x.getDay()]}"></b>`; }
-  // nights (8:30 pm -> 7:00 am): a dark band filled with little beds (not exact, just "sleep")
-  for (let d = -15; d <= 15; d++) {
-    const n0 = new Date(d0); n0.setDate(n0.getDate() + d); n0.setHours(20, 30, 0, 0);
-    const xs = Math.max(0, X(n0.getTime())), xe = Math.min(w, X(n0.getTime() + 10.5 * 3600000));
-    if (xe - xs < 2) continue;
-    h += `<div class="lv-night" style="left:${xs}px;width:${xe - xs}px;bottom:16px;background:rgba(39,49,61,.16)"></div>`;
-    const k = Math.floor((xe - xs) / 26);
-    for (let i = 0; i < k; i++) h += `<img src="${PHOTOS.bed}" style="position:absolute;top:3px;left:${xs + ((i + 0.5) * (xe - xs)) / k - 10}px;width:20px;height:20px;border-radius:4px;opacity:.55;object-fit:cover" alt="">`;
-  }
-  // items: closest first; size by zone; routine only within a day, the rest always
-  const items = LV_EVENTS.filter((e) => Math.abs(e.t - t) / MIN <= (e.routine ? 1440 : 366 * 1440))
-    .map((e) => ({ e, dm: (e.t - t) / MIN }))
-    // first what is within the hour, then planned events and seasons, then the rest of the routine
-    .map((o) => ({ ...o, rank: Math.abs(o.dm) <= 60 ? 0 : o.e.keep || o.e.season ? 1 : 2 }))
-    .sort((a, b) => a.rank - b.rank || Math.abs(a.dm) - Math.abs(b.dm));
-  const taken = [];
-  for (const { e, dm, rank } of items) {
-    const a = Math.abs(dm);
-    let size = a <= 60 ? 54 : a <= 1440 ? 42 : a <= 14 * 1440 ? 34 : 28;
-    if (e.big && a <= 1440) size += 16;
-    const x0 = X(e.t); let x = x0;
-    const side = dm >= 0 ? 1 : -1, free = (xx) => taken.every((o) => Math.abs(o.x - xx) >= (o.s + size) / 2 + 2);
-    for (let k = 0; k < 60 && !free(x); k++) x += side * 4;
-    if (!free(x)) { x = x0; for (let k = 0; k < 30 && !free(x); k++) x -= side * 4; } // or just inside it
-    if (!free(x) || x < size / 2 || x > w - size / 2) continue;
-    if (Math.abs(x - x0) > (a <= 60 ? 90 : 36) && rank > 0) continue; // a routine item that cannot sit near its time waits
-    taken.push({ x, s: size });
-    const top = 112 - 26 - size;
-    if (Math.abs(x - x0) > 3) h += `<div class="rt-lead" style="left:${Math.min(x, x0)}px;width:${Math.abs(x - x0)}px;top:${top + size + 4}px"></div>`;
-    h += `<div class="rt-stem" style="left:${x0}px;height:${Math.max(0, 112 - 12 - (top + size) - 2)}px"></div>`;
-    const soon = (e.t - now) / MIN;
-    const clock = soon > 0 && soon <= 60 && (e.routine || e.keep) ? `<u>${minClock(soon)}${Math.round(soon)}′</u>` : '';
-    const pic = e.photo ? `<img src="${e.photo}" alt="">` : e.img ? `<img src="${AVATARS[e.img]}" alt="">` : `<span style="font-size:${size * 0.62}px">${e.e}</span>`;
-    const cls = `${e.lane} ${e.img && !e.photo ? 'face' : ''} ${e.big ? 'bedtime' : ''}`;
-    h += `<button class="rt-it ${cls}" style="left:${x}px;top:${top}px;width:${size}px;height:${size}px" onclick="lvShow(${e.id})" title="${e.title || e.label}">${pic}${e.badge ? `<i>${e.badge}</i>` : e.img2 ? `<i style="padding:0;overflow:hidden"><img src="${AVATARS[e.img2]}" style="border-radius:50%"></i>` : ''}${clock}</button>`;
-  }
-  document.getElementById('lvtrack').innerHTML = h;
-}
-function relDemoAt(hh, mm) { const d = new Date(); d.setHours(hh, mm, 0, 0); LV.shift = (d - Date.now()) / MIN; LV.scrub = 0; LV.returning = false; LV_EVENTS = relEvents(); LV.minute = -1; lvUpdate(true); }
-function relBreakfast(k) { LV.breakfast = k; LV_EVENTS = relEvents(); lvUpdate(true); renderDayPlanPhone(document.getElementById('phones2')); }
-
-function renderDayPlanPhone(el) {
-  const cur = LV.breakfast || 'smoothie';
-  const opt = (k) => { const [n, p] = BREAKFAST[k]; return `<span class="${k === cur ? 'sel' : ''}" onclick="relBreakfast('${k}')"><b>${p.startsWith('data:') ? `<img src="${p}">` : p}</b>${n}</span>`; };
-  const row = (pic, t, sub) => `<div class="cal-ev">${pic}<div><b>${t}</b>${sub}</div></div>`;
-  const ph = (k) => `<img src="${PHOTOS[k]}" alt="" style="width:40px;height:40px">`;
-  const TPL = [['🩺', 'Doctor'], ['🦷', 'Dentist'], ['🧸', 'Play date'], ['🎂', 'Birthday'], ['💇', 'Haircut'], ['🏫', 'School trip'], ['✈️', 'Trip'], ['⭐', 'Other']];
-  el.innerHTML = phone(`<div class="ptop"><h3>🗓️ His day · Tomorrow</h3><div class="tl-filt" style="margin-top:8px"><span>Today</span><span class="on">Tomorrow</span><span>Sat</span></div></div>
-      ${row(ph('bath'), '7:30 am · Bath', 'every day')}
-      <div class="cal-form"><b>7:45 am · Breakfast — what is it tomorrow?</b>
-        <div class="bk-pick">${Object.keys(BREAKFAST).map(opt).join('')}<span class="cam"><b>📷</b>custom</span></div>
-        <div style="color:var(--muted);font-size:12px">A custom photo is used <b>for that day only</b>. Default when nobody picks: smoothie.</div></div>
-      ${row(ph('rice_bowl'), '12:30 pm · Lunch', 'default: rice bowl · <u>change</u>')}
-      ${row(ph('bed'), '8:30 pm · Sleep', 'every day')}`)
-    + phone(`<div class="ptop"><h3>＋ Add to his timeline</h3></div>
-      <div class="cal-form"><b>What is it?</b>
-        <div class="bk-pick">${TPL.map(([e, n], i) => `<span class="${i === 2 ? 'sel' : ''}"><b>${e}</b>${n}</span>`).join('')}</div>
-        <div class="f">🖼️ Picture: <b>🧸 default</b> · 📷 use my own photo</div>
-        <div class="f">🕒 Sat · 3:00 pm – 5:00 pm</div>
-        <div>Who: <span class="pick">${['mommy_joyce', 'lucho', 'pilar', 'larry', 'tintin'].map((k, i) => img(k).replace('<img', `<img class="${i === 4 ? 'sel' : ''}"`)).join('')}</span></div>
-        <div class="save" style="text-align:center">Add to his timeline</div></div>`)
-    + `<div class="legend"><h3>His day (caretakers)</h3>
-      <p><b>Routine slots with a choice</b> (breakfast, lunch, dinner, snack): pick from his foods, or take a photo just for that day. The pick shows on his timeline at that time; with no pick, the default shows.</p>
-      <p><b>Events</b> (doctor, dentist, play date, birthday…) start from a <b>default picture</b>; a caretaker can swap in a <b>custom photo</b> (the real doctor’s office, the friend’s face). Everything uses the same picture rules as his catalog.</p>
-      <p>Try a breakfast here and look at the 7:45 slot on the ⏳ tab.</p></div>`;
-}
-
 function lvNow() { LV.returning = true; }
 function lvShow(id) {
   const e = LV_EVENTS.find((x) => x.id === id); if (!e) return;
-  const pic = e.photo ? `<img src="${e.photo}" style="width:100%;max-height:260px;object-fit:contain;border-radius:16px">` : e.img ? `<span class="big">${face({ img: e.img })}</span>` : `<span class="big-emoji">${e.emoji}</span>`;
-  const when = LV.rel ? ` · <span style="color:#b5471b">${relPhrase(e.t - lvNowT())}</span>` : '';
-  document.getElementById('card').innerHTML = `<h2>${e.lane === 'past' ? '🕰️' : '📅'} ${new Date(e.t).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}${when}</h2><div class="row" style="flex-direction:column;align-items:stretch">${pic}<div>${e.title || e.label}</div></div><button class="cbtn" style="background:#d9f5e1" onclick="closeCard()">👍</button>`;
+  const pic = e.photo ? `<img src="${e.photo}" style="width:100%;max-height:260px;object-fit:cover;border-radius:16px">` : e.img ? `<span class="big">${face({ img: e.img })}</span>` : `<span class="big-emoji">${e.emoji}</span>`;
+  document.getElementById('card').innerHTML = `<h2>${e.lane === 'future' ? '📅' : '🕰️'} ${new Date(e.t).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</h2><div class="row" style="flex-direction:column;align-items:stretch">${pic}<div>${e.title}</div></div><button class="cbtn" style="background:#d9f5e1" onclick="closeCard()">👍</button>`;
   document.getElementById('overlay').classList.add('on');
 }
 
@@ -1528,7 +1338,7 @@ function lvShow(id) {
 function lvUpdate(force) {
   const t = lvTime();
   const w = document.getElementById('lvtl').offsetWidth;
-  if (LV.rel) relLayout(t, w); else document.getElementById('lvtrack').style.transform = `translateX(${w / 2 - ((t - LV_T0) / MIN) * LV.ppm}px)`;
+  document.getElementById('lvtrack').style.transform = `translateX(${w / 2 - ((t - LV_T0) / MIN) * LV.ppm}px)`;
   const away = Math.abs(LV.scrub) >= 1;
   document.getElementById('lvstage')?.classList.toggle('scrubbed', away);
   document.getElementById('lvtl').classList.toggle('scrubbed', away);
@@ -1536,7 +1346,7 @@ function lvUpdate(force) {
   if (m === LV.minute && !force) return;
   LV.minute = m;
   const d = new Date(t);
-  document.getElementById('lvclock').innerHTML = `${clk(d, away ? new Date(lvNowT()) : null, 80)}<div class="digital">${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}<small>${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</small></div>`;
+  document.getElementById('lvclock').innerHTML = `${clk(d, away ? new Date() : null, 80)}<div class="digital">${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}<small>${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</small></div>`;
   const S = { winter: ['❄️', 'Winter'], spring: ['🌸', 'Spring'], summer: ['☀️', 'Summer'], autumn: ['🍂', 'Autumn'] }[lvSeason(t)];
   const W = { clear: ['☀️', '21°C'], partly: ['⛅', '18°C'], cloudy: ['☁️', '15°C'], rain: ['🌧️', '12°C'], snow: ['❄️', '-2°C'] }[LV.weather];
   document.getElementById('lvchips').innerHTML = `<div class="chip"><b class="daydot" style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${DAYCOL[d.getDay()]}"></b>${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
@@ -1545,7 +1355,7 @@ function lvUpdate(force) {
 
 function lvLoop(ts) {
   if (vel() !== 'living') { LV.raf = 0; return; }
-  if (LV.fast) { LV.scrub += LV.rel ? 2 : 12; if (LV.scrub > (LV.rel ? 180 : 1440)) { LV.scrub = 0; LV.fast = false; } lvUpdate(); }
+  if (LV.fast) { LV.scrub += 12; if (LV.scrub > 1440) { LV.scrub = 0; LV.fast = false; } lvUpdate(); }
   else if (LV.returning) { LV.scrub += (0 - LV.scrub) * 0.12; if (Math.abs(LV.scrub) < 0.5) { LV.scrub = 0; LV.returning = false; } lvUpdate(); }
   if (ts - LV.last >= 33) { LV.last = ts; drawSky(ts); } // <= 30 fps, one canvas
   LV.raf = requestAnimationFrame(lvLoop);
@@ -1728,13 +1538,9 @@ Object.assign(VIEWS,{
   living:['🌍 Living orbit + places','The strip under the earth is the places compass (v0.7): 🏠 home under his head; nearby places close to the centre; past the 🚗 places a drive away (Abuelo Lucho is at the doctor); past the ✈️ far places and people (Larry in Miami, Abuela Pilar in Lima) at the edges. West on the left, east on the right; not to scale. Tap a place to add it to the sentence, a face to open their page. The sentence row is on top, the time row under it. NOW is fixed in the centre, in line with his head. Drag the timeline: left is the past (what he did, voice notes he played, photos caretakers added), right is the future (only what is scheduled). The sky, sun, moon and earth follow the time you drag to, and snap back to NOW after 8 s (or tap his face / the clock). Tap a picture on the timeline to see it.'],
   calendar:['📅 Calendar (caretakers)','Caretakers add events with a photo and the people involved. They show on the future side of his timeline; photos added to a past time show on the past side.']
 });
-Object.assign(VIEWS,{
-  reltime:['⏳ Relative time','The timeline as a time compass (v0.9). NOW stays in the centre; the next hour gets most of the room (⏱️ minutes, 15-minute ticks), then hours, days (a coloured dot per day) and seasons bunch at the edges. The demo pretends it is 7:05 am: 🛁 bath at 7:30 sits with its centre on its tick, 🥤 breakfast (smoothie, picked for today) right next to it. Things within the hour get a small filling clock with the minutes left. Drag the timeline: a short drag moves minutes, a long drag jumps days or months. Tap anything for its picture and “in 25 min”.'],
-  dayplan:['🗓️ His day (caretakers)','Caretakers pick what is for breakfast (smoothie, pancakes, eggs, cereal, or a photo just for that day), and add events like the doctor or a play date with a default or custom picture.']
-});
-const ORDER=['reltime','dayplan','living2','living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
-const PHONEISH=['phone','timeline','notify','bridge','calendar','dayplan'];
-const VIEW_EL={where:'orbit',living2:'living',reltime:'living'};
+const ORDER=['living2','living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
+const PHONEISH=['phone','timeline','notify','bridge','calendar'];
+const VIEW_EL={where:'orbit',living2:'living'};
 const vel=()=>VIEW_EL[view]||view;
 function go(v){
   view=v; const el=vel();
@@ -1744,7 +1550,6 @@ function go(v){
   document.getElementById('phoneView').style.display=v==='phone'?'flex':'none';
   document.getElementById('phones2').style.display=PHONEISH.includes(v)&&v!=='phone'?'flex':'none';
   if(v==='calendar') renderCalendarPhone(document.getElementById('phones2'));
-  else if(v==='dayplan') renderDayPlanPhone(document.getElementById('phones2'));
   else if(PHONEISH.includes(v)&&v!=='phone') renderPhones(v);
   ['home','person','log','media','parent','orbit','food','body','pongo','items','living'].forEach(k=>document.getElementById('v-'+k).classList.toggle('on',k===el));
   document.getElementById('screen').classList.toggle('living',el==='living');
@@ -1755,8 +1560,8 @@ function go(v){
   document.getElementById('stripbar').style.display=['home','orbit','food','living'].includes(el)?'flex':'none';
   if(el==='orbit')renderOrbit(); if(el==='food')renderFood(); if(el==='person')renderPerson();
   if(el==='body')renderBody(); if(el==='pongo')renderPongo(); if(el==='items')renderItems();
-  if(el==='living'){ LV.scrub=0; LV.onEarth = v==='living2'||v==='reltime'; LV.rel = v==='reltime'; LV.shift=0; if(LV.rel){ const d=new Date(); d.setHours(7,5,0,0); LV.shift=(d-Date.now())/MIN; } LV.land=null; renderLiving();
-    document.getElementById('note').innerHTML=VIEWS[v][1]+' <span id="lvdemo">Demo: <button onclick="LV.weather=\'clear\';lvUpdate(1)">☀️</button><button onclick="LV.weather=\'partly\';lvUpdate(1)">⛅</button><button onclick="LV.weather=\'rain\';lvUpdate(1)">🌧️</button><button onclick="LV.weather=\'snow\';LV.season=\'winter\';lvUpdate(1)">❄️</button><button onclick="LV.season=null;lvUpdate(1)">season: auto</button><button onclick="LV.returning=false;LV.fast=true">⏩ play a whole day</button></span>'+(LV.rel?' <span id="lvdemo">Pretend it is: <button onclick="relDemoAt(7,5)">7:05 am</button><button onclick="relDemoAt(7,28)">7:28 am</button><button onclick="relDemoAt(12,0)">noon</button><button onclick="relDemoAt(20,10)">8:10 pm</button><button onclick="LV.shift=0;LV.scrub=0;LV_EVENTS=relEvents();lvUpdate(1)">real now</button></span>':''); }
+  if(el==='living'){ LV.scrub=0; LV.onEarth = v==='living2'; LV.land=null; renderLiving();
+    document.getElementById('note').innerHTML=VIEWS[v][1]+' <span id="lvdemo">Demo: <button onclick="LV.weather=\'clear\';lvUpdate(1)">☀️</button><button onclick="LV.weather=\'partly\';lvUpdate(1)">⛅</button><button onclick="LV.weather=\'rain\';lvUpdate(1)">🌧️</button><button onclick="LV.weather=\'snow\';LV.season=\'winter\';lvUpdate(1)">❄️</button><button onclick="LV.season=null;lvUpdate(1)">season: auto</button><button onclick="LV.returning=false;LV.fast=true">⏩ play a whole day</button></span>'; }
   closeCard(); fit(); tick();
   if(v==='where') setTimeout(()=>showWhere('pilar',true),350);
 }
@@ -1767,7 +1572,7 @@ function fit(){
 }
 window.addEventListener('resize',fit);
 document.querySelectorAll('img.ph').forEach(i=>i.src=AVATARS[i.dataset.p]);
-renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('reltime');setInterval(tick,15000);
+renderCats();renderGrid();renderCore();renderTok();tick();renderPeople();go('living2');setInterval(tick,15000);
 </script>
 </body>
 </html>

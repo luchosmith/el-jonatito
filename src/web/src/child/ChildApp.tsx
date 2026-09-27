@@ -6,7 +6,7 @@ import { deviceLang, speak, useEvents, useLongPress, useNow } from '../common/ho
 import { sayToken } from '../common/sound.ts';
 import { flushTaps, logTap } from '../common/taplog.ts';
 import { itemToken, personToken, type Board, type StripToken } from '../common/board.ts';
-import { TimeBar, SCRUB_DAYS } from './TimeBar.tsx';
+import { TimeBar, PAST_DAYS, FUTURE_DAYS } from './TimeBar.tsx';
 import { EntryCard } from './EntryCard.tsx';
 import { VoiceArrival } from './VoiceArrival.tsx';
 import { weatherOf } from './Sky.tsx';
@@ -22,7 +22,7 @@ import { DayView } from './DayView.tsx';
 import { MediaView, type MediaState } from './MediaView.tsx';
 import { ParentGate } from './ParentGate.tsx';
 import { FamilyApp } from '../family/FamilyApp.tsx';
-import type { DispatchNote, Item, Locations, LogEntry, Message, NowInfo, Reply, ScheduleDay, ScheduleItem, TimelineEntry, User, VoiceNote } from '../../../shared/types.ts';
+import type { DispatchNote, Item, Locations, LogEntry, Message, NowInfo, Reply, ScheduleItem, TimelineEntry, User, VoiceNote } from '../../../shared/types.ts';
 import { seasonOf } from '../../../shared/time.ts';
 import { renderSentence } from '../../../shared/grammar.ts';
 
@@ -42,7 +42,6 @@ export function ChildApp({ user: _user }: { user: User }) {
   const now = useNow();
   const [board, setBoard] = useState<Board | null>(null);
   const [schedule, setSchedule] = useState<ScheduleItem[]>([]);
-  const [days, setDays] = useState<ScheduleDay[]>([]);
   const [info, setInfo] = useState<NowInfo | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [media, setMedia] = useState<MediaState>({ items: [], locked: false, unlock_at: null });
@@ -80,10 +79,6 @@ export function ChildApp({ user: _user }: { user: User }) {
   const loadMedia = useCallback(() => api.get<MediaState>('/api/media').then(setMedia), []);
   const loadVoice = useCallback(() => api.get<VoiceNote[]>('/api/voice-notes').then(setVoice), []);
   const loadLocations = useCallback(() => api.get<Locations>('/api/locations').then(setLocations), []);
-  const loadSchedule = useCallback(() => {
-    api.get<ScheduleItem[]>('/api/schedule').then(setSchedule).catch(() => undefined);
-    api.get<ScheduleDay[]>('/api/schedule/days').then(setDays).catch(() => undefined);
-  }, []);
   const loadTimeline = useCallback(() => api.get<TimelineEntry[]>('/api/timeline').then(setEntries).catch(() => undefined), []);
 
   /** Back to NOW: a short ease, then the orbit wakes up again. */
@@ -102,7 +97,7 @@ export function ChildApp({ user: _user }: { user: User }) {
   const onScrub = useCallback((minutes: number) => {
     if (springTimer.current) clearTimeout(springTimer.current);
     cancelAnimationFrame(springAnim.current);
-    setScrub(Math.max(-SCRUB_DAYS * 1440, Math.min(SCRUB_DAYS * 1440, minutes)));
+    setScrub(Math.max(-PAST_DAYS * 1440, Math.min(FUTURE_DAYS * 1440, minutes)));
   }, []);
   const onScrubEnd = useCallback(() => {
     if (springTimer.current) clearTimeout(springTimer.current);
@@ -123,9 +118,9 @@ export function ChildApp({ user: _user }: { user: User }) {
     api.get<Message[]>('/api/messages')
       .then((ms) => setTextReplies(ms.flatMap((m) => m.replies.filter((r) => r.kind === 'text'))))
       .catch(() => undefined);
-    loadSchedule();
+    api.get<ScheduleItem[]>('/api/schedule').then(setSchedule).catch(() => undefined);
     api.get<NowInfo>('/api/now').then(setInfo).catch(() => undefined);
-  }, [loadBoard, loadLogs, loadMedia, loadVoice, loadLocations, loadTimeline, loadSchedule]);
+  }, [loadBoard, loadLogs, loadMedia, loadVoice, loadLocations, loadTimeline]);
 
   useEvents((e) => {
     if (e.type === 'people' || e.type === 'symbols' || e.type === 'items') void loadBoard();
@@ -148,7 +143,6 @@ export function ChildApp({ user: _user }: { user: User }) {
       if (e.autoplay && !e.note.heard_at && !e.note.hidden) setArrivals((a) => (a.some((x) => x.id === e.note.id) ? a : [...a, e.note]));
     }
     if (e.type === 'location') void loadLocations();
-    if (e.type === 'schedule') loadSchedule();
     if (e.type === 'timeline' || e.type === 'message' || e.type === 'reply' || e.type === 'voice_note') void loadTimeline();
   });
 
@@ -288,7 +282,6 @@ export function ChildApp({ user: _user }: { user: User }) {
       now={now}
       view={viewTime}
       schedule={schedule}
-      days={days}
       info={info}
       entries={entries}
       board={board}

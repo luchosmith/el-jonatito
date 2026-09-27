@@ -8,16 +8,13 @@ import { prefsFor } from '../notify.ts';
 import { audioUrl, audit, childUserIds, getMessage, getReply, imageUrl } from '../repo.ts';
 import { IMAGE_MIME, saveImage } from '../uploads.ts';
 import { bool, num, obj, oneOf, str } from '../validate.ts';
-import { EVENT_TEMPLATE_IDS, EVENT_TEMPLATES } from '../../shared/events.ts';
 import { startOfDay } from '../../shared/time.ts';
-import type { CalendarEvent, EventTemplate, TapInput, TimelineEntry, Token } from '../../shared/types.ts';
+import type { CalendarEvent, TapInput, TimelineEntry, Token } from '../../shared/types.ts';
 
 const MAX_PHOTO = 8 * 1024 * 1024;
 const DAY = 86_400_000;
-/** What happened (taps, voices, media, pain) is only sent for the last two weeks; photos and events for the whole range. */
-const DETAIL_DAYS = 14;
 
-interface EventRow { id: number; starts_at: string; title: string; emoji: string | null; kind: 'event' | 'photo'; person_ids: string; show_from_min: number; hidden: number; created_by: number | null; photo: string | null; tphoto: string | null; template: string | null; by: string | null }
+interface EventRow { id: number; starts_at: string; title: string; emoji: string | null; kind: 'event' | 'photo'; person_ids: string; show_from_min: number; hidden: number; created_by: number | null; photo: string | null; by: string | null }
 
 export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
   const caretakers = () => db.all<{ id: number }>("SELECT id FROM users WHERE role = 'caretaker'").map((r) => r.id);
@@ -91,34 +88,27 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
   // ---- The tablet's timeline (past from what happened, future from the calendar) ------------------
   router.get('/api/timeline', requireAuth('child', 'caretaker'), (ctx) => {
     const t = now().getTime();
-    const from = ctx.url.searchParams.get('from') ? new Date(ctx.url.searchParams.get('from')!) : new Date(t - 366 * DAY);
-    const to = ctx.url.searchParams.get('to') ? new Date(ctx.url.searchParams.get('to')!) : new Date(t + 366 * DAY);
+    const from = ctx.url.searchParams.get('from') ? new Date(ctx.url.searchParams.get('from')!) : new Date(t - 3 * DAY);
+    const to = ctx.url.searchParams.get('to') ? new Date(ctx.url.searchParams.get('to')!) : new Date(t + 7 * DAY);
     if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || to <= from) throw new HttpError(400, 'Bad range');
-    if (to.getTime() - from.getTime() > 800 * DAY) throw new HttpError(400, 'Range too long');
-    const detailFrom = new Date(Math.max(from.getTime(), t - DETAIL_DAYS * DAY));
-    return timeline(from.toISOString(), to.toISOString(), ctx.user!.role === 'child' ? 'child' : 'caretaker', detailFrom.toISOString());
+    if (to.getTime() - from.getTime() > 12 * DAY) throw new HttpError(400, 'Range too long');
+    return timeline(from.toISOString(), to.toISOString(), ctx.user!.role === 'child' ? 'child' : 'caretaker');
   });
 
   function toEvent(r: EventRow): CalendarEvent {
-    const tpl = EVENT_TEMPLATES.find((x) => x.id === r.template);
     return {
-      id: r.id, starts_at: r.starts_at, title: r.title, emoji: r.emoji ?? tpl?.emoji ?? null, kind: r.kind, person_ids: JSON.parse(r.person_ids) as string[],
-      show_from_min: r.show_from_min, photo_url: imageUrl(r.photo ?? r.tphoto), created_by: r.by, template: r.template,
+      id: r.id, starts_at: r.starts_at, title: r.title, emoji: r.emoji, kind: r.kind, person_ids: JSON.parse(r.person_ids) as string[],
+      show_from_min: r.show_from_min, photo_url: imageUrl(r.photo), created_by: r.by,
     };
   }
-  const templatePhoto = (id: string) =>
-    db.get<{ file: string }>("SELECT file FROM images WHERE owner_type = 'template' AND owner_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 1", id)?.file ?? null;
   const EVENT_SQL = `SELECT e.*,
       (SELECT file FROM images im WHERE im.owner_type='event' AND im.owner_id=CAST(e.id AS TEXT) AND im.is_active=1 ORDER BY im.id DESC LIMIT 1) AS photo,
-      (SELECT file FROM images im WHERE im.owner_type='template' AND im.owner_id=e.template AND im.is_active=1 ORDER BY im.id DESC LIMIT 1) AS tphoto,
       (SELECT COALESCE(i.short_label, u.username) FROM users u LEFT JOIN items i ON i.id = u.person_id WHERE u.id = e.created_by) AS by
     FROM events e`;
 
-  function timeline(fromIso: string, toIso: string, who: 'child' | 'caretaker', detailFromIso = fromIso): TimelineEntry[] {
+  function timeline(fromIso: string, toIso: string, who: 'child' | 'caretaker'): TimelineEntry[] {
     const nowIso = now().toISOString();
     const out: TimelineEntry[] = [];
-    const eventsFromIso = fromIso;
-    fromIso = detailFromIso;
     for (const m of listMoments(db, fromIso, toIso)) {
       if (who === 'child' && m.outcome !== 'sent') continue; // his own timeline shows what he said
       out.push({ kind: 'moment', at: m.started_at, moment: m });
@@ -142,7 +132,7 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
          WHERE l.at >= ? AND l.at < ? AND u.role = 'caretaker'`, fromIso, toIso,
       )) out.push({ kind: 'log', at: l.at, type: l.type, label: l.label ?? l.note ?? l.type, emoji: l.emoji, amount: l.amount, by: l.by });
     }
-    for (const e of db.all<EventRow>(`${EVENT_SQL} WHERE e.hidden = 0 AND e.starts_at >= ? AND e.starts_at < ?`, eventsFromIso, toIso)) {
+    for (const e of db.all<EventRow>(`${EVENT_SQL} WHERE e.hidden = 0 AND e.starts_at >= ? AND e.starts_at < ?`, fromIso, toIso)) {
       const ev = toEvent(e);
       if (e.kind === 'photo') { if (e.starts_at <= nowIso) out.push({ kind: 'photo', at: e.starts_at, event: ev }); continue; }
       // Future events show once their "show from" time has come (caretakers always see them).
@@ -154,9 +144,7 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
 
   // ---- Calendar ------------------------------------------------------------------------------------
   const eventBody = (b: Record<string, unknown>, partial: boolean) => {
-    const template = oneOf(b, 'template', EVENT_TEMPLATE_IDS, true);
-    // A kind gives a title when none is typed ("Doctor").
-    const title = str(b, 'title', { optional: partial || !!template, max: 80 }) ?? (partial ? undefined : EVENT_TEMPLATES.find((x) => x.id === template)?.label);
+    const title = str(b, 'title', { optional: partial, max: 80 });
     const startsStr = str(b, 'starts_at', { optional: partial, max: 40 });
     const starts = startsStr ? new Date(startsStr) : undefined;
     if (starts && Number.isNaN(starts.getTime())) throw new HttpError(400, 'starts_at is not a date');
@@ -167,7 +155,7 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
     return {
       title: title?.trim(), starts_at: starts?.toISOString(), emoji: str(b, 'emoji', { optional: true, max: 16 }),
       kind: oneOf(b, 'kind', ['event', 'photo'] as const, true), person_ids: people as string[] | undefined,
-      show_from_min: num(b, 'show_from_min', { optional: true, min: 0, max: 366 * 1440 }), hidden: bool(b, 'hidden'), template,
+      show_from_min: num(b, 'show_from_min', { optional: true, min: 0, max: 14 * 1440 }), hidden: bool(b, 'hidden'),
     };
   };
   const getEvent = (id: number) => {
@@ -180,39 +168,14 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
     hub.publish(everyoneWatching(), { type: 'timeline' });
   };
 
-  // ---- Kinds of events and their default pictures -------------------------------------------------
-  const templates = (): EventTemplate[] => EVENT_TEMPLATES.map((x) => ({ id: x.id, emoji: x.emoji, label: x.label, photo_url: imageUrl(templatePhoto(x.id)) }));
-  const knownTemplate = (id: string) => {
-    if (!EVENT_TEMPLATE_IDS.includes(id as never)) throw new HttpError(404, 'Unknown kind of event');
-    return id;
-  };
-  router.get('/api/calendar/templates', requireAuth('caretaker'), templates);
-  router.put('/api/calendar/templates/:id/image', requireAuth('caretaker'), rawBody(IMAGE_MIME, MAX_PHOTO), (ctx) => {
-    const id = knownTemplate(ctx.params.id);
-    const file = saveImage(cfg.uploadsDir, ctx.raw!, ctx.req.headers['content-type']);
-    db.run("INSERT INTO images(owner_type, owner_id, file, is_active, uploaded_by, created_at) VALUES('template',?,?,1,?,?)", id, file, ctx.user!.id, now().toISOString());
-    audit(db, ctx.user!.id, 'template.photo', id, now().toISOString());
-    hub.publish(everyoneWatching(), { type: 'timeline' });
-    return templates();
-  });
-  /** Back to the emoji (the old photos stay, inactive, like every picture). */
-  router.delete('/api/calendar/templates/:id/image', requireAuth('caretaker'), (ctx) => {
-    const id = knownTemplate(ctx.params.id);
-    db.run("UPDATE images SET is_active = 0 WHERE owner_type = 'template' AND owner_id = ?", id);
-    audit(db, ctx.user!.id, 'template.revert', id, now().toISOString());
-    hub.publish(everyoneWatching(), { type: 'timeline' });
-    return templates();
-  });
-
   router.get('/api/calendar', requireAuth('caretaker'), () =>
     db.all<EventRow>(`${EVENT_SQL} WHERE e.starts_at >= ? ORDER BY e.starts_at`, new Date(now().getTime() - 3 * DAY).toISOString()).map(toEvent),
   );
   router.post('/api/calendar', requireAuth('caretaker'), jsonBody, (ctx) => {
     const e = eventBody(obj(ctx.body), false);
     const r = db.run(
-      'INSERT INTO events(starts_at, title, emoji, kind, person_ids, show_from_min, template, created_by, created_at) VALUES(?,?,?,?,?,?,?,?,?)',
-      e.starts_at!, e.title!, e.emoji ?? null, e.kind ?? 'event', JSON.stringify(e.person_ids ?? []), e.show_from_min ?? 1440, e.template ?? null,
-      ctx.user!.id, now().toISOString(),
+      'INSERT INTO events(starts_at, title, emoji, kind, person_ids, show_from_min, created_by, created_at) VALUES(?,?,?,?,?,?,?,?)',
+      e.starts_at!, e.title!, e.emoji ?? null, e.kind ?? 'event', JSON.stringify(e.person_ids ?? []), e.show_from_min ?? 1440, ctx.user!.id, now().toISOString(),
     );
     changed(ctx, 'event.add', r.lastId);
     return getEvent(r.lastId);
@@ -231,7 +194,6 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
     if (e.person_ids !== undefined) set('person_ids', JSON.stringify(e.person_ids));
     if (e.show_from_min !== undefined) set('show_from_min', e.show_from_min);
     if (e.hidden !== undefined) set('hidden', e.hidden ? 1 : 0);
-    if (e.template !== undefined) set('template', e.template);
     if (!sets.length) throw new HttpError(400, 'Nothing to change');
     db.run(`UPDATE events SET ${sets.join(', ')} WHERE id = ?`, ...vals, id);
     changed(ctx, 'event.update', id);

@@ -62,7 +62,7 @@ export class Db {
       PRAGMA foreign_keys = OFF;
       DELETE FROM notify_queue; DELETE FROM notify_prefs; DELETE FROM tap_events; DELETE FROM moments; DELETE FROM events;
       DELETE FROM pain_reports; DELETE FROM voice_notes; DELETE FROM locations; DELETE FROM audio_clips; DELETE FROM item_rules;
-      DELETE FROM media_sessions; DELETE FROM schedule_days; DELETE FROM schedule_items; DELETE FROM availability;
+      DELETE FROM media_sessions; DELETE FROM schedule_items; DELETE FROM availability;
       DELETE FROM log_entries; DELETE FROM replies; DELETE FROM message_recipients; DELETE FROM messages;
       DELETE FROM images; DELETE FROM items; DELETE FROM media; DELETE FROM users; DELETE FROM people;
       DELETE FROM settings; DELETE FROM audit; DELETE FROM sqlite_sequence;
