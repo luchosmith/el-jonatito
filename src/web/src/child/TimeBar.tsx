@@ -14,6 +14,10 @@ export const PX_PER_MIN = 1.1;
 export const PAST_DAYS = 3;
 export const FUTURE_DAYS = 7;
 const DAY = 86_400_000;
+/** full-size pictures (sleep, the morning chain): 72 px and a small gap */
+const BIG_PITCH = 76;
+/** an event's picture repeated across its block */
+const EVENT_PITCH = 50;
 
 interface Props {
   now: Date;
@@ -97,6 +101,9 @@ const Track = memo(function Track({ origin, now, schedule, entries, board, onEnt
   const todayStart = startOfDay(now).getTime();
   const nextIdx = schedule.findIndex((s) => s.start_min > nowMin);
   const out: ReactNode[] = [];
+  const photoOf = (id: string | null) => (id ? board.items.find((it) => it.id === id)?.photo_url ?? null : null);
+  // Big pictures chain: each starts on its tick, or right where the big picture (or block) before it ends.
+  let chainRight = -Infinity;
 
   for (let d = 0; d < PAST_DAYS + FUTURE_DAYS + 1; d++) {
     const day = origin + d * DAY;
@@ -110,15 +117,33 @@ const Track = memo(function Track({ origin, now, schedule, entries, board, onEnt
     schedule.forEach((s, i) => {
       const next = schedule[i + 1]?.start_min ?? 1440;
       const cls = !isToday ? '' : next <= nowMin ? 'done' : i === nextIdx ? 'next' : '';
-      const photo = s.symbol_id ? board.items.find((it) => it.id === s.symbol_id)?.photo_url : null;
-      const bedtime = s.symbol_id === 'bed';
-      out.push(
-        <span key={`r${d}-${s.id}`} className={`tl-item tb-rt ${cls} ${bedtime ? 'bedtime' : ''}`} style={{ left: x(day + s.start_min * 60_000) }}
-          {...(isToday ? { 'data-testid': `tl-${s.label}` } : {})}>
-          {photo ? <img src={photo} alt="" draggable={false} /> : s.symbol_emoji}
-          <span>{fmtMinutes(s.start_min)}</span>
-        </span>,
-      );
+      const photo = photoOf(s.symbol_id);
+      const pic = photo ? <img src={photo} alt="" draggable={false} /> : <b>{s.symbol_emoji}</b>;
+      const t = day + s.start_min * 60_000;
+      const testId = isToday ? { 'data-testid': `tl-${s.label}` } : {};
+      if (s.end_min != null) {
+        // A block (sleep): full-size pictures laid from its start, the last one cut off at its end. No time written.
+        const end = day + (s.end_min <= s.start_min ? DAY : 0) + s.end_min * 60_000;
+        const w = x(end) - x(t);
+        out.push(
+          <div key={`r${d}-${s.id}`} className={`tl-block ${cls}`} style={{ left: x(t), width: w }} {...testId}>
+            {Array.from({ length: Math.ceil(w / BIG_PITCH) }, (_, k) => <span key={k} className="tl-big" style={{ left: k * BIG_PITCH }}>{pic}</span>)}
+          </div>,
+        );
+        chainRight = x(end);
+      } else if (s.big) {
+        // In the morning chain: its left edge on its tick, or right after the big picture before it.
+        const left = Math.max(x(t), chainRight);
+        chainRight = left + BIG_PITCH;
+        out.push(<div key={`r${d}-${s.id}`} className={`tl-block one ${cls}`} style={{ left, width: BIG_PITCH }} {...testId}><span className="tl-big">{pic}</span></div>);
+      } else {
+        out.push(
+          <span key={`r${d}-${s.id}`} className={`tl-item tb-rt ${cls}`} style={{ left: x(t) }} {...testId}>
+            {photo ? <img src={photo} alt="" draggable={false} /> : s.symbol_emoji}
+            <span>{fmtMinutes(s.start_min)}</span>
+          </span>,
+        );
+      }
     });
   }
 
@@ -148,6 +173,24 @@ const Track = memo(function Track({ origin, now, schedule, entries, board, onEnt
       badge = e.event.photo_url ? null : e.event.emoji;
       if (e.kind === 'event') cls += ' future';
     } else continue;
+    const ends = e.kind === 'event' && e.event.ends_at ? new Date(e.event.ends_at).getTime() : null;
+    if (ends && ends > t) {
+      // A block: its picture repeats from its start, the last one cut off at its end, along a thin line.
+      const w = x(ends) - x(t);
+      out.push(
+        <div key={`e-${e.kind}-${e.at}-${out.length}`} className="tl-span-wrap" style={{ left: x(t), width: w }}>
+          <i className="tl-span" />
+          {Array.from({ length: Math.ceil(w / EVENT_PITCH) }, (_, k) => (
+            <button key={k} className={`tl-entry ${cls}`} style={{ left: k * EVENT_PITCH + EVENT_PITCH / 2 - 3 }} data-testid={k ? 'tl-entry-more' : 'tl-entry'} data-kind={e.kind}
+              onClick={() => onEntry?.(e)}>
+              {pic}
+              {badge && !k && <i>{badge}</i>}
+            </button>
+          ))}
+        </div>,
+      );
+      continue;
+    }
     out.push(
       <button key={`e-${e.kind}-${e.at}-${out.length}`} className={`tl-entry ${cls}`} style={{ left: x(t) }} data-testid="tl-entry" data-kind={e.kind}
         onClick={() => onEntry?.(e)}>

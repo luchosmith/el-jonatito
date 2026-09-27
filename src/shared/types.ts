@@ -115,6 +115,10 @@ export interface ScheduleItem {
   symbol_id: string | null;
   /** minutes after midnight, local time */
   start_min: number;
+  /** a block (sleep 20:30 -> 7:00): its picture repeats until then; earlier than start_min = the next morning */
+  end_min: number | null;
+  /** a full-size picture on the timeline (the morning chain: wake-up, breakfast) */
+  big: boolean;
 }
 
 export interface MediaItem {
@@ -308,6 +312,8 @@ export type TimelineEntry =
 export interface CalendarEvent {
   id: number;
   starts_at: string;
+  /** optional: a block of time; its picture repeats across it on his timeline */
+  ends_at: string | null;
   title: string;
   emoji: string | null;
   kind: 'event' | 'photo';

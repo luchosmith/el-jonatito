@@ -14,7 +14,7 @@ import type { CalendarEvent, TapInput, TimelineEntry, Token } from '../../shared
 const MAX_PHOTO = 8 * 1024 * 1024;
 const DAY = 86_400_000;
 
-interface EventRow { id: number; starts_at: string; title: string; emoji: string | null; kind: 'event' | 'photo'; person_ids: string; show_from_min: number; hidden: number; created_by: number | null; photo: string | null; by: string | null }
+interface EventRow { id: number; starts_at: string; ends_at: string | null; title: string; emoji: string | null; kind: 'event' | 'photo'; person_ids: string; show_from_min: number; hidden: number; created_by: number | null; photo: string | null; by: string | null }
 
 export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
   const caretakers = () => db.all<{ id: number }>("SELECT id FROM users WHERE role = 'caretaker'").map((r) => r.id);
@@ -97,7 +97,7 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
 
   function toEvent(r: EventRow): CalendarEvent {
     return {
-      id: r.id, starts_at: r.starts_at, title: r.title, emoji: r.emoji, kind: r.kind, person_ids: JSON.parse(r.person_ids) as string[],
+      id: r.id, starts_at: r.starts_at, ends_at: r.ends_at, title: r.title, emoji: r.emoji, kind: r.kind, person_ids: JSON.parse(r.person_ids) as string[],
       show_from_min: r.show_from_min, photo_url: imageUrl(r.photo), created_by: r.by,
     };
   }
@@ -132,7 +132,8 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
          WHERE l.at >= ? AND l.at < ? AND u.role = 'caretaker'`, fromIso, toIso,
       )) out.push({ kind: 'log', at: l.at, type: l.type, label: l.label ?? l.note ?? l.type, emoji: l.emoji, amount: l.amount, by: l.by });
     }
-    for (const e of db.all<EventRow>(`${EVENT_SQL} WHERE e.hidden = 0 AND e.starts_at >= ? AND e.starts_at < ?`, fromIso, toIso)) {
+    // A block counts while any of it is in the range (it may have started before).
+    for (const e of db.all<EventRow>(`${EVENT_SQL} WHERE e.hidden = 0 AND e.starts_at < ? AND COALESCE(e.ends_at, e.starts_at) >= ?`, toIso, fromIso)) {
       const ev = toEvent(e);
       if (e.kind === 'photo') { if (e.starts_at <= nowIso) out.push({ kind: 'photo', at: e.starts_at, event: ev }); continue; }
       // Future events show once their "show from" time has come (caretakers always see them).
@@ -148,15 +149,25 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
     const startsStr = str(b, 'starts_at', { optional: partial, max: 40 });
     const starts = startsStr ? new Date(startsStr) : undefined;
     if (starts && Number.isNaN(starts.getTime())) throw new HttpError(400, 'starts_at is not a date');
+    const endsStr = b.ends_at === null ? null : str(b, 'ends_at', { optional: true, max: 40 });
+    const ends = endsStr ? new Date(endsStr) : endsStr === null ? null : undefined;
+    if (ends && Number.isNaN(ends.getTime())) throw new HttpError(400, 'ends_at is not a date');
     if (title !== undefined && !title.trim()) throw new HttpError(400, 'title is required');
     if (b.person_ids !== undefined && !Array.isArray(b.person_ids)) throw new HttpError(400, 'person_ids must be a list');
     const people = b.person_ids as unknown[] | undefined;
     for (const p of people ?? []) if (typeof p !== 'string' || !db.get('SELECT 1 FROM people WHERE id = ?', p)) throw new HttpError(400, 'Unknown person');
     return {
-      title: title?.trim(), starts_at: starts?.toISOString(), emoji: str(b, 'emoji', { optional: true, max: 16 }),
+      title: title?.trim(), starts_at: starts?.toISOString(), ends_at: ends === undefined ? undefined : ends?.toISOString() ?? null, emoji: str(b, 'emoji', { optional: true, max: 16 }),
       kind: oneOf(b, 'kind', ['event', 'photo'] as const, true), person_ids: people as string[] | undefined,
       show_from_min: num(b, 'show_from_min', { optional: true, min: 0, max: 14 * 1440 }), hidden: bool(b, 'hidden'),
     };
+  };
+  /** A block ends after it starts and lasts at most two weeks. */
+  const checkSpan = (starts: string, ends: string | null | undefined) => {
+    if (!ends) return;
+    const ms = new Date(ends).getTime() - new Date(starts).getTime();
+    if (ms <= 0) throw new HttpError(400, 'ends_at must be after starts_at');
+    if (ms > 14 * DAY) throw new HttpError(400, 'An event can last at most two weeks');
   };
   const getEvent = (id: number) => {
     const r = db.get<EventRow>(`${EVENT_SQL} WHERE e.id = ?`, id);
@@ -173,22 +184,25 @@ export function activityRoutes({ router, db, cfg, hub, now }: Deps) {
   );
   router.post('/api/calendar', requireAuth('caretaker'), jsonBody, (ctx) => {
     const e = eventBody(obj(ctx.body), false);
+    checkSpan(e.starts_at!, e.ends_at);
     const r = db.run(
-      'INSERT INTO events(starts_at, title, emoji, kind, person_ids, show_from_min, created_by, created_at) VALUES(?,?,?,?,?,?,?,?)',
-      e.starts_at!, e.title!, e.emoji ?? null, e.kind ?? 'event', JSON.stringify(e.person_ids ?? []), e.show_from_min ?? 1440, ctx.user!.id, now().toISOString(),
+      'INSERT INTO events(starts_at, ends_at, title, emoji, kind, person_ids, show_from_min, created_by, created_at) VALUES(?,?,?,?,?,?,?,?,?)',
+      e.starts_at!, e.ends_at ?? null, e.title!, e.emoji ?? null, e.kind ?? 'event', JSON.stringify(e.person_ids ?? []), e.show_from_min ?? 1440, ctx.user!.id, now().toISOString(),
     );
     changed(ctx, 'event.add', r.lastId);
     return getEvent(r.lastId);
   });
   router.patch('/api/calendar/:id', requireAuth('caretaker'), jsonBody, (ctx) => {
     const id = Number(ctx.params.id);
-    getEvent(id);
+    const cur = getEvent(id);
     const e = eventBody(obj(ctx.body), true);
+    checkSpan(e.starts_at ?? cur.starts_at, e.ends_at === undefined ? cur.ends_at : e.ends_at);
     const sets: string[] = [];
     const vals: (string | number | null)[] = [];
     const set = (c: string, v: string | number | null) => { sets.push(`${c} = ?`); vals.push(v); };
     if (e.title !== undefined) set('title', e.title);
     if (e.starts_at !== undefined) set('starts_at', e.starts_at);
+    if (e.ends_at !== undefined) set('ends_at', e.ends_at);
     if (e.emoji !== undefined) set('emoji', e.emoji);
     if (e.kind !== undefined) set('kind', e.kind);
     if (e.person_ids !== undefined) set('person_ids', JSON.stringify(e.person_ids));

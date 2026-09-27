@@ -544,10 +544,17 @@ img { display: block; }
 .av .tbadge b { font-size: 10px; margin-left: 1px; }
 .av .vbadge .n { right: -10px; top: -10px; }
 .dk-status { position: absolute; left: -8px; top: -6px; width: 28px; height: 28px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; font-size: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.3); z-index: 2; }
-/* routine pictures on the timeline; bedtime is big */
+/* routine pictures on the timeline */
 .tl-item img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; display: block; }
-.tl-item.bedtime { top: 1px; z-index: 1; }
-.tl-item.bedtime img { width: 72px; height: 72px; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
-.tl-item.bedtime span { font-weight: 800; color: var(--ink); background: #fff; border-radius: 5px; padding: 0 4px; margin-top: -8px; position: relative; }
+/* blocks of time (sleep) and the morning chain: full-size pictures, no time written; a block's last one is cut off at its end */
+.tl-block { position: absolute; top: 5px; height: 76px; overflow: hidden; z-index: 1; pointer-events: none; }
+.tl-big { position: absolute; top: 0; left: 0; width: 72px; height: 72px; box-sizing: border-box; border-radius: 12px; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); overflow: hidden; background: #fff; display: grid; place-items: center; font-size: 40px; }
+.tl-big img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tl-big b { font-weight: normal; }
+.tl-block.done { opacity: .5; }
+.tl-block.next .tl-big { border-color: #ffd166; }
+/* an event with an end: its picture repeats across the block, along a thin line */
+.tl-span-wrap { position: absolute; top: 0; height: 50px; overflow: hidden; z-index: 1; }
+.tl-span { position: absolute; left: 0; right: 0; top: 44px; height: 3px; border-radius: 2px; background: rgba(90,164,230,.75); }
 .cm-home.photo { overflow: visible; padding: 0; }
 .cm-home.photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }

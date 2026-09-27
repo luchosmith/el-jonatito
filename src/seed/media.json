@@ -12,15 +12,14 @@
     { "title": "Pongo",           "kind": "movie",   "cover": "covers/pongo.jpg" }
   ],
   "routine": [
-    { "emoji": "🌅", "label": "wake",      "at": "07:00" },
-    { "emoji": "🥞", "label": "breakfast", "at": "07:30", "symbol": "pancakes" },
-    { "emoji": "🏫", "label": "school",    "at": "08:30" },
+    { "emoji": "🌅", "label": "wake",      "at": "07:00", "symbol": "bath", "big": true },
+    { "emoji": "🥤", "label": "breakfast", "at": "07:30", "symbol": "smoothie", "big": true },
     { "emoji": "🍝", "label": "lunch",     "at": "12:30" },
     { "emoji": "🌳", "label": "park",      "at": "13:30" },
     { "emoji": "🍇", "label": "snack",     "at": "15:00" },
     { "emoji": "📺", "label": "media",     "at": "16:00" },
     { "emoji": "🍲", "label": "dinner",    "at": "18:30", "symbol": "chicken_soup" },
     { "emoji": "🛁", "label": "bath",      "at": "19:30" },
-    { "emoji": "🛏️", "label": "sleep",     "at": "20:30", "symbol": "bed" }
+    { "emoji": "🛏️", "label": "sleep",     "at": "20:30", "until": "07:00", "symbol": "bed", "big": true }
   ]
 }

@@ -95,3 +95,54 @@ test('caretakers add an event from the 📅 Calendar tab; it appears on his time
   expect((await pilarApi.post('/api/calendar', { title: 'x', starts_at: '2026-09-24T12:00:00Z' })).status()).toBe(403);
   await joyce.context.close();
 });
+
+test('sleep is a block of bed pictures (no time) until 7:00; then the bath picture, then breakfast (smoothie) right after it', async ({ page, request }) => {
+  await login(page, 'jonatito');
+  const now = (await page.getByTestId('now-marker').boundingBox())!;
+  const nowX = now.x + now.width / 2;
+  const PX = 1.1; // px per minute
+  // Tonight: 8:30 pm (290 min after 3:40) until 7:00 am (630 min), full-size beds, no time written.
+  const sleep = page.getByTestId('tl-sleep');
+  const sb = (await sleep.boundingBox())!;
+  expect(Math.abs(sb.x - (nowX + 290 * PX))).toBeLessThan(3);
+  expect(Math.abs(sb.width - 630 * PX)).toBeLessThan(3);
+  expect(await sleep.locator('.tl-big').count()).toBeGreaterThanOrEqual(9);
+  await expect(sleep).toHaveText('');
+  // This morning: the bath picture starts on 7:00 (520 min before now), breakfast right after it.
+  const wake = (await page.getByTestId('tl-wake').boundingBox())!;
+  const breakfast = (await page.getByTestId('tl-breakfast').boundingBox())!;
+  expect(Math.abs(wake.x - (nowX - 520 * PX))).toBeLessThan(3);
+  expect(Math.abs(breakfast.x - (wake.x + wake.width))).toBeLessThan(2);
+  const board = await (await (await apiAs(request, 'joyce')).get('/api/board')).json();
+  const photo = (id: string) => board.items.find((i: { id: string }) => i.id === id).photo_url;
+  await expect(page.getByTestId('tl-wake').locator('img')).toHaveAttribute('src', photo('bath'));
+  await expect(page.getByTestId('tl-breakfast').locator('img')).toHaveAttribute('src', photo('smoothie'));
+  await expect(page.getByTestId('tl-school')).toHaveCount(0);
+});
+
+test('an event with an end repeats its picture across its time', async ({ page, request, browser }) => {
+  const joyce = await apiAs(request, 'joyce');
+  const park = await (await joyce.post('/api/calendar', {
+    title: 'Park with TinTin', emoji: '🌳', starts_at: '2026-09-23T14:00:00-04:00', ends_at: '2026-09-23T16:30:00-04:00', person_ids: ['tintin'],
+  })).json();
+  expect(park.ends_at).toBe('2026-09-23T20:30:00.000Z');
+  expect((await joyce.post('/api/calendar', { title: 'x', starts_at: '2026-09-23T14:00:00-04:00', ends_at: '2026-09-23T13:00:00-04:00' })).status()).toBe(400);
+  expect((await joyce.patch(`/api/calendar/${park.id}`, { ends_at: '2026-10-23T13:00:00-04:00' })).status()).toBe(400); // at most two weeks
+
+  await login(page, 'jonatito');
+  await expect(page.locator('[data-testid="tl-entry"][data-kind="event"]')).toHaveCount(1);
+  expect(await page.getByTestId('tl-entry-more').count()).toBeGreaterThanOrEqual(2); // 150 min ≈ 165 px
+  await page.getByTestId('tl-entry-more').first().click();
+  await expect(page.getByTestId('entry-card')).toContainText('Park with TinTin');
+
+  // Caretakers set "until" on 📅 Calendar.
+  const phone = await device(browser, 'joyce', { clock: AFTERNOON });
+  await phone.page.getByTestId('tab-calendar').click();
+  await phone.page.getByTestId('cal-title').fill('Sleepover at Abuela’s');
+  await phone.page.getByTestId('cal-date').fill('2026-09-25');
+  await phone.page.getByTestId('cal-time').fill('18:00');
+  await phone.page.getByTestId('cal-until').fill('09:00');
+  await phone.page.getByTestId('cal-add').click();
+  await expect(phone.page.getByTestId('cal-event').filter({ hasText: 'Sleepover' })).toContainText('6:00 pm – 9:00 am');
+  await phone.context.close();
+});

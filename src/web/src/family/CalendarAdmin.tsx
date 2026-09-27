@@ -17,6 +17,7 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(() => localDate(new Date()));
   const [time, setTime] = useState('10:00');
+  const [until, setUntil] = useState('');
   const [emoji, setEmoji] = useState('');
   const [people, setPeople] = useState<string[]>([]);
   const [showFrom, setShowFrom] = useState(1440);
@@ -25,17 +26,23 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
   const load = () => api.get<CalendarEvent[]>('/api/calendar').then(setEvents);
   useEffect(() => void load(), [version]);
 
+  /** "until" earlier than "from" means the next day (a sleepover). */
+  const endsAt = () => {
+    const e = new Date(`${date}T${until}:00`);
+    if (until <= time) e.setDate(e.getDate() + 1);
+    return e.toISOString();
+  };
   const add = async () => {
     setMsg('');
     if (!title.trim()) return setMsg('Give it a short title.');
     if (kind === 'photo' && !file) return setMsg('Choose a photo.');
     try {
       const ev = await api.post<CalendarEvent>('/api/calendar', {
-        title: title.trim(), starts_at: new Date(`${date}T${time}:00`).toISOString(), kind, person_ids: people,
+        title: title.trim(), starts_at: new Date(`${date}T${time}:00`).toISOString(), ...(kind === 'event' && until ? { ends_at: endsAt() } : {}), kind, person_ids: people,
         show_from_min: showFrom, ...(emoji ? { emoji } : {}),
       });
       if (file) await api.upload('PUT', `/api/calendar/${ev.id}/image`, file);
-      setTitle(''); setEmoji(''); setPeople([]); setFile(null);
+      setTitle(''); setEmoji(''); setPeople([]); setFile(null); setUntil('');
       setMsg(kind === 'photo' ? 'Photo added to his day.' : 'Added to his timeline.');
       await load();
     } catch (e) {
@@ -61,6 +68,12 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
           <input type="date" data-testid="cal-date" value={date} onChange={(e) => setDate(e.target.value)} />
           <input type="time" data-testid="cal-time" value={time} onChange={(e) => setTime(e.target.value)} />
         </div>
+        {kind === 'event' && (
+          <label>
+            Until (optional: its picture repeats across the whole time)
+            <input type="time" data-testid="cal-until" value={until} onChange={(e) => setUntil(e.target.value)} />
+          </label>
+        )}
         <div className="two">
           <input data-testid="cal-emoji" value={emoji} placeholder="Emoji (🦷)" onChange={(e) => setEmoji(e.target.value)} />
           <label className="btn">
@@ -96,7 +109,7 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
           {e.photo_url ? <img src={e.photo_url} alt="" /> : <span className="big-emoji">{e.emoji ?? '📅'}</span>}
           <div>
             <b>{e.kind === 'photo' ? '📷 ' : ''}{e.title}</b>
-            <span className="muted small">{fmt12ampm(new Date(e.starts_at))} · {new Date(e.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+            <span className="muted small">{fmt12ampm(new Date(e.starts_at))}{e.ends_at ? ` – ${fmt12ampm(new Date(e.ends_at))}` : ''} · {new Date(e.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
             <span className="cal-faces">{e.person_ids.map((id) => person(id) && <span key={id} className="mini"><Face person={person(id)!} /></span>)}</span>
           </div>
           <button className="link" data-testid={`cal-delete-${e.id}`} onClick={() => remove(e.id)} aria-label="Delete">✖</button>

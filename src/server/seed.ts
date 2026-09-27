@@ -63,7 +63,7 @@ export function seed(db: Db, cfg: Config) {
   const media = readJson<{
     policy: { session_max_min: number; sleep_start: string; sleep_end: string };
     items: { title: string; kind: string; emoji?: string; cover?: string; bedtime_ok?: boolean }[];
-    routine: { emoji: string; label: string; at: string; symbol?: string }[];
+    routine: { emoji: string; label: string; at: string; until?: string; symbol?: string; big?: boolean }[];
   }>(path.join(dir, 'media.json'));
 
   fs.mkdirSync(path.join(cfg.uploadsDir, 'images'), { recursive: true });
@@ -125,7 +125,8 @@ export function seed(db: Db, cfg: Config) {
       if (m.cover) copySeedImage(db, cfg, m.cover, 'media', String(r.lastId), now);
     });
     for (const r of media.routine) {
-      db.run('INSERT INTO schedule_items(emoji, label, symbol_id, start_min) VALUES(?,?,?,?)', r.emoji, r.label, r.symbol ?? null, hm(r.at));
+      db.run('INSERT INTO schedule_items(emoji, label, symbol_id, start_min, end_min, big) VALUES(?,?,?,?,?,?)',
+        r.emoji, r.label, r.symbol ?? null, hm(r.at), r.until ? hm(r.until) : null, r.big ? 1 : 0);
     }
 
     db.setSetting('media_policy', {

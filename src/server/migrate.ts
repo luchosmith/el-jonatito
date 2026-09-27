@@ -7,6 +7,9 @@
 // v5 -> v6: voice_notes.label (saved clips a caretaker can send again).
 // v6 -> v7: Pongo and Barney move from the orbit into the dock (settings.dock_items).
 // v7 -> v8: people leave the outer orbit (they are in the taskbar and on the globe).
+// v8 -> v9: blocks of time: schedule_items.end_min / .big and events.ends_at. Sleep runs until wake-up;
+//           the morning is a chain of big pictures (wake-up = bath photo, breakfast = smoothie); school
+//           leaves the routine for now.
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +17,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -55,8 +58,25 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 6) db.tx(() => migrateV5toV6(db));
   if (from < 7) db.tx(() => migrateV6toV7(db));
   if (from < 8) db.tx(() => db.run("UPDATE items SET orbit = NULL, orbit_slot = NULL WHERE orbit = 'outer'"));
+  if (from < 9) db.tx(() => migrateV8toV9(db));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
+}
+
+const columns = (db: Db, table: string) => db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name);
+
+/** v9: blocks of time, and the new morning. Only changes routine rows that are still the seed's. */
+function migrateV8toV9(db: Db) {
+  const sc = columns(db, 'schedule_items');
+  if (!sc.includes('end_min')) db.raw.exec('ALTER TABLE schedule_items ADD COLUMN end_min INTEGER');
+  if (!sc.includes('big')) db.raw.exec('ALTER TABLE schedule_items ADD COLUMN big INTEGER NOT NULL DEFAULT 0');
+  if (!columns(db, 'events').includes('ends_at')) db.raw.exec('ALTER TABLE events ADD COLUMN ends_at TEXT');
+  const has = (id: string) => !!db.get('SELECT 1 FROM items WHERE id = ?', id);
+  const wake = db.get<{ m: number | null }>("SELECT MIN(start_min) AS m FROM schedule_items WHERE symbol_id IS NOT 'bed'")?.m ?? 420;
+  db.run("UPDATE schedule_items SET end_min = ?, big = 1 WHERE symbol_id = 'bed' AND end_min IS NULL", wake);
+  if (has('bath')) db.run("UPDATE schedule_items SET symbol_id = 'bath', big = 1 WHERE label = 'wake' AND symbol_id IS NULL");
+  if (has('smoothie')) db.run("UPDATE schedule_items SET symbol_id = 'smoothie', emoji = '🥤', big = 1 WHERE label = 'breakfast' AND symbol_id = 'pancakes'");
+  db.run("DELETE FROM schedule_items WHERE label = 'school' AND start_min = 510 AND symbol_id IS NULL AND NOT EXISTS (SELECT 1 FROM item_rules WHERE routine_item_id = schedule_items.id)");
 }
 
 /** v7: the dock holds Pongo and Barney (after the family); their orbit spots stay empty. */
