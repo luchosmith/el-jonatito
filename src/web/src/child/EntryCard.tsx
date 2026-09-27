@@ -6,6 +6,7 @@ import { TokenCard } from '../common/Token.tsx';
 import { playClip } from '../common/sound.ts';
 import type { Board } from '../common/board.ts';
 import { fmt12 } from '../../../shared/time.ts';
+import { relativePhrase } from '../../../shared/timescale.ts';
 import type { Lang, TimelineEntry } from '../../../shared/types.ts';
 
 export function EntryCard({ entry, board, lang, onClose }: { entry: TimelineEntry; board: Board; lang: Lang; onClose: () => void }) {
@@ -41,6 +42,13 @@ export function EntryCard({ entry, board, lang, onClose }: { entry: TimelineEntr
   } else if (entry.kind === 'pain') {
     const part = board.items.find((i) => i.id === `body_${entry.part}`);
     body = <div className="row"><PainFace level={entry.level} size={84} /><b>● {part?.labels[lang] ?? entry.part}</b></div>;
+  } else if (entry.kind === 'routine') {
+    body = (
+      <div className="row" style={{ flexDirection: 'column' }}>
+        {entry.photo_url ? <img className="entry-photo" src={entry.photo_url} alt="" data-testid="entry-photo" /> : <div className="big-emoji" style={{ fontSize: 80 }}>{entry.emoji}</div>}
+        <b>{entry.label}</b>
+      </div>
+    );
   } else if (entry.kind === 'photo' || entry.kind === 'event') {
     const e = entry.event;
     body = (
@@ -56,7 +64,8 @@ export function EntryCard({ entry, board, lang, onClose }: { entry: TimelineEntr
   return (
     <div className="overlay" data-testid="entry-card" data-kind={entry.kind} onClick={onClose}>
       <div className="card" onClick={(ev) => ev.stopPropagation()}>
-        <h2><Clock12 at={at} size={48} /> {fmt12(at)} <small className="muted">{at.toLocaleDateString('en-US', { weekday: 'long' })}</small></h2>
+        <h2><Clock12 at={at} size={48} /> {fmt12(at)} <small className="muted">{at.toLocaleDateString('en-US', { weekday: 'long' })}</small>
+          <small className="entry-when" data-testid="entry-when">{relativePhrase(at.getTime() - Date.now())}</small></h2>
         {body}
         <button className="cbtn ok" data-testid="entry-ok" onClick={onClose}>👍</button>
       </div>

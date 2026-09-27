@@ -115,6 +115,19 @@ export interface ScheduleItem {
   symbol_id: string | null;
   /** minutes after midnight, local time */
   start_min: number;
+  /** words a caretaker can pick for one day (breakfast: smoothie, pancakes, eggs, cereal); empty = no choice */
+  choices: string[];
+}
+
+/** One day's pick for one routine slot: one of its choices, or a custom photo for that day only. */
+export interface ScheduleDay {
+  schedule_id: number;
+  /** 'YYYY-MM-DD', local time */
+  day: string;
+  item_id: string | null;
+  label: string | null;
+  photo_url: string | null;
+  set_by: string | null;
 }
 
 export interface MediaItem {
@@ -155,7 +168,9 @@ export type ServerEvent =
   | { type: 'voice_note'; note: VoiceNote; autoplay?: boolean }
   | { type: 'location'; person_id: string }
   | { type: 'notify'; batch: NotifyBatch }
-  | { type: 'timeline' };
+  | { type: 'timeline' }
+  /** the routine or a day's pick changed */
+  | { type: 'schedule' };
 
 // ---- v0.3: item catalog, voice notes, locations ------------------------------------------
 
@@ -303,7 +318,9 @@ export type TimelineEntry =
   | { kind: 'media'; at: string; title: string; cover_url: string | null; emoji: string | null }
   | { kind: 'log'; at: string; type: string; label: string; emoji: string | null; amount: number | null; by: string }
   | { kind: 'photo'; at: string; event: CalendarEvent }
-  | { kind: 'event'; at: string; event: CalendarEvent };
+  | { kind: 'event'; at: string; event: CalendarEvent }
+  /** only on the tablet: a routine slot he tapped (the server never sends these) */
+  | { kind: 'routine'; at: string; label: string; photo_url: string | null; emoji: string };
 
 export interface CalendarEvent {
   id: number;
@@ -313,8 +330,19 @@ export interface CalendarEvent {
   kind: 'event' | 'photo';
   person_ids: string[];
   show_from_min: number;
+  /** its own photo, else the family's default photo for its kind */
   photo_url: string | null;
   created_by: string | null;
+  /** doctor, dentist, playdate… (see shared/events.ts) */
+  template: string | null;
+}
+
+/** A kind of event with its default picture (an emoji, or a photo the family set). */
+export interface EventTemplate {
+  id: string;
+  emoji: string;
+  label: string;
+  photo_url: string | null;
 }
 
 export interface NotifyBatch {

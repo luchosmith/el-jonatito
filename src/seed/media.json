@@ -13,14 +13,15 @@
   ],
   "routine": [
     { "emoji": "🌅", "label": "wake",      "at": "07:00" },
-    { "emoji": "🥞", "label": "breakfast", "at": "07:30", "symbol": "pancakes" },
+    { "emoji": "🛁", "label": "bath",      "at": "07:30", "symbol": "bath" },
+    { "emoji": "🥤", "label": "breakfast", "at": "07:45", "symbol": "smoothie", "choices": ["smoothie", "pancakes", "eggs", "cereal"] },
     { "emoji": "🏫", "label": "school",    "at": "08:30" },
-    { "emoji": "🍝", "label": "lunch",     "at": "12:30" },
+    { "emoji": "🍝", "label": "lunch",     "at": "12:30", "choices": ["rice_bowl", "chicken_soup", "pasta_red", "pasta_green"] },
     { "emoji": "🌳", "label": "park",      "at": "13:30" },
-    { "emoji": "🍇", "label": "snack",     "at": "15:00" },
+    { "emoji": "🍇", "label": "snack",     "at": "15:00", "choices": ["grapes", "cookie", "ice_cream"] },
     { "emoji": "📺", "label": "media",     "at": "16:00" },
-    { "emoji": "🍲", "label": "dinner",    "at": "18:30", "symbol": "chicken_soup" },
-    { "emoji": "🛁", "label": "bath",      "at": "19:30" },
+    { "emoji": "🍲", "label": "dinner",    "at": "18:30", "symbol": "chicken_soup", "choices": ["chicken_soup", "rice_bowl", "pasta_red", "pasta_green"] },
+    { "emoji": "🛁", "label": "bath",      "at": "19:30", "symbol": "bath" },
     { "emoji": "🛏️", "label": "sleep",     "at": "20:30", "symbol": "bed" }
   ]
 }

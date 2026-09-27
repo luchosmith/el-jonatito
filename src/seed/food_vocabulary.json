@@ -192,6 +192,42 @@
       "grid_col": 3,
       "is_hidden": false,
       "log_trackable": true
+    },
+    {
+      "key": "eggs",
+      "category": "food",
+      "board_tab": "food",
+      "fitz_color": "orange (thing)",
+      "placeholder_emoji": "🍳",
+      "image": null,
+      "photo": null,
+      "labels": {
+        "en": "eggs",
+        "es": "huevos"
+      },
+      "grid_page": "food",
+      "grid_row": 1,
+      "grid_col": 4,
+      "is_hidden": false,
+      "log_trackable": true
+    },
+    {
+      "key": "cereal",
+      "category": "food",
+      "board_tab": "food",
+      "fitz_color": "orange (thing)",
+      "placeholder_emoji": "🥣",
+      "image": null,
+      "photo": null,
+      "labels": {
+        "en": "cereal",
+        "es": "cereal"
+      },
+      "grid_page": "food",
+      "grid_row": 1,
+      "grid_col": 5,
+      "is_hidden": false,
+      "log_trackable": true
     }
   ]
 }

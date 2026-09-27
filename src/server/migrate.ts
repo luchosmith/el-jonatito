@@ -7,6 +7,10 @@
 // v5 -> v6: voice_notes.label (saved clips a caretaker can send again).
 // v6 -> v7: Pongo and Barney move from the orbit into the dock (settings.dock_items).
 // v7 -> v8: people leave the outer orbit (they are in the taskbar and on the globe).
+// v8 -> v9: relative time: a routine slot can have choices (schedule_items.choices) and a pick per day
+//           (schedule_days, custom photos as images 'schedule_day'); events get a kind with a default
+//           picture (events.template, images 'template'); eggs and cereal; a morning bath at 7:30 and
+//           breakfast at 7:45 (smoothie).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,7 +18,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 9;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -55,8 +59,70 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 6) db.tx(() => migrateV5toV6(db));
   if (from < 7) db.tx(() => migrateV6toV7(db));
   if (from < 8) db.tx(() => db.run("UPDATE items SET orbit = NULL, orbit_slot = NULL WHERE orbit = 'outer'"));
+  if (from < 9) {
+    db.raw.exec('PRAGMA foreign_keys = OFF');
+    try {
+      db.tx(() => migrateV8toV9(db, cfg));
+    } finally {
+      db.raw.exec('PRAGMA foreign_keys = ON');
+    }
+  }
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
+}
+
+const columns = (db: Db, table: string) => db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name);
+
+/** v9: per-day picks, event kinds, eggs and cereal, and the new morning. Only touches the routine where it is still the seed's. */
+function migrateV8toV9(db: Db, cfg: Config) {
+  if (!columns(db, 'schedule_items').includes('choices')) db.raw.exec('ALTER TABLE schedule_items ADD COLUMN choices TEXT');
+  if (!columns(db, 'events').includes('template')) db.raw.exec('ALTER TABLE events ADD COLUMN template TEXT');
+  db.raw.exec(`
+    CREATE TABLE images_v9 (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      owner_type TEXT NOT NULL CHECK (owner_type IN ('item','media','event','schedule_day','template')),
+      owner_id TEXT NOT NULL, file TEXT NOT NULL, is_active INTEGER NOT NULL DEFAULT 1,
+      uploaded_by INTEGER REFERENCES users(id), created_at TEXT NOT NULL);
+    INSERT INTO images_v9 SELECT id, owner_type, owner_id, file, is_active, uploaded_by, created_at FROM images;
+    DROP TABLE images;
+    ALTER TABLE images_v9 RENAME TO images;
+    CREATE INDEX images_owner ON images(owner_type, owner_id, is_active);`);
+
+  // Eggs and cereal (the food page's free cells, if still free).
+  const food = JSON.parse(fs.readFileSync(path.join(cfg.seedDir, 'food_vocabulary.json'), 'utf8')) as {
+    symbols: { key: string; placeholder_emoji: string; labels: { en: string; es: string }; grid_row: number; grid_col: number }[];
+  };
+  const now = new Date().toISOString();
+  for (const f of food.symbols.filter((x) => ['eggs', 'cereal'].includes(x.key))) {
+    if (db.get('SELECT 1 FROM items WHERE id = ?', f.key)) continue;
+    const free = !db.get("SELECT 1 FROM items WHERE grid_page = 'food' AND grid_row = ? AND grid_col = ?", f.grid_row, f.grid_col);
+    db.run(
+      `INSERT INTO items(id, category, kind, label_en, label_es, emoji, grid_page, grid_row, grid_col, log_trackable, updated_at)
+       VALUES(?, 'food', 'thing', ?, ?, ?, ?, ?, ?, 1, ?)`,
+      f.key, f.labels.en, f.labels.es, f.placeholder_emoji, free ? 'food' : null, free ? f.grid_row : null, free ? f.grid_col : null, now,
+    );
+  }
+
+  // The morning: bath at 7:30, then breakfast (smoothie) at 7:45; both baths show the bath photo.
+  const has = (id: string) => !!db.get('SELECT 1 FROM items WHERE id = ?', id);
+  db.run("UPDATE schedule_items SET emoji = '🥤', symbol_id = 'smoothie', start_min = 465 WHERE label = 'breakfast' AND start_min = 450 AND symbol_id = 'pancakes'");
+  const bath = db.get<{ id: number }>("SELECT id FROM schedule_items WHERE label = 'bath'");
+  if (bath && !db.get("SELECT 1 FROM schedule_items WHERE label = 'bath' AND start_min < 720")) {
+    db.run("INSERT INTO schedule_items(emoji, label, symbol_id, start_min) VALUES('🛁', 'bath', NULL, 450)");
+  }
+  if (has('bath')) db.run("UPDATE schedule_items SET symbol_id = 'bath' WHERE label = 'bath' AND symbol_id IS NULL");
+  const CHOICES: Record<string, string[]> = {
+    breakfast: ['smoothie', 'pancakes', 'eggs', 'cereal'],
+    lunch: ['rice_bowl', 'chicken_soup', 'pasta_red', 'pasta_green'],
+    snack: ['grapes', 'cookie', 'ice_cream'],
+    dinner: ['chicken_soup', 'rice_bowl', 'pasta_red', 'pasta_green'],
+  };
+  for (const [label, ids] of Object.entries(CHOICES)) {
+    const ok = ids.filter(has);
+    if (ok.length) db.run('UPDATE schedule_items SET choices = ? WHERE label = ? AND choices IS NULL', JSON.stringify(ok), label);
+  }
+  const broken = db.all<{ table: string }>('PRAGMA foreign_key_check');
+  if (broken.length) throw new Error(`Migration left ${broken.length} broken links (first in ${broken[0].table}); nothing was changed`);
 }
 
 /** v7: the dock holds Pongo and Barney (after the family); their orbit spots stay empty. */

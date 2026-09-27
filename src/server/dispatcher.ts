@@ -4,7 +4,7 @@ import type { Db } from './db.ts';
 import type { DispatchNote, Token, TokenKind } from '../shared/types.ts';
 import { renderSentence, type ResolvedToken } from '../shared/grammar.ts';
 import { HttpError } from './http.ts';
-import { inWindow, minutesOfDay, startOfDay } from '../shared/time.ts';
+import { inWindow, localDay, minutesOfDay, startOfDay } from '../shared/time.ts';
 
 export interface DispatchInput {
   fromUserId: number;
@@ -157,9 +157,12 @@ export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResul
 
     // 4. Next meal coming up (within 3 hours)
     const nowMin = minutesOfDay(now);
+    // next *meal* only (bedtime links the bed); today's pick ("breakfast: eggs") wins over the everyday picture
     const next = db.get<{ start_min: number; symbol_id: string }>(
-      `SELECT s.start_min, s.symbol_id FROM schedule_items s JOIN items i ON i.id = s.symbol_id
-       WHERE i.category IN ('food','drink') AND s.start_min > ? ORDER BY s.start_min LIMIT 1`, nowMin, // next *meal* only (bedtime links the bed)
+      `SELECT s.start_min, COALESCE(d.item_id, s.symbol_id) AS symbol_id FROM schedule_items s
+       LEFT JOIN schedule_days d ON d.schedule_id = s.id AND d.day = ?
+       JOIN items i ON i.id = COALESCE(d.item_id, s.symbol_id)
+       WHERE i.category IN ('food','drink') AND s.start_min > ? ORDER BY s.start_min LIMIT 1`, localDay(now), nowMin,
     );
     if (next && next.start_min - nowMin <= 180) {
       const at = startOfDay(now);

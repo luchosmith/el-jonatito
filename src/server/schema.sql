@@ -55,7 +55,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS items_slot ON items(COALESCE(parent_id, ''), o
 -- Every picture ever used for an item or a media cover; the newest active one wins.
 CREATE TABLE IF NOT EXISTS images (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  owner_type    TEXT NOT NULL CHECK (owner_type IN ('item','media','event')),
+  owner_type    TEXT NOT NULL CHECK (owner_type IN ('item','media','event','schedule_day','template')),
   owner_id      TEXT NOT NULL,
   file          TEXT NOT NULL,
   is_active     INTEGER NOT NULL DEFAULT 1,
@@ -146,8 +146,20 @@ CREATE TABLE IF NOT EXISTS schedule_items (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   emoji         TEXT NOT NULL,
   label         TEXT NOT NULL,
-  symbol_id     TEXT,
-  start_min     INTEGER NOT NULL                -- minutes after midnight (daily routine)
+  symbol_id     TEXT,                           -- the default picture (a word), e.g. breakfast -> smoothie
+  start_min     INTEGER NOT NULL,               -- minutes after midnight (daily routine)
+  choices       TEXT                            -- JSON item ids caretakers pick from for one day, e.g. breakfast
+);
+
+-- One day's pick for one routine slot ("breakfast tomorrow: eggs", or a custom photo for that day only).
+CREATE TABLE IF NOT EXISTS schedule_days (
+  schedule_id   INTEGER NOT NULL REFERENCES schedule_items(id) ON DELETE CASCADE,
+  day           TEXT NOT NULL,                  -- 'YYYY-MM-DD', local time
+  item_id       TEXT REFERENCES items(id) ON DELETE SET NULL,  -- NULL = a custom photo (images owner_type 'schedule_day', owner_id '<id>:<day>')
+  label         TEXT,
+  set_by        INTEGER REFERENCES users(id),
+  updated_at    TEXT NOT NULL,
+  PRIMARY KEY (schedule_id, day)
 );
 
 CREATE TABLE IF NOT EXISTS media (
@@ -261,6 +273,7 @@ CREATE TABLE IF NOT EXISTS events (
   title         TEXT NOT NULL,
   emoji         TEXT,
   kind          TEXT NOT NULL DEFAULT 'event' CHECK (kind IN ('event','photo')),
+  template      TEXT,                           -- doctor | dentist | playdate | … (its default picture)
   person_ids    TEXT NOT NULL DEFAULT '[]',
   show_from_min INTEGER NOT NULL DEFAULT 1440,  -- appears on his timeline this long before it starts
   hidden        INTEGER NOT NULL DEFAULT 0,

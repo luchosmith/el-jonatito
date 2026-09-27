@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { Db } from '../server/db.ts';
 import { loadConfig } from '../server/config.ts';
-import { migrate, schemaVersion } from '../server/migrate.ts';
+import { migrate, SCHEMA_VERSION, schemaVersion } from '../server/migrate.ts';
 import { seed } from '../server/seed.ts';
 import { listItems, listPeople } from '../server/repo.ts';
 
@@ -52,7 +52,7 @@ test('a v2 database is backed up, upgraded to v3, and keeps its data', () => {
   const db = new Db(cfg.dbFile); // applies the v3 schema next to the old tables, like a real restart
   const backup = migrate(db, cfg);
   assert.ok(backup && fs.existsSync(backup), 'writes a backup copy first');
-  assert.equal(schemaVersion(db), 8);
+  assert.equal(schemaVersion(db), SCHEMA_VERSION);
   const tables = db.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table'").map((t) => t.name);
   assert.ok(!tables.includes('symbols') && !tables.includes('limits'));
   assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
@@ -117,7 +117,7 @@ test('a v3 database gets Music in a free inner slot (and never moves anything el
   // 6 is taken (bath) and 7 too (water, from seed/orbit.json): Music takes the first free slot.
   assert.equal(items.find((i) => i.id === 'water')!.orbit_slot, 7);
   assert.equal(items.find((i) => i.id === 'music')!.orbit_slot, 1);
-  assert.equal(schemaVersion(db), 8);
+  assert.equal(schemaVersion(db), SCHEMA_VERSION);
   db.close();
 });
 
@@ -137,5 +137,32 @@ test('v7: Pongo and Barney leave the orbit for the dock; their spots stay empty'
   assert.equal(items.find((i) => i.id === 'pongo')!.tap, 'play');
   assert.deepEqual(db.setting('dock_items', []), ['pongo', 'barney']);
   assert.equal(items.filter((i) => i.orbit === 'inner' && !i.parent_id && (i.orbit_slot === 4 || i.orbit_slot === 5)).length, 0);
+  db.close();
+});
+
+test('v9: the morning gets a bath at 7:30 and breakfast (smoothie) at 7:45; meals get choices; eggs and cereal', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-migrate9-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  // Pretend it is a v8 database: the old routine, no choices, no eggs or cereal.
+  db.run("DELETE FROM schedule_items WHERE label = 'bath' AND start_min = 450");
+  db.run("UPDATE schedule_items SET start_min = 450, symbol_id = 'pancakes', emoji = '🥞' WHERE label = 'breakfast'");
+  db.run("UPDATE schedule_items SET symbol_id = NULL WHERE label = 'bath'");
+  db.run('UPDATE schedule_items SET choices = NULL');
+  db.run("DELETE FROM items WHERE id IN ('eggs','cereal')");
+  db.run("INSERT INTO images(owner_type, owner_id, file, created_at) VALUES('event','1','x.jpg','2026-09-01')");
+  db.raw.exec('PRAGMA user_version = 8');
+  migrate(db, cfg);
+  const rows = db.all<{ label: string; start_min: number; symbol_id: string | null; choices: string | null }>('SELECT * FROM schedule_items ORDER BY start_min');
+  const morning = rows.filter((r) => r.start_min < 480).map((r) => `${r.label}@${r.start_min}:${r.symbol_id}`);
+  assert.deepEqual(morning, ['wake@420:null', 'bath@450:bath', 'breakfast@465:smoothie']);
+  assert.equal(rows.find((r) => r.label === 'bath' && r.start_min === 1170)!.symbol_id, 'bath');
+  assert.deepEqual(JSON.parse(rows.find((r) => r.label === 'breakfast')!.choices!), ['smoothie', 'pancakes', 'eggs', 'cereal']);
+  assert.ok(rows.find((r) => r.label === 'lunch')!.choices);
+  assert.ok(db.get("SELECT 1 FROM items WHERE id = 'eggs' AND grid_page = 'food'"));
+  assert.ok(db.get("SELECT 1 FROM images WHERE owner_type = 'event'"), 'pictures survive the rebuild');
+  db.run("INSERT INTO images(owner_type, owner_id, file, created_at) VALUES('schedule_day','3:2026-09-24','y.jpg','2026-09-01')");
+  assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
   db.close();
 });

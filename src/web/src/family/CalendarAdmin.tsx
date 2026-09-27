@@ -5,9 +5,9 @@ import { api, ApiError } from '../api.ts';
 import type { Board } from '../common/board.ts';
 import { Face } from '../common/Face.tsx';
 import { fmt12ampm } from '../../../shared/time.ts';
-import type { CalendarEvent } from '../../../shared/types.ts';
+import type { CalendarEvent, EventTemplate } from '../../../shared/types.ts';
 
-const SHOW_FROM: [number, string][] = [[0, 'at that time'], [180, '3 hours before'], [1440, 'the day before'], [10080, 'a week before']];
+const SHOW_FROM: [number, string][] = [[0, 'at that time'], [180, '3 hours before'], [1440, 'the day before'], [10080, 'a week before'], [525600, 'right away']];
 const pad = (n: number) => String(n).padStart(2, '0');
 const localDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
@@ -19,28 +19,35 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
   const [time, setTime] = useState('10:00');
   const [emoji, setEmoji] = useState('');
   const [people, setPeople] = useState<string[]>([]);
-  const [showFrom, setShowFrom] = useState(1440);
+  const [showFrom, setShowFrom] = useState(525600);
   const [file, setFile] = useState<File | null>(null);
   const [msg, setMsg] = useState('');
+  const [templates, setTemplates] = useState<EventTemplate[]>([]);
+  const [template, setTemplate] = useState<string | null>(null);
   const load = () => api.get<CalendarEvent[]>('/api/calendar').then(setEvents);
   useEffect(() => void load(), [version]);
+  useEffect(() => void api.get<EventTemplate[]>('/api/calendar/templates').then(setTemplates).catch(() => undefined), [version]);
+  const tpl = templates.find((t) => t.id === template);
 
   const add = async () => {
     setMsg('');
-    if (!title.trim()) return setMsg('Give it a short title.');
+    if (!title.trim() && !(kind === 'event' && template)) return setMsg('Give it a short title, or pick what it is.');
     if (kind === 'photo' && !file) return setMsg('Choose a photo.');
     try {
       const ev = await api.post<CalendarEvent>('/api/calendar', {
-        title: title.trim(), starts_at: new Date(`${date}T${time}:00`).toISOString(), kind, person_ids: people,
-        show_from_min: showFrom, ...(emoji ? { emoji } : {}),
+        ...(title.trim() ? { title: title.trim() } : {}), starts_at: new Date(`${date}T${time}:00`).toISOString(), kind, person_ids: people,
+        show_from_min: showFrom, ...(emoji ? { emoji } : {}), ...(kind === 'event' && template ? { template } : {}),
       });
       if (file) await api.upload('PUT', `/api/calendar/${ev.id}/image`, file);
-      setTitle(''); setEmoji(''); setPeople([]); setFile(null);
+      setTitle(''); setEmoji(''); setPeople([]); setFile(null); setTemplate(null);
       setMsg(kind === 'photo' ? 'Photo added to his day.' : 'Added to his timeline.');
       await load();
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : 'Could not save');
     }
+  };
+  const setDefault = async (id: string, f: File | null) => {
+    setTemplates(await (f ? api.upload<EventTemplate[]>('PUT', `/api/calendar/templates/${id}/image`, f) : api.del<EventTemplate[]>(`/api/calendar/templates/${id}/image`)));
   };
   const remove = async (id: number) => {
     await api.del(`/api/calendar/${id}`);
@@ -56,7 +63,17 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
         <button className={kind === 'photo' ? 'on' : ''} data-testid="cal-kind-photo" onClick={() => setKind('photo')}>📷 Photo on his day</button>
       </div>
       <div className="cal-form panel">
-        <input data-testid="cal-title" value={title} placeholder={kind === 'photo' ? 'What is in the photo? (the park)' : 'What is it? (Dentist)'} onChange={(e) => setTitle(e.target.value)} />
+        {kind === 'event' && (
+          <div className="plan-picks" data-testid="cal-templates">
+            {templates.map((t) => (
+              <button key={t.id} className={`plan-pick ${template === t.id ? 'sel' : ''}`} data-testid={`cal-tpl-${t.id}`} onClick={() => setTemplate(template === t.id ? null : t.id)}>
+                <b>{t.photo_url ? <img src={t.photo_url} alt="" /> : t.emoji}</b><span>{t.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+        {tpl && <p className="muted small">Picture: {tpl.photo_url ? 'the family photo for' : tpl.emoji} {tpl.label.toLowerCase()} · or 📷 use your own photo for this one</p>}
+        <input data-testid="cal-title" value={title} placeholder={kind === 'photo' ? 'What is in the photo? (the park)' : tpl ? `${tpl.label} (or type a title)` : 'What is it? (Dentist)'} onChange={(e) => setTitle(e.target.value)} />
         <div className="two">
           <input type="date" data-testid="cal-date" value={date} onChange={(e) => setDate(e.target.value)} />
           <input type="time" data-testid="cal-time" value={time} onChange={(e) => setTime(e.target.value)} />
@@ -88,6 +105,23 @@ export function CalendarAdmin({ board, version }: { board: Board; version: numbe
         <button className="save" data-testid="cal-add" onClick={add}>{kind === 'photo' ? 'Add to his day' : 'Add to his timeline'}</button>
         {msg && <p className="muted" data-testid="cal-msg">{msg}</p>}
       </div>
+
+      {kind === 'event' && (
+        <details className="panel cal-defaults" data-testid="cal-defaults">
+          <summary>Default pictures for each kind</summary>
+          {templates.map((t) => (
+            <div key={t.id} className="cal-ev">
+              {t.photo_url ? <img src={t.photo_url} alt="" /> : <span className="big-emoji">{t.emoji}</span>}
+              <div><b>{t.label}</b></div>
+              <label className="btn small">📷
+                <input type="file" accept="image/jpeg,image/png,image/webp" hidden data-testid={`tpl-photo-${t.id}`}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void setDefault(t.id, f); e.target.value = ''; }} />
+              </label>
+              {t.photo_url && <button className="link" data-testid={`tpl-revert-${t.id}`} onClick={() => void setDefault(t.id, null)}>↺ {t.emoji}</button>}
+            </div>
+          ))}
+        </details>
+      )}
 
       <h3>On his timeline</h3>
       {events.length === 0 && <p className="muted">Nothing yet.</p>}

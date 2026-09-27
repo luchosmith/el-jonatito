@@ -42,3 +42,8 @@ export function startOfDay(d: Date): Date {
 export function inWindow(min: number, start: number, end: number): boolean {
   return start <= end ? min >= start && min < end : min >= start || min < end;
 }
+
+/** 'YYYY-MM-DD' of the local day. */
+export function localDay(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
