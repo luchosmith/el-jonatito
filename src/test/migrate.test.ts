@@ -192,7 +192,7 @@ test('v11: Toilet opens a cloud with wee wee, toilet paper (new, with drawings) 
   const items = listItems(db, new Date());
   const by = (id: string) => items.find((i) => i.id === id)!;
   assert.equal(by('toilet').tap, 'open');
-  assert.deepEqual(['wee_wee', 'toilet_paper', 'bath'].map((id) => [by(id).parent_id, by(id).orbit_slot]), [['toilet', 0], ['toilet', 2], ['toilet', 4]]);
+  assert.deepEqual(['wee_wee', 'toilet_paper', 'bath'].map((id) => [by(id).parent_id, by(id).orbit_slot]), [['toilet', 4], ['toilet', 2], ['toilet', 0]]);
   assert.match(by('wee_wee').photo_url ?? '', /\.jpg$/);
   assert.equal(by('wee_wee').labels.es, 'hacer pipí');
   assert.equal(by('toilet').orbit_slot, 1, 'Toilet stays in its spot');

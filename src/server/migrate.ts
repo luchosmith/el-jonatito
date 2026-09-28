@@ -86,7 +86,7 @@ function migrateV10toV11(db: Db, cfg: Config) {
   }
   if (!db.get("SELECT 1 FROM items WHERE id = 'toilet' AND parent_id IS NULL")) return;
   db.run("UPDATE items SET tap = 'open' WHERE id = 'toilet'");
-  for (const [id, slot] of [['toilet_paper', 2], ['bath', 4], ['wee_wee', 0]] as const) {
+  for (const [id, slot] of [['toilet_paper', 2], ['bath', 0], ['wee_wee', 4]] as const) {
     const free = !db.get("SELECT 1 FROM items WHERE parent_id = 'toilet' AND orbit = 'inner' AND orbit_slot = ?", slot);
     if (free) db.run("UPDATE items SET parent_id = 'toilet', orbit = 'inner', orbit_slot = ? WHERE id = ? AND orbit IS NULL", slot, id);
   }

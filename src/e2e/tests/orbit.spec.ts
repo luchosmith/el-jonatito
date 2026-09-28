@@ -85,7 +85,7 @@ test('Toilet opens its own cloud: wee wee, toilet paper and the shower; the sky 
   await page.getByTestId('orbit-toilet').click();
   await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', 'toilet');
   await expect(page.getByTestId('sub-veil')).toBeVisible();
-  for (const [id, slot] of [['wee_wee', 0], ['toilet_paper', 2], ['bath', 4]] as const) {
+  for (const [id, slot] of [['bath', 0], ['toilet_paper', 2], ['wee_wee', 4]] as const) {
     await expect(page.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
     await expect(page.getByTestId(`orbit-${id}`).locator('img')).toHaveAttribute('src', /\/api\/images\//);
   }

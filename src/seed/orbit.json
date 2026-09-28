@@ -11,7 +11,7 @@
   ],
   "sub_orbits": {
     "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green", "cookie", "ice_cream"],
-    "toilet": ["wee_wee", null, "toilet_paper", null, "bath", null, null, null, null, null]
+    "toilet": ["bath", null, "toilet_paper", null, "wee_wee", null, null, null, null, null]
   },
   "rules": [
     { "item": "grapes", "kind": "window", "routine": "snack", "open_min": 45, "blocks": true },
