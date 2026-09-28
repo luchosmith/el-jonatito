@@ -1,7 +1,7 @@
 {
   "inner": [
     { "id": "eat", "slot": 0, "tap": "open", "short_label": "Eat", "emoji": "🍇" },
-    { "id": "toilet", "slot": 1, "short_label": "Toilet" },
+    { "id": "toilet", "slot": 1, "tap": "open", "short_label": "Toilet" },
     { "id": "music", "slot": 6, "short_label": "Music" },
     { "id": "water", "slot": 7, "short_label": "Water" }
   ],
@@ -10,7 +10,8 @@
     { "id": "barney" }
   ],
   "sub_orbits": {
-    "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green", "cookie", "ice_cream"]
+    "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green", "cookie", "ice_cream"],
+    "toilet": [null, null, "toilet_paper", null, "bath", null, null, "wee_wee", null, null]
   },
   "rules": [
     { "item": "grapes", "kind": "window", "routine": "snack", "open_min": 45, "blocks": true },

@@ -265,6 +265,28 @@
       "photo": "symbols/toilet.jpg"
     },
     {
+      "id": "wee_wee",
+      "page": "action",
+      "row": 2,
+      "col": 0,
+      "kind": "action",
+      "emoji": "🚽",
+      "en": "wee wee",
+      "es": "hacer pipí",
+      "photo": "symbols/wee_wee.svg"
+    },
+    {
+      "id": "toilet_paper",
+      "page": "action",
+      "row": 2,
+      "col": 1,
+      "kind": "thing",
+      "emoji": "🧻",
+      "en": "toilet paper",
+      "es": "papel higiénico",
+      "photo": "symbols/toilet_paper.svg"
+    },
+    {
       "id": "watch",
       "page": "action",
       "row": 1,

@@ -92,7 +92,8 @@ export function OrbitView(p: Props) {
       <div className={`orbit-layer ${p.away ? 'away' : ''}`}>
         {!parentId && <div className="ring inner" />}{/* a sub-orbit is a loose cloud, no ring */}
 
-        {Array.from({ length: slotCount(parentId) }, (_, s) => s).filter((s) => !used.has(s)).map((s) => (
+        {/* Empty spots stay reserved in the main orbit; a cloud only shows what is in it (less to look at). */}
+        {!parentId && Array.from({ length: slotCount(parentId) }, (_, s) => s).filter((s) => !used.has(s)).map((s) => (
           <div key={s} className="orb empty" style={placeStyle(parentId, s)} data-testid={`orbit-empty-${s}`} />
         ))}
 

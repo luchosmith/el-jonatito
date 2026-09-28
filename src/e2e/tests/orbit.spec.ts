@@ -46,7 +46,7 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   await expect(page.getByTestId('orbit-parent').locator('img')).toBeVisible();
   await expect(page.getByTestId('orbit-grapes').locator('img')).toHaveAttribute('src', /grapes/);
   await expect(page.getByTestId('orbit-grapes')).toHaveAttribute('data-slot', '4');
-  await expect(page.getByTestId('orbit-empty-0')).toBeVisible(); // water moved to the main orbit; its spot stays empty
+  await expect(page.getByTestId('orbit-empty-0')).toHaveCount(0); // a cloud shows no empty spots (water's old spot stays free)
   // The foods are a cloud of 10 spots: cookie and ice cream too; none touch each other, his face or the clock.
   await expect(page.getByTestId('orbit-cookie')).toHaveAttribute('data-slot', '8');
   await expect(page.getByTestId('orbit-ice_cream')).toHaveAttribute('data-slot', '9');
@@ -78,6 +78,22 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   await page.getByTestId('orbit-me').click();
   await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', '');
   await expect(page.getByTestId('sub-veil')).toHaveCount(0);
+});
+
+test('Toilet opens its own cloud: wee wee, toilet paper and the shower; the sky fades behind a veil', async ({ page }) => {
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-toilet').click();
+  await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', 'toilet');
+  await expect(page.getByTestId('sub-veil')).toBeVisible();
+  for (const [id, slot] of [['toilet_paper', 2], ['bath', 4], ['wee_wee', 7]] as const) {
+    await expect(page.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
+    await expect(page.getByTestId(`orbit-${id}`).locator('img')).toHaveAttribute('src', /\/api\/images\//);
+  }
+  await expect(page.getByTestId('orbit-parent').locator('img')).toBeVisible(); // the toilet photo, to go back
+  await page.getByTestId('orbit-wee_wee').click();
+  await expect(page.getByTestId('strip-token')).toHaveCount(2);
+  await page.getByTestId('orbit-me').click();
+  await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', '');
 });
 
 test('foods outside their time are dimmed with a clock and are not added', async ({ page }) => {

@@ -11,6 +11,7 @@
 //           the morning is a chain of big pictures (wake-up = bath photo, breakfast = smoothie); school
 //           leaves the routine for now.
 // v9 -> v10: availability.status can be 'on_duty' (a caretaker who is with him).
+// v10 -> v11: Toilet opens its own cloud: wee wee, toilet paper (new words) and Bath (the shower photo).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,7 +19,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -61,11 +62,35 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 8) db.tx(() => db.run("UPDATE items SET orbit = NULL, orbit_slot = NULL WHERE orbit = 'outer'"));
   if (from < 9) db.tx(() => migrateV8toV9(db));
   if (from < 10) db.tx(() => migrateV9toV10(db));
+  if (from < 11) db.tx(() => migrateV10toV11(db, cfg));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
 }
 
 const columns = (db: Db, table: string) => db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name);
+
+/** v11: two new words, and Toilet opens a cloud with them and Bath. Nothing a caretaker placed is moved. */
+function migrateV10toV11(db: Db, cfg: Config) {
+  const vocab = JSON.parse(fs.readFileSync(path.join(cfg.seedDir, 'vocabulary.json'), 'utf8')) as {
+    symbols: { id: string; page: string; row: number; col: number; kind: string; emoji: string; en: string; es: string; photo?: string }[];
+  };
+  const now = new Date().toISOString();
+  for (const w of vocab.symbols.filter((x) => x.id === 'wee_wee' || x.id === 'toilet_paper')) {
+    if (db.get('SELECT 1 FROM items WHERE id = ?', w.id)) continue;
+    const cellFree = !db.get('SELECT 1 FROM items WHERE grid_page = ? AND grid_row = ? AND grid_col = ?', w.page, w.row, w.col);
+    db.run(
+      `INSERT INTO items(id, category, kind, label_en, label_es, emoji, grid_page, grid_row, grid_col, updated_at) VALUES(?,?,?,?,?,?,?,?,?,?)`,
+      w.id, PAGE_CATEGORY[w.page] ?? 'core', w.kind, w.en, w.es, w.emoji, cellFree ? w.page : null, cellFree ? w.row : null, cellFree ? w.col : null, now,
+    );
+    if (w.photo) copySeedImage(db, cfg, w.photo, 'item', w.id, now);
+  }
+  if (!db.get("SELECT 1 FROM items WHERE id = 'toilet' AND parent_id IS NULL")) return;
+  db.run("UPDATE items SET tap = 'open' WHERE id = 'toilet'");
+  for (const [id, slot] of [['toilet_paper', 2], ['bath', 4], ['wee_wee', 7]] as const) {
+    const free = !db.get("SELECT 1 FROM items WHERE parent_id = 'toilet' AND orbit = 'inner' AND orbit_slot = ?", slot);
+    if (free) db.run("UPDATE items SET parent_id = 'toilet', orbit = 'inner', orbit_slot = ? WHERE id = ? AND orbit IS NULL", slot, id);
+  }
+}
 
 /** v10: SQLite can't relax a CHECK in place, so availability is rebuilt to allow 'on_duty'. */
 function migrateV9toV10(db: Db) {

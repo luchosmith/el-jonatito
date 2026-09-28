@@ -616,7 +616,9 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 
 ### 5.19a The foods: a cloud, not a ring (v0.9, built)
 - A sub-orbit (Eat → foods) has **10 fixed spots** arranged as a loose cloud, five on each side of his face, clear of the clock, his face, the Eat button and the "next food" card; the main orbit keeps its 8-spot ring. Spots are still fixed for good (motor planning); growing from 8 to 10 moved each food once.
-- Cookie and ice cream take spots 9 and 10; spot 1 (next to the clock) is free. When the foods are open, the sky and the globe fade behind a soft veil (main area only).
+- Cookie and ice cream take spots 9 and 10; spot 1 (next to the clock) is free.
+- **Toilet** opens its own cloud the same way: **wee wee** (drawing: a child looking into the open toilet; "hacer pipí"), **toilet paper** (drawing; "papel higiénico") and **Bath** (the shower photo). Schema v11 adds the two words.
+- A cloud shows only what is in it; empty spots stay reserved but are not drawn (the main orbit still shows its empty spots). When the foods are open, the sky and the globe fade behind a soft veil (main area only).
 
 ### 5.19b On duty (v0.9, built; mockup tabs "🌍 Places on the earth" and "🛡️ On duty")
 > **Built (September 2026):** messages go to **whoever is on duty and to anyone he picked** (a message with no name: to whoever is on duty). The orbiting face sits a little over his own so it stays clear of the clock and the inner orbit.

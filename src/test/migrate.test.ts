@@ -176,3 +176,25 @@ test('v10: availability can be on duty; statuses are kept', () => {
   assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
   db.close();
 });
+
+test('v11: Toilet opens a cloud with wee wee, toilet paper (new, with drawings) and Bath', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-migrate11-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  // Pretend it is a v10 database: no new words, Toilet just adds its word, Bath out of the orbit.
+  db.run("DELETE FROM images WHERE owner_id IN ('wee_wee','toilet_paper')");
+  db.run("DELETE FROM items WHERE id IN ('wee_wee','toilet_paper')");
+  db.run("UPDATE items SET tap = 'add' WHERE id = 'toilet'");
+  db.run("UPDATE items SET orbit = NULL, orbit_slot = NULL, parent_id = NULL WHERE id = 'bath'");
+  db.raw.exec('PRAGMA user_version = 10');
+  migrate(db, cfg);
+  const items = listItems(db, new Date());
+  const by = (id: string) => items.find((i) => i.id === id)!;
+  assert.equal(by('toilet').tap, 'open');
+  assert.deepEqual(['wee_wee', 'toilet_paper', 'bath'].map((id) => [by(id).parent_id, by(id).orbit_slot]), [['toilet', 7], ['toilet', 2], ['toilet', 4]]);
+  assert.match(by('wee_wee').photo_url ?? '', /\.svg$/);
+  assert.equal(by('wee_wee').labels.es, 'hacer pipí');
+  assert.equal(by('toilet').orbit_slot, 1, 'Toilet stays in its spot');
+  db.close();
+});
