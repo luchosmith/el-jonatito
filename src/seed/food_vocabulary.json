@@ -131,10 +131,10 @@
       "fitz_color": "orange (thing)",
       "placeholder_emoji": "🍝",
       "image": null,
-      "photo": null,
+      "photo": "symbols/pasta_red.jpg",
       "labels": {
-        "en": "pasta with red sauce",
-        "es": "pasta con salsa roja"
+        "en": "spaghetti",
+        "es": "espaguetis"
       },
       "grid_page": "food",
       "grid_row": 1,
