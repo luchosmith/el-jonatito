@@ -48,8 +48,13 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   await expect(page.getByTestId('orbit-grapes')).toHaveAttribute('data-slot', '4');
   await expect(page.getByTestId('orbit-empty-0')).toBeVisible(); // water moved to the main orbit; its spot stays empty
   await expect(page.getByTestId('orbit-water')).toHaveCount(0);
-  // People stay in the outer orbit, so the whole sentence is one screen.
-  await expect(page.getByTestId('compass-home')).toBeVisible(); // the globe is still under him
+  // The sky and the globe fade behind a veil, only in the main area (not over the timeline or the taskbar).
+  const veil = (await page.getByTestId('sub-veil').boundingBox())!;
+  const area = (await page.getByTestId('orbit').boundingBox())!;
+  expect(veil).toEqual(area);
+  expect(veil.y).toBeGreaterThanOrEqual((await page.getByTestId('here-now').boundingBox())!.y + (await page.getByTestId('here-now').boundingBox())!.height - 1);
+  expect(veil.y + veil.height).toBeLessThanOrEqual((await page.getByTestId('dock').boundingBox())!.y + 1);
+  await expect(page.getByTestId('compass-home')).toBeVisible(); // still there, just faded
   await page.getByTestId('orbit-grapes').click();
   await expect(page.getByTestId('strip-token')).toHaveCount(2);
 
@@ -62,6 +67,7 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
 
   await page.getByTestId('orbit-me').click();
   await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', '');
+  await expect(page.getByTestId('sub-veil')).toHaveCount(0);
 });
 
 test('foods outside their time are dimmed with a clock and are not added', async ({ page }) => {

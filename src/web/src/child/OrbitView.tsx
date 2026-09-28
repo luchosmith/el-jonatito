@@ -80,7 +80,7 @@ export function OrbitView(p: Props) {
 
 
   return (
-    <div className="orbit" data-testid="orbit" data-parent={parentId ?? ''}>
+    <div className={`orbit ${parentId ? 'sub' : ''}`} data-testid="orbit" data-parent={parentId ?? ''}>
       <Sky timeRef={p.timeRef} weather={p.weather} season={p.season} />
       <div className="now-guide" aria-hidden />
       {/* The clock, in the sky under NOW: numbers and hands only, like the clock on his wall. Dragged
@@ -120,6 +120,8 @@ export function OrbitView(p: Props) {
 
       </div>
 
+      {/* In a sub-orbit (Eat -> foods) the sky and the globe fade back behind a soft veil, so only the choices stand out. */}
+      {parentId && <div className="sub-veil" data-testid="sub-veil" aria-hidden />}
       {(
         <PlacesCompass
           board={board}

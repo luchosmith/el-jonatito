@@ -150,6 +150,12 @@ img { display: block; }
 .reply-text { border: none; background: #eef4ff; border-radius: 14px; padding: 10px 14px; font-size: 22px; font-weight: 700; max-width: 520px; }
 .orbit { flex: 1; position: relative; min-height: 0; overflow: hidden; background: radial-gradient(ellipse at 50% 45%, #fff 0%, var(--calm) 70%); }
 .orbit-layer { position: absolute; inset: 0; transition: opacity .4s; }
+/* a sub-orbit (Eat -> foods): the sky and the globe barely show behind a veil; the main area only */
+.sub-veil { position: absolute; inset: 0; z-index: 2; background: rgba(247, 245, 240, .9); backdrop-filter: blur(3px); pointer-events: none; animation: veil-in .3s ease-out; }
+@keyframes veil-in { from { opacity: 0; } }
+.orbit.sub .orbit-layer { z-index: 3; }
+.orbit.sub .orbit-me, .orbit.sub .orbit-parent, .orbit.sub .sky-clock { z-index: 4; }
+.orbit.sub .next-open, .orbit.sub .closed-tip { z-index: 5; }
 .ring { position: absolute; left: 50%; top: 50%; translate: -50% -50%; border-radius: 50%; border: 2px dashed #d6dde5; pointer-events: none; }
 .ring.inner { width: 40%; height: 60%; }
 .orbit-me { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: clamp(110px, 18vmin, 160px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; border: 5px solid #fff; box-shadow: 0 0 0 5px var(--people), 0 8px 20px rgba(0,0,0,.15); background: #ffe3c4; padding: 0; z-index: 2; }
