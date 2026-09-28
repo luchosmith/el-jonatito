@@ -137,7 +137,7 @@ CREATE INDEX IF NOT EXISTS log_at ON log_entries(at);
 
 CREATE TABLE IF NOT EXISTS availability (
   user_id       INTEGER PRIMARY KEY REFERENCES users(id),
-  status        TEXT NOT NULL CHECK (status IN ('available','busy','away')),
+  status        TEXT NOT NULL CHECK (status IN ('available','busy','away','on_duty')),  -- on_duty: with him (Where I am = home)
   until         TEXT,
   updated_at    TEXT NOT NULL
 );

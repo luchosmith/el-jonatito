@@ -50,7 +50,7 @@ function staff(db: Db): StaffRow[] {
 }
 
 export function isAvailable(s: { status: string | null; until: string | null }, now: Date): boolean {
-  if (!s.status || s.status === 'available') return true;
+  if (!s.status || s.status === 'available' || s.status === 'on_duty') return true;
   // A busy/away status with an "until" time expires by itself.
   return !!s.until && new Date(s.until) <= now;
 }
@@ -91,14 +91,16 @@ export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResul
 
   const notes: DispatchNote[] = [];
   const people = staff(db);
-  const onDuty = people.filter((s) => s.role === 'caretaker' && isAvailable(s, now));
+  // On duty = a caretaker who is with him right now (status 'on_duty'); free = any available caretaker.
+  const onDuty = people.filter((s) => s.role === 'caretaker' && s.status === 'on_duty');
+  const free = people.filter((s) => s.role === 'caretaker' && isAvailable(s, now));
   const caretakers = people.filter((s) => s.role === 'caretaker');
   const target = addressee ? people.find((s) => s.person_id === addressee!.id) : undefined;
   let recipients: number[];
 
   if (urgent) {
-    // 2a. Urgent: everyone on duty right now (or every caretaker if nobody is), plus the person he chose.
-    const set = new Set((onDuty.length ? onDuty : caretakers).map((s) => s.user_id));
+    // 2a. Urgent: whoever is on duty, every free caretaker (or every caretaker if nobody is free), plus the person he chose.
+    const set = new Set([...onDuty, ...(free.length ? free : caretakers)].map((s) => s.user_id));
     if (target) set.add(target.user_id);
     recipients = [...set];
     notes.push({
@@ -109,13 +111,15 @@ export function dispatch(db: Db, now: Date, input: DispatchInput): DispatchResul
     // 2b. Normal
     const quiet = db.setting<{ start_min: number; end_min: number }>('quiet_hours', { start_min: 1260, end_min: 420 });
     const isQuiet = inWindow(minutesOfDay(now), quiet.start_min, quiet.end_min);
-    const fallback = onDuty[0] ?? caretakers[0];
+    const fallback = onDuty[0] ?? free[0] ?? caretakers[0];
+    // Whoever is on duty always gets it too (they are with him), next to the person he chose.
+    const withDuty = (ids: number[]) => [...new Set([...onDuty.map((s) => s.user_id), ...ids])];
 
     if (!target || (isQuiet && target.role !== 'caretaker')) {
-      recipients = fallback ? [fallback.user_id] : [];
+      recipients = withDuty(fallback ? [fallback.user_id] : []);
       notes.push({ kind: 'delivered', person_id: fallback?.person_id ?? null });
     } else {
-      recipients = [target.user_id];
+      recipients = withDuty([target.user_id]);
       if (!isAvailable(target, now)) {
         // Still delivered (they'll see it later) — but offer who is free now.
         notes.push({

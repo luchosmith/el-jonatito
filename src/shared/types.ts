@@ -7,7 +7,8 @@ export type Labels = Partial<Record<Lang, string | null>>;
 /** Word classes follow the modified Fitzgerald Key used on the board. */
 export type TokenKind = 'person' | 'pet' | 'action' | 'thing' | 'desc' | 'social' | 'urgent';
 
-export type AvailabilityStatus = 'available' | 'busy' | 'away';
+/** on_duty: a caretaker who is with him right now (only possible when their Where I am is home) */
+export type AvailabilityStatus = 'available' | 'busy' | 'away' | 'on_duty';
 
 export interface User {
   id: number;

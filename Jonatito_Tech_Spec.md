@@ -614,6 +614,14 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 -- settings.current_place = item id (default 'home'); locations.place_item_id = optional family place for "I'm at …"
 ```
 
+### 5.19b On duty (v0.9, built; mockup tabs "🌍 Places on the earth" and "🛡️ On duty")
+> **Built (September 2026):** messages go to **whoever is on duty and to anyone he picked** (a message with no name: to whoever is on duty). The orbiting face sits a little over his own so it stays clear of the clock and the inner orbit.
+- **A new status** next to available / busy / away: **🛡️ On duty**, for **caretakers only**, and only when they are **in the same place as Jonatito**: their "Where I am" is within the walk zone of home (under 2 km, the same test as the places compass). If their location moves elsewhere, on duty ends by itself (back to available).
+- **On his tablet:** each on-duty caretaker's face **orbits his own face**: the same size as on the globe (68 px), touching his ring, **one slow turn a minute**, staying upright, with a small 🛡️. They leave the globe while on duty. Two on duty sit opposite each other. Tapping the face opens their page.
+- **Messages:** every message also goes to whoever is on duty, next to the person he picked; with no name, to whoever is on duty; HELP and pain 3–5 reach whoever is on duty plus every free caretaker. If nobody is on duty, it works as before.
+- **Family app → 🟢 My status:** a 🛡️ On duty button. Away from home it is off and says why ("You are in Jersey City… set Where I am to 🏠 Home first").
+- **Data:** `availability.status` gains `'on_duty'` (schema v10); the server refuses it when the caretaker is not at home, and clears it when their location moves away.
+
 ### 5.20 Decisions to confirm (v0.8)
 1. **Position:** a separate band under the earth (as mocked), or drawn **on** the earth band to keep orbit space?
 2. **Side:** west/east by real direction, or simply alternate left/right?

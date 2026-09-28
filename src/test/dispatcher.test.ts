@@ -58,3 +58,15 @@ test('rejects unknown and empty input', () => {
   assert.throws(() => dispatch(db, at('10:00'), { fromUserId: child(), toPersonId: null, tokens: [] }));
   assert.throws(() => dispatch(db, at('10:00'), { fromUserId: child(), toPersonId: null, tokens: [{ kind: 'thing', id: 'nope' }] }));
 });
+
+test('on duty: the caretaker with him gets every message too, next to the person he chose; with no name, it goes to them', () => {
+  db.run("UPDATE availability SET status='on_duty', until=NULL WHERE user_id=?", uid('lucho'));
+  const chosen = dispatch(db, at('10:00'), { fromUserId: child(), toPersonId: null, tokens: [{ kind: 'person', id: 'pilar' }, { kind: 'thing', id: 'pancakes' }] });
+  assert.deepEqual([...chosen.recipients].sort(), [uid('lucho'), uid('pilar')].sort());
+  const noName = dispatch(db, at('10:00'), { fromUserId: child(), toPersonId: null, tokens: [{ kind: 'thing', id: 'water' }] });
+  assert.deepEqual(noName.recipients, [uid('lucho')]);
+  assert.deepEqual(noName.notes[0], { kind: 'delivered', person_id: 'lucho' });
+  const help = dispatch(db, at('10:00'), { fromUserId: child(), toPersonId: null, tokens: [{ kind: 'urgent', id: 'help' }] });
+  assert.ok(help.recipients.includes(uid('lucho')));
+  assert.equal(isAvailable({ status: 'on_duty', until: null }, at('10:00')), true);
+});

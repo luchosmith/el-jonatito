@@ -413,6 +413,12 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 .lv-stage.scrubbed .lv-items{opacity:.3;pointer-events:none}
 .lv-guide{position:absolute;left:50%;top:0;height:calc(50% - 75px);border-left:2px dashed rgba(228,87,87,.55);transform:translateX(-1px)}
 .lv-me{z-index:3}
+/* v0.9 on duty: the caretaker's face (globe size) orbits his, touching it, slowly */
+.duty-arm{position:absolute;left:50%;top:50%;width:0;height:0;z-index:4;animation:dutySpin 60s linear infinite}
+.duty-face{position:absolute;left:-34px;top:-153px;width:68px;height:68px;padding:0;border-radius:50%;border:4px solid #45c46a;background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:pointer;animation:dutySpin 60s linear infinite reverse}
+.duty-face img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.duty-face i{position:absolute;right:-6px;bottom:-4px;font-style:normal;font-size:14px;background:#fff;border-radius:50%;width:22px;height:22px;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+@keyframes dutySpin{to{transform:rotate(360deg)}}
 /* v0.9: the clock in the sky under NOW; the time row is only the timeline */
 .lv-skyclock{position:absolute;left:50%;top:4px;transform:translateX(-50%);z-index:3;cursor:pointer;filter:drop-shadow(0 3px 8px rgba(0,0,0,.18))}
 .here2 .lv-clock,.here2 #lvchips{display:none}
@@ -420,6 +426,9 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 .cal-ev{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 10px;margin:6px 10px;font-size:13px}
 .cal-ev img{width:54px;height:40px;object-fit:cover;border-radius:8px}.cal-ev .av2{width:30px;height:30px;border-radius:50%;object-fit:cover}
 .cal-ev b{display:block}
+.duty-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}.duty-btns span{border:2px solid var(--line);border-radius:12px;padding:8px;text-align:center;font-weight:700;font-size:13px}
+.duty-btns span small{display:block;font-weight:400;font-size:10px;color:var(--muted)}.duty-btns span.sel{border-color:#45c46a;background:#e6f7ea}.duty-btns span.off{opacity:.4}
+.duty-why{font-size:12px;color:#8a6d00;background:#fff7d6;border-radius:10px;padding:7px 9px}.duty-why.ok{color:#1f6f3a;background:#e6f7ea}
 .cal-form{background:#fff;border:1px solid var(--line);border-radius:14px;margin:8px 10px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:7px}
 .cal-form .f{border:1px solid var(--line);border-radius:10px;padding:7px 9px;color:var(--muted)}
 .cal-form .pick{display:flex;gap:6px;margin:0}.cal-form .pick img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:3px solid transparent}.cal-form .pick img.sel{border-color:var(--action)}
@@ -715,10 +724,11 @@ img.mini{width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px so
 const PEOPLE=[
   {id:'mama',n:'Mommy Joyce',e:'👩',img:'mommy_joyce',s:'busy'},
   {id:'larry',n:'Larry',e:'👨',img:'larry',s:'away'},
-  {id:'abuelo',n:'Abuelo Lucho',e:'👴',img:'lucho',s:'busy'},
+  {id:'abuelo',n:'Abuelo Lucho',e:'👴',img:'lucho',s:'ok'},
   {id:'pilar',n:'Abuela Pilar',e:'👵',img:'pilar',s:'ok'},
   {id:'tintin',n:'TinTin',e:'🧑',img:'tintin',s:'ok'}
 ];
+const DUTY=['abuelo']; // v0.9: caretakers on duty (only when they are with him): their faces orbit his
 const TEXTS={pilar:1}; // unread typed replies (💬), for the mockup
 const PETS=[
   {id:'lexi',n:'Lexi (SLUT)',e:'🐩',kind:'dog · poodle'},
@@ -1424,6 +1434,7 @@ function renderLiving() {
       <div class="lv-skyclock" id="lvskyclock" onclick="lvNow()"></div>
       <div class="lv-items">${LV.onEarth ? '<div class="oring in"></div>' : rings()}${emptySlots(new Set(lvInner().map((i) => i.slot)))}${lvInner().map((it) => itemOrb(it, `add('${it.e}','${it.w}','${it.t}',${it.img ? `'${it.img}'` : 'null'})`)).join('')}</div>
       <div class="ome lv-me" onclick="lvNow()"><img src="${AVATARS.jonatito}" alt=""></div>
+      ${LV.onEarth ? DUTY.map((id, k) => { const P = PEOPLE.find((y) => y.id === id); return `<div class="duty-arm" style="animation-delay:${-k * 60 / DUTY.length}s"><button class="duty-face" style="animation-delay:${-k * 60 / DUTY.length}s" onclick="openPerson('${id}')" title="${P.n} is on duty"><img src="${AVATARS[P.img]}" alt=""><i>🛡️</i></button></div>`; }).join('') : ''}
       ${LV.onEarth ? placesStrip() : ''}
     </div>${LV.onEarth ? '' : placesStrip()}`;
   const wrap = document.getElementById('lvstrips');
@@ -1570,6 +1581,19 @@ function drawSky(idle) {
   g.globalAlpha = 1; g.restore();
 }
 
+function renderDutyPhone(el){
+  const st=(on,off)=>`<div class="cal-form"><b>My status</b>
+      <div class="duty-btns"><span class="${on?'sel':''} ${off?'off':''}">🛡️ On duty<small>with Jonatito</small></span><span class="${on?'':'sel'}">🟢 Available</span><span>🟡 Busy</span><span>⚪ Away</span></div>
+      ${off?'<div class="duty-why">You are in <b>Jersey City</b>. You can be on duty only when you are with Jonatito: set <b>Where I am</b> to 🏠 Home first.</div>':'<div class="duty-why ok">Your face circles Jonatito’s on his tablet. Messages with no name, and HELP, come to you first.</div>'}</div>`;
+  const where=(home)=>`<div class="cal-ev"><span style="font-size:30px">${home?'🏠':'🚗'}</span><div><b>Where I am: ${home?'Home (with Jonatito)':'Jersey City'}</b>${home?'same place as Jonatito':'8 km from Jonatito'}</div></div>`;
+  el.innerHTML=phone(`<div class="ptop"><h3>🟢 My status · Abuelo Lucho</h3></div>${where(true)}${st(true,false)}`)
+    +phone(`<div class="ptop"><h3>🟢 My status · Abuelo Lucho</h3></div>${where(false)}${st(false,true)}`)
+    +`<div class="legend"><h3>On duty (caretakers)</h3>
+    <p><b>On duty</b> is a status next to available / busy / away, for caretakers only, and only when they are <b>in the same place as Jonatito</b> (their “Where I am” is home, the walk zone). Leaving (“Where I am” changes to somewhere else) ends it by itself.</p>
+    <p>On his tablet the on-duty face <b>orbits his own</b>, the same size as on the globe, touching his, one slow turn a minute (it stays upright), and it leaves the globe. Tap it to open their page. Two on duty: opposite each other.</p>
+    <p>Messages with no name, pain 1–2 and HELP go to whoever is on duty first.</p></div>`;
+}
+
 function renderCalendarPhone(el){
   el.innerHTML=phone(`<div class="ptop"><h3>📅 Calendar · Jonatito</h3><div class="tl-filt" style="margin-top:8px"><span class="on">Coming up</span><span>Add a photo to his day</span></div></div>
     <div class="cal-ev"><img src="${PHOTO_DENTIST}" alt=""><div><b>Tomorrow 10:00 · Dentist</b>with ${img('mommy_joyce').replace('<img','<img class="av2" style="width:20px;height:20px;vertical-align:middle"')} Mommy Joyce · shows on his timeline from today</div></div>
@@ -1615,7 +1639,7 @@ function placesStrip() {
   // Lay out on two rows; if a spot is taken on both rows, nudge it outwards (away from home).
   const things = [
     ...PLACES.map((p) => ({ x: plX(p), html: (cls, x) => { const who = p.who ? PEOPLE.find((y) => y.id === p.who) : null; return `<button class="pl ${cls}" style="left:${x}%" onclick="add('${p.e}','${p.n}','desc')" title="${p.n}">${p.e}${who ? `<i class="with">${face(who)}</i>` : ''}</button>`; } })),
-    ...PL_PEOPLE.map((q) => { const P = PEOPLE.find((y) => y.id === q.id); return { x: plX(q), html: (cls, x) => `<button class="pl person ${cls}" style="left:${x}%" onclick="openPerson('${q.id}')" title="${P.n}">${face(P)}</button>` }; }),
+    ...PL_PEOPLE.filter((q) => !(LV.onEarth && DUTY.includes(q.id))).map((q) => { const P = PEOPLE.find((y) => y.id === q.id); return { x: plX(q), html: (cls, x) => `<button class="pl person ${cls}" style="left:${x}%" onclick="openPerson('${q.id}')" title="${P.n}">${face(P)}</button>` }; }),
   ].sort((a, b) => Math.abs(a.x - 50) - Math.abs(b.x - 50));
   const rows = { high: [], low: [] };
   const GAP = 4.2;
@@ -1658,12 +1682,13 @@ Object.assign(VIEWS,{
   bridge:['💬 WhatsApp bridge','Abuelo Lucho uses plain WhatsApp: a template when the 24-hour window is closed, then the picture strip and his voice once it opens; Abuelo’s voice note lands on Jonatito’s shelf.']
 });
 Object.assign(VIEWS,{
-  living2:['🌍 Places on the earth','NEW (v0.9 interactions): tap any picture in the orbit: it pops big in the middle and slides off to the left (every tap still goes into the sentence strip). The time row has two strips. Top: his schedule (routine, blocks, calendar events). Under it, thinner: only what definitely happened, in squares (Pongo played ▶, a meal or drink a caretaker logged 📝, a message he sent, with the face of who he sent it to), and, round, the faces of people who reached him (Abuela Pilar answered ✅, Abuelo Lucho sent a voice note 4 min ago). Newest next to NOW, nudged left so none overlap. Right of NOW it is empty. NEW (v0.9 blocks): drag the timeline right to tonight: sleep is a row of bed photos from 8:30 pm to 7:00 am (no time written), and at 7:00 the wake-up picture (the bath photo for now) starts right where the last bed is cut off, and breakfast (the smoothie) comes right after the bath (school is off the timeline for now); tomorrow 2:00–4:30 the park with TinTin repeats its picture along its span. Same as the first tab, but the places compass is drawn ON a bigger earth; home is NYC. Pongo and Barney are in the taskbar after the family (as in the live app); the pets are small pictures next to 🏠 HOME (nothing to tap). Taskbar faces show a badge when something new is waiting (moving sound wave + count for voice notes, 💬 for a typed reply). People are no longer in the orbit: they are in the taskbar and appear as small faces on the globe where they are (Mommy Joyce at work in Midtown, TinTin in Brooklyn, Abuelo Lucho at the doctor in New Jersey past the 🚗, Larry in Miami and Abuela Pilar in Lima past the ✈️). No generic place icons. The walk / 🚗 / ✈️ zones are soft bands on the ground; nearby places sit on the land, far ones by the edges of the sphere.'],
+  living2:['🌍 Places on the earth','NEW (v0.9 on duty): Abuelo Lucho is on duty, so his face (the same size as on the globe) circles Jonatito’s, touching it, one slow turn a minute, and he is no longer on the globe. NEW (v0.9 interactions): tap any picture in the orbit: it pops big in the middle and slides off to the left (every tap still goes into the sentence strip). The time row has two strips. Top: his schedule (routine, blocks, calendar events). Under it, thinner: only what definitely happened, in squares (Pongo played ▶, a meal or drink a caretaker logged 📝, a message he sent, with the face of who he sent it to), and, round, the faces of people who reached him (Abuela Pilar answered ✅, Abuelo Lucho sent a voice note 4 min ago). Newest next to NOW, nudged left so none overlap. Right of NOW it is empty. NEW (v0.9 blocks): drag the timeline right to tonight: sleep is a row of bed photos from 8:30 pm to 7:00 am (no time written), and at 7:00 the wake-up picture (the bath photo for now) starts right where the last bed is cut off, and breakfast (the smoothie) comes right after the bath (school is off the timeline for now); tomorrow 2:00–4:30 the park with TinTin repeats its picture along its span. Same as the first tab, but the places compass is drawn ON a bigger earth; home is NYC. Pongo and Barney are in the taskbar after the family (as in the live app); the pets are small pictures next to 🏠 HOME (nothing to tap). Taskbar faces show a badge when something new is waiting (moving sound wave + count for voice notes, 💬 for a typed reply). People are no longer in the orbit: they are in the taskbar and appear as small faces on the globe where they are (Mommy Joyce at work in Midtown, TinTin in Brooklyn, Abuelo Lucho at the doctor in New Jersey past the 🚗, Larry in Miami and Abuela Pilar in Lima past the ✈️). No generic place icons. The walk / 🚗 / ✈️ zones are soft bands on the ground; nearby places sit on the land, far ones by the edges of the sphere.'],
   living:['🌍 Living orbit + places','The strip under the earth is the places compass (v0.7): 🏠 home under his head; nearby places close to the centre; past the 🚗 places a drive away (Abuelo Lucho is at the doctor); past the ✈️ far places and people (Larry in Miami, Abuela Pilar in Lima) at the edges. West on the left, east on the right; not to scale. Tap a place to add it to the sentence, a face to open their page. The sentence row is on top, the time row under it. NOW is fixed in the centre, in line with his head. Drag the timeline: left is the past (what he did, voice notes he played, photos caretakers added), right is the future (only what is scheduled). The sky, sun, moon and earth follow the time you drag to, and snap back to NOW after 8 s (or tap his face / the clock). Tap a picture on the timeline to see it.'],
   calendar:['📅 Calendar (caretakers)','Caretakers add events with a photo and the people involved. They show on the future side of his timeline; photos added to a past time show on the past side.']
 });
-const ORDER=['living2','living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
-const PHONEISH=['phone','timeline','notify','bridge','calendar'];
+Object.assign(VIEWS,{duty:['🛡️ On duty','Abuelo Lucho’s phone: he can go on duty only when he is with Jonatito (left). Somewhere else, the button is off and says why (right).']});
+const ORDER=['living2','duty','living','orbit','food','person','body','pongo','home','log','media','parent','items','phone','timeline','notify','calendar'];
+const PHONEISH=['phone','timeline','notify','bridge','calendar','duty'];
 const VIEW_EL={where:'orbit',living2:'living'};
 const vel=()=>VIEW_EL[view]||view;
 function go(v){
@@ -1674,6 +1699,7 @@ function go(v){
   document.getElementById('phoneView').style.display=v==='phone'?'flex':'none';
   document.getElementById('phones2').style.display=PHONEISH.includes(v)&&v!=='phone'?'flex':'none';
   if(v==='calendar') renderCalendarPhone(document.getElementById('phones2'));
+  else if(v==='duty') renderDutyPhone(document.getElementById('phones2'));
   else if(PHONEISH.includes(v)&&v!=='phone') renderPhones(v);
   ['home','person','log','media','parent','orbit','food','body','pongo','items','living'].forEach(k=>document.getElementById('v-'+k).classList.toggle('on',k===el));
   document.getElementById('screen').classList.toggle('living',el==='living');

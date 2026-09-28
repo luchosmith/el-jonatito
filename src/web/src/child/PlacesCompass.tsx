@@ -21,7 +21,8 @@ export function PlacesCompass({ board, locations, onPerson }: { board: Board; lo
 
   // People with a shared location, nearest first; two rows, nudged outwards (never across home) when crowded.
   const shown = locations.people
-    .map((l) => ({ l, person: board.people.find((p) => p.id === l.person_id && p.is_visible && !p.is_self) }))
+    // A caretaker on duty circles his face instead (they are with him), so not on the globe.
+    .map((l) => ({ l, person: board.people.find((p) => p.id === l.person_id && p.is_visible && !p.is_self && p.status !== 'on_duty') }))
     .filter((x): x is { l: (typeof locations.people)[number]; person: Person } => !!x.person)
     .map((x) => ({ ...x, x: compassX(home, x.l), atHome: distanceKm(home, x.l) < HOME_KM }))
     .sort((a, b) => Math.abs(a.x - 50) - Math.abs(b.x - 50));

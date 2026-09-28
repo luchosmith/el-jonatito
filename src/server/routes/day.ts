@@ -4,7 +4,7 @@ import { requireAuth } from '../auth.ts';
 import { canonicalSymbol } from '../dispatcher.ts';
 import path from 'node:path';
 import { HttpError, jsonBody, rawBody, safeJoin, sendFile } from '../http.ts';
-import { audit, getLog, imageUrl, logsBetween } from '../repo.ts';
+import { audit, getLog, imageUrl, isWithJonatito, logsBetween } from '../repo.ts';
 import { MEDIA_MIME, saveMedia } from '../uploads.ts';
 import { num, obj, oneOf, str } from '../validate.ts';
 import { inWindow, minutesOfDay, seasonOf, startOfDay } from '../../shared/time.ts';
@@ -52,9 +52,14 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
   // ---- Availability ----------------------------------------------------------
   router.put('/api/availability', requireAuth('caretaker', 'friend'), jsonBody, (ctx) => {
     const body = obj(ctx.body);
-    const status = oneOf(body, 'status', ['available', 'busy', 'away'] as const)!;
+    const status = oneOf(body, 'status', ['available', 'busy', 'away', 'on_duty'] as const)!;
+    // On duty: caretakers only, and only when they are with him (their Where I am is home).
+    if (status === 'on_duty') {
+      if (ctx.user!.role !== 'caretaker') throw new HttpError(403, 'Only caretakers can be on duty');
+      if (!isWithJonatito(db, cfg, ctx.user!.id, now())) throw new HttpError(409, 'You can be on duty only when you are with Jonatito: set Where I am to Home first');
+    }
     const mins = num(body, 'until_minutes', { optional: true, min: 1, max: 24 * 60 });
-    const until = status !== 'available' && mins ? new Date(now().getTime() + mins * 60_000).toISOString() : null;
+    const until = status !== 'available' && status !== 'on_duty' && mins ? new Date(now().getTime() + mins * 60_000).toISOString() : null;
     db.run(
       `INSERT INTO availability(user_id, status, until, updated_at) VALUES(?,?,?,?)
        ON CONFLICT(user_id) DO UPDATE SET status = excluded.status, until = excluded.until, updated_at = excluded.updated_at`,

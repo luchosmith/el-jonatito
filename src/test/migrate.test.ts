@@ -162,3 +162,17 @@ test('v9: sleep becomes a block until wake-up; the morning chain (bath, smoothie
   assert.ok(db.all<{ name: string }>('PRAGMA table_info(events)').some((c) => c.name === 'ends_at'));
   db.close();
 });
+
+test('v10: availability can be on duty; statuses are kept', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-migrate10-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  db.run("UPDATE availability SET status = 'busy' WHERE user_id = 2");
+  db.raw.exec('PRAGMA user_version = 9');
+  migrate(db, cfg);
+  assert.equal(db.get<{ status: string }>('SELECT status FROM availability WHERE user_id = 2')!.status, 'busy');
+  db.run("UPDATE availability SET status = 'on_duty' WHERE user_id = 3");
+  assert.equal(db.all('PRAGMA foreign_key_check').length, 0);
+  db.close();
+});

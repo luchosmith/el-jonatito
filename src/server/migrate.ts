@@ -10,6 +10,7 @@
 // v8 -> v9: blocks of time: schedule_items.end_min / .big and events.ends_at. Sleep runs until wake-up;
 //           the morning is a chain of big pictures (wake-up = bath photo, breakfast = smoothie); school
 //           leaves the routine for now.
+// v9 -> v10: availability.status can be 'on_duty' (a caretaker who is with him).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,7 +18,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -59,11 +60,24 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 7) db.tx(() => migrateV6toV7(db));
   if (from < 8) db.tx(() => db.run("UPDATE items SET orbit = NULL, orbit_slot = NULL WHERE orbit = 'outer'"));
   if (from < 9) db.tx(() => migrateV8toV9(db));
+  if (from < 10) db.tx(() => migrateV9toV10(db));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
 }
 
 const columns = (db: Db, table: string) => db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name);
+
+/** v10: SQLite can't relax a CHECK in place, so availability is rebuilt to allow 'on_duty'. */
+function migrateV9toV10(db: Db) {
+  db.raw.exec(`
+    CREATE TABLE availability_v10 (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id),
+      status TEXT NOT NULL CHECK (status IN ('available','busy','away','on_duty')),
+      until TEXT, updated_at TEXT NOT NULL);
+    INSERT INTO availability_v10 SELECT user_id, status, until, updated_at FROM availability;
+    DROP TABLE availability;
+    ALTER TABLE availability_v10 RENAME TO availability;`);
+}
 
 /** v9: blocks of time, and the new morning. Only changes routine rows that are still the seed's. */
 function migrateV8toV9(db: Db) {

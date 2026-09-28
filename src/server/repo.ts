@@ -1,8 +1,10 @@
 // Read models shared by routes and the dispatcher.
 import type { Db } from './db.ts';
+import type { Config } from './config.ts';
 import type {
-  BoardSymbol, Item, ItemImage, ItemRule, LogEntry, Message, Person, PersonLocation, Reply, Token, VoiceNote,
+  BoardSymbol, Item, ItemImage, ItemRule, LogEntry, Message, Person, PersonLocation, Place, Reply, Token, VoiceNote,
 } from '../shared/types.ts';
+import { coarse, distanceKm, nearestCity } from '../shared/geo.ts';
 import { evaluateRules } from '../shared/rules.ts';
 
 export const imageUrl = (file: string | null) => (file ? `/api/images/${encodeURIComponent(file)}` : null);
@@ -229,6 +231,32 @@ export function listVoiceNotes(db: Db, now: Date, opts: { includeHidden?: boolea
 export function getVoiceNote(db: Db, id: number): VoiceNote | undefined {
   const r = db.get<VoiceRow>(`${VOICE_SQL} WHERE v.id = ?`, id);
   return r ? toVoice(r) : undefined;
+}
+
+export const validTz = (tz: string) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/** Where Jonatito lives (the centre of the places compass). */
+export function homePlace(db: Db, cfg: Config): Place {
+  const saved = db.setting<Place | null>('home_location', null);
+  if (saved) return saved;
+  const city = nearestCity(cfg.lat, cfg.lon);
+  const tz = process.env.TZ && validTz(process.env.TZ) ? process.env.TZ : Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return { place_label: cfg.placeName, country_code: city.cc, tz, lat: coarse(cfg.lat), lon: coarse(cfg.lon) };
+}
+
+/** "With Jonatito": their Where I am is within walking distance of home (the compass's walk zone). */
+export const WITH_HIM_KM = 2;
+export function isWithJonatito(db: Db, cfg: Config, userId: number, now: Date): boolean {
+  const l = db.get<{ lat: number; lon: number; until: string | null }>('SELECT lat, lon, until FROM locations WHERE user_id = ?', userId);
+  if (!l || (l.until && l.until <= now.toISOString())) return false;
+  return distanceKm(homePlace(db, cfg), l) < WITH_HIM_KM;
 }
 
 export function listLocations(db: Db, now: Date): PersonLocation[] {

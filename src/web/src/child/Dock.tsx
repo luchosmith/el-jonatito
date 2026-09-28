@@ -44,6 +44,7 @@ export function Dock({ people, things, unheard, unreadText, meActive, boardActiv
               </i>
             )}
             {p.status === 'away' && <i className="dk-status" data-testid={`away-${p.id}`}>🚫</i>}
+            {p.status === 'on_duty' && <i className="dk-status" data-testid={`duty-badge-${p.id}`}>🛡️</i>}
             {/* something new waiting: voice notes he hasn't heard, typed replies he hasn't seen */}
             {(unheard[p.id] ?? 0) > 0 && (
               <i className="vbadge" data-testid={`dock-voice-${p.id}`} data-count={unheard[p.id]}>

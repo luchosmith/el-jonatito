@@ -2,7 +2,7 @@
 import type { Deps } from '../app.ts';
 import { requireAuth } from '../auth.ts';
 import { HttpError, jsonBody, rawBody } from '../http.ts';
-import { audit, childUserIds, getVoiceNote, listLocations, listVoiceNotes } from '../repo.ts';
+import { audit, childUserIds, getVoiceNote, homePlace, isWithJonatito, listLocations, listVoiceNotes, validTz } from '../repo.ts';
 import { AUDIO_MIME, saveAudio } from '../uploads.ts';
 import { isQuietHours } from '../notify.ts';
 import { bool, num, obj, oneOf, str } from '../validate.ts';
@@ -11,19 +11,11 @@ const cleanLabel = (s: string | null | undefined) => {
   const t = (s ?? '').trim().slice(0, 60);
   return t || null;
 };
-import { coarse, nearestCity } from '../../shared/geo.ts';
+import { coarse } from '../../shared/geo.ts';
 import type { Locations, Place } from '../../shared/types.ts';
 
 const MAX_NOTE = 8 * 1024 * 1024; // about a minute of Opus/AAC
 
-const validTz = (tz: string) => {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-};
 
 export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
   const caretakerIds = () => db.all<{ id: number }>("SELECT id FROM users WHERE role = 'caretaker'").map((r) => r.id);
@@ -111,12 +103,13 @@ export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
   });
 
   // ---- Where everyone is ------------------------------------------------------------------------
-  const home = (): Place => {
-    const saved = db.setting<Place | null>('home_location', null);
-    if (saved) return saved;
-    const city = nearestCity(cfg.lat, cfg.lon);
-    const tz = process.env.TZ && validTz(process.env.TZ) ? process.env.TZ : Intl.DateTimeFormat().resolvedOptions().timeZone;
-    return { place_label: cfg.placeName, country_code: city.cc, tz, lat: coarse(cfg.lat), lon: coarse(cfg.lon) };
+  const home = (): Place => homePlace(db, cfg);
+  /** Leaving home ends on duty (you can only be on duty when you are with him). */
+  const checkDuty = (userId: number, personId: string | null) => {
+    const a = db.get<{ status: string }>('SELECT status FROM availability WHERE user_id = ?', userId);
+    if (a?.status !== 'on_duty' || isWithJonatito(db, cfg, userId, now())) return;
+    db.run("UPDATE availability SET status = 'available', until = NULL, updated_at = ? WHERE user_id = ?", now().toISOString(), userId);
+    if (personId) hub.publish('all', { type: 'availability', person_id: personId, status: 'available', until: null });
   };
 
   router.get('/api/locations', requireAuth(), (ctx): Locations => {
@@ -145,6 +138,7 @@ export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
       ctx.user!.id, place, cc, tz, coarse(lat), coarse(lon), source, until?.toISOString() ?? null, now().toISOString(),
     );
     if (ctx.user!.person_id) hub.publish([...childUserIds(db), ...caretakerIds()], { type: 'location', person_id: ctx.user!.person_id });
+    checkDuty(ctx.user!.id, ctx.user!.person_id);
     return listLocations(db, now()).find((l) => l.person_id === ctx.user!.person_id) ?? null;
   });
 
@@ -152,6 +146,7 @@ export function voiceRoutes({ router, db, cfg, hub, now }: Deps) {
   router.delete('/api/location', requireAuth('caretaker', 'friend'), (ctx) => {
     db.run('DELETE FROM locations WHERE user_id = ?', ctx.user!.id);
     if (ctx.user!.person_id) hub.publish([...childUserIds(db), ...caretakerIds()], { type: 'location', person_id: ctx.user!.person_id });
+    checkDuty(ctx.user!.id, ctx.user!.person_id);
     return { ok: true };
   });
 }

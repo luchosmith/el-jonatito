@@ -136,6 +136,16 @@ export function OrbitView(p: Props) {
       >
         {me && <Face person={me} />}
       </button>
+      {/* Caretakers on duty (with him right now): their face circles his, touching it, one slow turn a minute. */}
+      {!parent && board.people.filter((pp) => pp.status === 'on_duty' && pp.is_visible).map((pp, k, all) => (
+        <div key={pp.id} className="duty-arm" style={{ animationDelay: `${(-k * 60) / all.length}s` }}>
+          <button className="duty-face" data-testid={`duty-${pp.id}`} style={{ animationDelay: `${(-k * 60) / all.length}s` }}
+            onClick={() => p.onPerson(pp.id)} aria-label={`${pp.short_label} is with you`}>
+            <Face person={pp} />
+            <i>🛡️</i>
+          </button>
+        </div>
+      ))}
       {parent && !p.away && (
         <button className={`orbit-parent ${kindClass(parent.kind)}`} data-testid="orbit-parent" onClick={p.onBack}>
           {parent.photo_url ? <img src={parent.photo_url} alt="" /> : parent.emoji}
