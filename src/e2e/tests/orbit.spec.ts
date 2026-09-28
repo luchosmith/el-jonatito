@@ -85,10 +85,13 @@ test('Toilet opens its own cloud: wee wee, toilet paper and the shower; the sky 
   await page.getByTestId('orbit-toilet').click();
   await expect(page.getByTestId('orbit')).toHaveAttribute('data-parent', 'toilet');
   await expect(page.getByTestId('sub-veil')).toBeVisible();
-  for (const [id, slot] of [['toilet_paper', 2], ['bath', 4], ['wee_wee', 7]] as const) {
+  for (const [id, slot] of [['wee_wee', 0], ['toilet_paper', 2], ['bath', 4]] as const) {
     await expect(page.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
     await expect(page.getByTestId(`orbit-${id}`).locator('img')).toHaveAttribute('src', /\/api\/images\//);
   }
+  // All three on the right, together (in the bathroom they are next to each other).
+  const me = (await page.getByTestId('orbit-me').boundingBox())!;
+  for (const id of ['wee_wee', 'toilet_paper', 'bath']) expect((await page.getByTestId(`orbit-${id}`).boundingBox())!.x).toBeGreaterThan(me.x + me.width / 2);
   await expect(page.getByTestId('orbit-parent').locator('img')).toBeVisible(); // the toilet photo, to go back
   await page.getByTestId('orbit-wee_wee').click();
   await expect(page.getByTestId('strip-token')).toHaveCount(2);
