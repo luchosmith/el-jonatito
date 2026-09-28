@@ -37,13 +37,16 @@ test('on duty only when with him; the face circles his; messages go to them too;
   await expect(face).toBeVisible();
   await expect(page.getByTestId('compass-lucho')).toHaveCount(0); // not on the globe while he circles Jonatito
   await expect(page.getByTestId('duty-badge-lucho')).toBeVisible();
-  // Same size as on the globe; right next to his face (a little over it); clear of the clock and the orbit.
+  // Same size as on the globe; hovering just off his face at about 4 o'clock (it does not circle); clear of everything else.
   const f = (await face.boundingBox())!;
   const me = (await page.getByTestId('orbit-me').boundingBox())!;
   expect(Math.round(f.width)).toBe(68);
-  const d = Math.hypot(f.x + f.width / 2 - (me.x + me.width / 2), f.y + f.height / 2 - (me.y + me.height / 2));
-  expect(d).toBeLessThan(me.width / 2 + f.width / 2);
-  for (const id of ['main-clock', 'orbit-water', 'orbit-eat']) expect(await overlaps(face, page.getByTestId(id)), id).toBe(false);
+  const dx = f.x + f.width / 2 - (me.x + me.width / 2);
+  const dy = f.y + f.height / 2 - (me.y + me.height / 2);
+  expect(dx).toBeGreaterThan(0); // right
+  expect(dy).toBeGreaterThan(0); // and below: 4 to 5 o'clock
+  expect(Math.hypot(dx, dy)).toBeLessThan(me.width / 2 + f.width / 2 + 16); // close to him
+  for (const id of ['orbit-me', 'main-clock', 'orbit-water', 'orbit-eat', 'orbit-toilet', 'compass-home']) expect(await overlaps(face, page.getByTestId(id)), id).toBe(false);
 
   // A message with no name goes to him (one to someone he picks goes to both: see test/dispatcher.test.ts).
   await build(page, ['water', 'drink_f']);

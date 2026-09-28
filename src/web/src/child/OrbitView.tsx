@@ -15,6 +15,14 @@ import type { Season } from '../../../shared/time.ts';
 import { fmt12 } from '../../../shared/time.ts';
 import type { Item, Lang, Locations, Person } from '../../../shared/types.ts';
 
+/** Where on-duty faces hover: clock angles in degrees (125 = a little past 4 o'clock), just off his face. */
+const DUTY_SPOTS = [125, 235];
+const dutySpot = (deg: number): React.CSSProperties => {
+  const r = 'calc(clamp(110px, 18vmin, 160px) / 2 + 40px)'; // his radius + half a face + a little air
+  const rad = (deg * Math.PI) / 180;
+  return { left: `calc(50% + ${Math.sin(rad).toFixed(3)} * ${r} - 34px)`, top: `calc(50% - ${Math.cos(rad).toFixed(3)} * ${r} - 34px)` };
+};
+
 interface Props {
   board: Board;
   me: Person | undefined;
@@ -139,15 +147,14 @@ export function OrbitView(p: Props) {
       >
         {me && <Face person={me} />}
       </button>
-      {/* Caretakers on duty (with him right now): their face circles his, touching it, one slow turn a minute. */}
-      {!parent && board.people.filter((pp) => pp.status === 'on_duty' && pp.is_visible).map((pp, k, all) => (
-        <div key={pp.id} className="duty-arm" style={{ animationDelay: `${(-k * 60) / all.length}s` }}>
-          <button className="duty-face" data-testid={`duty-${pp.id}`} style={{ animationDelay: `${(-k * 60) / all.length}s` }}
-            onClick={() => p.onPerson(pp.id)} aria-label={`${pp.short_label} is with you`}>
-            <Face person={pp} />
-            <i>🛡️</i>
-          </button>
-        </div>
+      {/* Caretakers on duty (with him right now): their face hovers just off his, at about 4 o'clock
+          (a second one at about 8 o'clock). */}
+      {!parent && board.people.filter((pp) => pp.status === 'on_duty' && pp.is_visible).slice(0, DUTY_SPOTS.length).map((pp, k) => (
+        <button key={pp.id} className="duty-face" data-testid={`duty-${pp.id}`} style={dutySpot(DUTY_SPOTS[k])}
+          onClick={() => p.onPerson(pp.id)} aria-label={`${pp.short_label} is with you`}>
+          <Face person={pp} />
+          <i>🛡️</i>
+        </button>
       ))}
       {parent && !p.away && (
         <button className={`orbit-parent ${kindClass(parent.kind)}`} data-testid="orbit-parent" onClick={p.onBack}>
