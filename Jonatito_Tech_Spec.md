@@ -614,6 +614,10 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 -- settings.current_place = item id (default 'home'); locations.place_item_id = optional family place for "I'm at …"
 ```
 
+### 5.19a The foods: a cloud, not a ring (v0.9, built)
+- A sub-orbit (Eat → foods) has **10 fixed spots** arranged as a loose cloud, five on each side of his face, clear of the clock, his face, the Eat button and the "next food" card; the main orbit keeps its 8-spot ring. Spots are still fixed for good (motor planning); growing from 8 to 10 moved each food once.
+- Cookie and ice cream take spots 9 and 10; spot 1 (next to the clock) is free. When the foods are open, the sky and the globe fade behind a soft veil (main area only).
+
 ### 5.19b On duty (v0.9, built; mockup tabs "🌍 Places on the earth" and "🛡️ On duty")
 > **Built (September 2026):** messages go to **whoever is on duty and to anyone he picked** (a message with no name: to whoever is on duty). The orbiting face sits a little over his own so it stays clear of the clock and the inner orbit.
 - **A new status** next to available / busy / away: **🛡️ On duty**, for **caretakers only**, and only when they are **in the same place as Jonatito**: their "Where I am" is within the walk zone of home (under 2 km, the same test as the places compass). If their location moves elsewhere, on duty ends by itself (back to available).

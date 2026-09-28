@@ -10,7 +10,7 @@
     { "id": "barney" }
   ],
   "sub_orbits": {
-    "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green"]
+    "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green", "cookie", "ice_cream"]
   },
   "rules": [
     { "item": "grapes", "kind": "window", "routine": "snack", "open_min": 45, "blocks": true },

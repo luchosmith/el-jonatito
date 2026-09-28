@@ -13,6 +13,8 @@ const MAX_WORD_AUDIO = 2 * 1024 * 1024;
 const CATEGORIES: ItemCategory[] = ['person', 'pet', 'food', 'drink', 'action', 'place', 'feeling', 'play', 'media', 'body', 'social', 'urgent', 'core'];
 const TAPS: TapAction[] = ['add', 'open', 'play', 'body', 'none'];
 export const INNER_SLOTS = 8;
+/** a sub-orbit (Eat -> foods) is a cloud of 10 spots */
+export const SUB_SLOTS = 10;
 export const OUTER_SLOTS = 10;
 /** 12:00 crowds the inner orbit on a landscape screen; 6:00 is where his ground pin sits. */
 export const RESERVED_OUTER = [0, 5];
@@ -80,7 +82,7 @@ export function boardRoutes({ router, db, cfg, hub, now }: Deps) {
       const parent = body.parent_id === null || body.parent_id === undefined ? null : str(body, 'parent_id', { max: 60 })!;
       let slot: number | null = null;
       if (orbit) {
-        slot = num(body, 'orbit_slot', { min: 0, max: (orbit === 'inner' ? INNER_SLOTS : OUTER_SLOTS) - 1 })!;
+        slot = num(body, 'orbit_slot', { min: 0, max: (orbit === 'outer' ? OUTER_SLOTS : parent ? SUB_SLOTS : INNER_SLOTS) - 1 })!;
         if (!Number.isInteger(slot)) throw new HttpError(400, 'orbit_slot must be a whole number');
         // People left the orbit (v0.8): they are in the taskbar and on the globe.
         if (orbit === 'outer') throw new HttpError(400, 'People are not placed in the orbit');

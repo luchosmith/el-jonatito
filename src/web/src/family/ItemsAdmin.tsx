@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api.ts';
 import type { Board } from '../common/board.ts';
 import { shownLabel } from '../common/board.ts';
-import { INNER_SLOTS, OUTER_SLOTS, RESERVED_OUTER } from '../common/orbit.ts';
+import { INNER_SLOTS, OUTER_SLOTS, RESERVED_OUTER, SUB_SLOTS } from '../common/orbit.ts';
 import { startRecording, type Recording } from '../common/recorder.ts';
 import { playClip } from '../common/sound.ts';
 import { kindClass } from '../common/Token.tsx';
@@ -32,7 +32,7 @@ function groups(items: Item[]): Group[] {
   const out: Group[] = [
     { title: 'Main orbit · inner', rows: inOrbit(null, 'inner', INNER_SLOTS) },
   ];
-  for (const p of items.filter((i) => i.tap === 'open')) out.push({ title: `${p.emoji ?? ''} ${shownLabel(p)} › its orbit`, rows: inOrbit(p.id, 'inner', INNER_SLOTS) });
+  for (const p of items.filter((i) => i.tap === 'open')) out.push({ title: `${p.emoji ?? ''} ${shownLabel(p)} › its orbit`, rows: inOrbit(p.id, 'inner', SUB_SLOTS) });
   out.push({ title: 'My body', rows: items.filter((i) => i.category === 'body').map((item) => ({ item })) });
   const placed = new Set(out.flatMap((g) => g.rows.filter((r): r is { item: Item } => 'item' in r).map((r) => r.item.id)));
   out.push({ title: 'Board only / others', rows: items.filter((i) => !placed.has(i.id)).sort((a, b) => (a.grid_page ?? '~').localeCompare(b.grid_page ?? '~')).map((item) => ({ item })) });
@@ -227,7 +227,7 @@ function Placement({ item, board, onMove }: { item: Item; board: Board; onMove: 
   const [parent, setParent] = useState(item.parent_id ?? '');
   const [slot, setSlot] = useState<number | ''>(item.orbit_slot ?? '');
   const openers = board.items.filter((i) => i.tap === 'open' && i.id !== item.id);
-  const n = orbit === 'outer' ? OUTER_SLOTS : INNER_SLOTS;
+  const n = orbit === 'outer' ? OUTER_SLOTS : parent ? SUB_SLOTS : INNER_SLOTS;
   const takenBy = (s: number) =>
     board.items.find((i) => i.id !== item.id && i.orbit === orbit && (i.parent_id ?? '') === (orbit === 'outer' ? '' : parent) && i.orbit_slot === s);
   const changed = orbit !== (item.orbit ?? '') || parent !== (item.parent_id ?? '') || slot !== (item.orbit_slot ?? '');

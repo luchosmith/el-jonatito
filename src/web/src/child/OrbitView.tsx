@@ -4,7 +4,7 @@
 import { useEffect, useState, type MutableRefObject } from 'react';
 import { Face } from '../common/Face.tsx';
 import { Clock12 } from '../common/Clock12.tsx';
-import { INNER_SLOTS, slotStyle } from '../common/orbit.ts';
+import { placeStyle, slotCount } from '../common/orbit.ts';
 import { itemToken, shownLabel, type Board, type StripToken } from '../common/board.ts';
 import { kindClass } from '../common/Token.tsx';
 import { speak } from '../common/hooks.ts';
@@ -90,10 +90,10 @@ export function OrbitView(p: Props) {
       </button>
 
       <div className={`orbit-layer ${p.away ? 'away' : ''}`}>
-        <div className="ring inner" />
+        {!parentId && <div className="ring inner" />}{/* a sub-orbit is a loose cloud, no ring */}
 
-        {Array.from({ length: INNER_SLOTS }, (_, s) => s).filter((s) => !used.has(s)).map((s) => (
-          <div key={s} className="orb empty" style={slotStyle('inner', s)} data-testid={`orbit-empty-${s}`} />
+        {Array.from({ length: slotCount(parentId) }, (_, s) => s).filter((s) => !used.has(s)).map((s) => (
+          <div key={s} className="orb empty" style={placeStyle(parentId, s)} data-testid={`orbit-empty-${s}`} />
         ))}
 
         {inner.map((item) => {
@@ -105,7 +105,7 @@ export function OrbitView(p: Props) {
               data-testid={`orbit-${item.id}`}
               data-slot={item.orbit_slot}
               data-closed={closed ? closed.toISOString() : ''}
-              style={{ ...slotStyle('inner', item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.6}s` }}
+              style={{ ...placeStyle(parentId, item.orbit_slot!), animationDelay: `${item.orbit_slot! * -0.6}s` }}
               onClick={() => tapItem(item)}
               aria-label={shownLabel(item)}
               title={shownLabel(item)}
@@ -163,7 +163,7 @@ export function OrbitView(p: Props) {
       )}
 
       {tip && (
-        <div className="closed-tip" data-testid="closed-tip" style={slotStyle('inner', tip.item.orbit_slot ?? 0)}>
+        <div className="closed-tip" data-testid="closed-tip" style={placeStyle(parentId, tip.item.orbit_slot ?? 0)}>
           <b>{tip.item.photo_url ? <img src={tip.item.photo_url} alt="" /> : tip.item.emoji}</b>
           <Clock12 at={tip.at} from={now} size={72} />
           <b className="time">{fmt12(tip.at)}</b>

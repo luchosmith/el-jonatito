@@ -47,6 +47,16 @@ test('tapping builds the sentence; Eat opens the foods around him and his face g
   await expect(page.getByTestId('orbit-grapes').locator('img')).toHaveAttribute('src', /grapes/);
   await expect(page.getByTestId('orbit-grapes')).toHaveAttribute('data-slot', '4');
   await expect(page.getByTestId('orbit-empty-0')).toBeVisible(); // water moved to the main orbit; its spot stays empty
+  // The foods are a cloud of 10 spots: cookie and ice cream too; none touch each other, his face or the clock.
+  await expect(page.getByTestId('orbit-cookie')).toHaveAttribute('data-slot', '8');
+  await expect(page.getByTestId('orbit-ice_cream')).toHaveAttribute('data-slot', '9');
+  const spots = [...await page.locator('[data-testid^="orbit-"].orb').all(), page.getByTestId('orbit-me'), page.getByTestId('main-clock')];
+  const boxes = await Promise.all(spots.map((l) => l.boundingBox()));
+  for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+    const a = boxes[i]!, b = boxes[j]!;
+    const d = Math.hypot(a.x + a.width / 2 - (b.x + b.width / 2), a.y + a.height / 2 - (b.y + b.height / 2));
+    expect(d, `spots ${i} and ${j}`).toBeGreaterThan(a.width / 2 + b.width / 2);
+  }
   await expect(page.getByTestId('orbit-water')).toHaveCount(0);
   // The sky and the globe fade behind a veil, only in the main area (not over the timeline or the taskbar).
   const veil = (await page.getByTestId('sub-veil').boundingBox())!;
