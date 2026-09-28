@@ -15,15 +15,15 @@ async function openItem(browser: import('@playwright/test').Browser, id: string)
   return joyce;
 }
 
-test('renaming Bath in the editor changes the orbit label; the spoken words stay separate', async ({ page, browser }) => {
+test('renaming Toilet in the editor changes the orbit label; the spoken words stay separate', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  const joyce = await openItem(browser, 'bath');
-  await expect(joyce.page.getByTestId('item-label-en')).toHaveValue('take a bath');
-  await joyce.page.getByTestId('item-short').fill('Bubbles');
-  await joyce.page.getByTestId('item-label-es').fill('bañito');
+  const joyce = await openItem(browser, 'toilet');
+  await expect(joyce.page.getByTestId('item-label-en')).toHaveValue('go to the toilet');
+  await joyce.page.getByTestId('item-short').fill('Potty');
+  await joyce.page.getByTestId('item-label-es').fill('al bañito');
   await joyce.page.getByTestId('item-save-words').click();
-  await expect(page.getByTestId('orbit-bath')).toHaveAttribute('aria-label', 'Bubbles'); // the name is not shown to him, only kept
-  await expect(page.getByTestId('orbit-bath')).toHaveAttribute('data-slot', '1');
+  await expect(page.getByTestId('orbit-toilet')).toHaveAttribute('aria-label', 'Potty'); // the name is not shown to him, only kept
+  await expect(page.getByTestId('orbit-toilet')).toHaveAttribute('data-slot', '1');
   await joyce.context.close();
 });
 
@@ -59,20 +59,20 @@ test('a recorded word plays when he taps; "text-to-speech" goes back to the comp
 
 test('a time rule added in the editor closes the item on the tablet, with its clock', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  const joyce = await openItem(browser, 'bath');
+  const joyce = await openItem(browser, 'toilet');
   await joyce.page.getByTestId('rule-kind').selectOption('window');
   await joyce.page.getByTestId('rule-start').fill('19:00');
   await joyce.page.getByTestId('rule-end').fill('20:00');
   await joyce.page.getByTestId('rule-add').click();
   await expect(joyce.page.getByTestId('item-closed')).toBeVisible();
-  await expect(page.getByTestId('orbit-bath')).toHaveClass(/closed/);
-  await expect(page.getByTestId('orbit-bath').locator('svg.clock12')).toHaveAttribute('aria-label', '7:00');
+  await expect(page.getByTestId('orbit-toilet')).toHaveClass(/closed/);
+  await expect(page.getByTestId('orbit-toilet').locator('svg.clock12')).toHaveAttribute('aria-label', '7:00');
 
   // "Reminder only" keeps it open.
   const blocks = joyce.page.locator('[data-testid^="rule-blocks-"]');
   await blocks.click(); // saved on the server first, then shown
   await expect(blocks).not.toBeChecked();
-  await expect(page.getByTestId('orbit-bath')).not.toHaveClass(/closed/);
+  await expect(page.getByTestId('orbit-toilet')).not.toHaveClass(/closed/);
   await joyce.context.close();
 });
 

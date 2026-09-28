@@ -13,8 +13,10 @@ test('the orbit is home: his core things in fixed inner slots; people are on the
   await login(page, 'jonatito');
   const orbit = page.getByTestId('orbit');
   await expect(orbit).toHaveAttribute('data-parent', '');
-  const slots: [string, number][] = [['eat', 0], ['bath', 1], ['toilet', 2], ['music', 6], ['water', 7]];
+  const slots: [string, number][] = [['eat', 0], ['toilet', 1], ['music', 6], ['water', 7]];
   for (const [id, slot] of slots) await expect(orbit.getByTestId(`orbit-${id}`)).toHaveAttribute('data-slot', String(slot));
+  await expect(orbit.getByTestId('orbit-bath')).toHaveCount(0); // Bath left the orbit (still on the board); Toilet took its spot
+  await expect(orbit.getByTestId('orbit-empty-2')).toBeVisible();
   await expect(orbit.getByTestId('orbit-eat').locator('img')).toHaveAttribute('src', /\/api\/images\//); // the family's photo of grapes
   await expect(orbit.getByTestId('orbit-go')).toHaveCount(0); // Go left the orbit (still on the board)
   await expect(orbit.getByTestId('orbit-empty-3')).toBeVisible();

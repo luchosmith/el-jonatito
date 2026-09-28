@@ -108,7 +108,7 @@ test('a v3 database gets Music in a free inner slot (and never moves anything el
   // Pretend it is a v3 database whose slot 6 a caretaker has used, without Music yet.
   db.run("DELETE FROM images WHERE owner_id = 'music'");
   db.run("DELETE FROM items WHERE id = 'music'");
-  db.run("UPDATE items SET orbit_slot = 6 WHERE id = 'bath'");
+  db.run("UPDATE items SET orbit = 'inner', orbit_slot = 6 WHERE id = 'bath'");
   db.raw.exec('PRAGMA user_version = 3');
   const backup = migrate(db, cfg);
   assert.match(backup ?? '', /\.v3-backup-/);
