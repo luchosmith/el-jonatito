@@ -13,16 +13,22 @@ export function stopSound() {
   }
 }
 
+/** Fired around every recorded clip (voice notes, recorded words) so his music can pause for it. */
+export const CLIP_START = 'jt-clip-start';
+export const CLIP_END = 'jt-clip-end';
+
 /** Plays a recorded clip; calls `onEnd` when it finishes (or fails). */
 export function playClip(url: string, onEnd?: () => void) {
   stopSound();
   const a = new Audio(url);
   current = a;
   let done = false;
+  window.dispatchEvent(new Event(CLIP_START));
   const finish = () => {
     if (done) return;
     done = true;
     if (current === a) current = null;
+    window.dispatchEvent(new Event(CLIP_END));
     onEnd?.();
   };
   a.onended = finish;

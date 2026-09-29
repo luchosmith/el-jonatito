@@ -122,10 +122,26 @@ export interface ScheduleItem {
   big: boolean;
 }
 
+/** A song in his 🎧 Music playlist. */
+export interface Song {
+  id: number;
+  title: string;
+  artist: string | null;
+  cover_url: string | null;
+  audio_url: string;
+  hidden: boolean;
+}
+export interface SongList {
+  songs: Song[];
+  /** the sleep lock: no music after bedtime */
+  locked: boolean;
+  unlock_at: string | null;
+}
+
 export interface MediaItem {
   id: number;
   title: string;
-  kind: 'movie' | 'song' | 'photos' | 'story' | 'sensory';
+  kind: 'movie' | 'song' | 'photos' | 'story' | 'sensory' | 'music';
   emoji: string | null;
   cover_url: string | null;
   bedtime_ok: boolean;

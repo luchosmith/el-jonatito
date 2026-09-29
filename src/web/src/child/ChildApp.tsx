@@ -13,6 +13,8 @@ import { weatherOf } from './Sky.tsx';
 import { BoardView, Strip } from './Board.tsx';
 import { OrbitView } from './OrbitView.tsx';
 import { FlyAway } from './FlyAway.tsx';
+import { MusicView } from './MusicView.tsx';
+import { useMusic } from './useMusic.ts';
 import { Dock } from './Dock.tsx';
 import { DispatchCard, type SentState } from './DispatchCard.tsx';
 import { ReplyToast } from './ReplyToast.tsx';
@@ -24,7 +26,7 @@ import { MediaView, type MediaState } from './MediaView.tsx';
 import { ParentGate } from './ParentGate.tsx';
 import { FamilyApp } from '../family/FamilyApp.tsx';
 import type { DispatchNote, Item, Locations, LogEntry, Message, NowInfo, Reply, ScheduleItem, TimelineEntry, User, VoiceNote } from '../../../shared/types.ts';
-import { seasonOf } from '../../../shared/time.ts';
+import { inWindow, minutesOfDay, seasonOf } from '../../../shared/time.ts';
 import { renderSentence } from '../../../shared/grammar.ts';
 
 type View =
@@ -34,7 +36,8 @@ type View =
   | { name: 'body' }
   | { name: 'player'; itemId: string }
   | { name: 'day' }
-  | { name: 'media' };
+  | { name: 'media' }
+  | { name: 'music' };
 
 const HOME: View = { name: 'orbit', parent: null };
 const SPRING_BACK_MS = 8000;
@@ -78,6 +81,8 @@ export function ChildApp({ user: _user }: { user: User }) {
 
   const loadBoard = useCallback(() => api.get<Board>('/api/board').then(setBoard), []);
   const loadLogs = useCallback(() => api.get<LogEntry[]>('/api/logs').then(setLogs), []);
+  // 🎧 his music: plays on every screen; stops when he taps 🎧 again, when a film starts, or at bedtime.
+  const music = useMusic();
   const loadMedia = useCallback(() => api.get<MediaState>('/api/media').then(setMedia), []);
   const loadVoice = useCallback(() => api.get<VoiceNote[]>('/api/voice-notes').then(setVoice), []);
   const loadLocations = useCallback(() => api.get<Locations>('/api/locations').then(setLocations), []);
@@ -188,6 +193,15 @@ export function ChildApp({ user: _user }: { user: User }) {
     return out;
   }, [voice]);
 
+  // A film (Pongo, Barney) stops the music; so does bedtime (the same sleep lock as films).
+  useEffect(() => {
+    if (view.name === 'player') music.stop();
+  }, [view.name]);
+  useEffect(() => {
+    const p = media.policy;
+    if (music.playing && p && inWindow(minutesOfDay(now), p.sleep_start_min, p.sleep_end_min)) music.stop();
+  }, [now, music.playing, media.policy]);
+
   if (parent) {
     return (
       <FamilyApp
@@ -259,6 +273,16 @@ export function ChildApp({ user: _user }: { user: User }) {
     api.post<VoiceNote>(`/api/voice-notes/${n.id}/heard`).catch(() => undefined);
   };
 
+  const isMusic = (item: Item) => media.items.find((m) => m.id === item.media_id)?.kind === 'music';
+  /** 🎧: starts his songs (a new random order) and opens them; while they play, it stops them. */
+  const toggleMusic = async (item?: Item) => {
+    if (music.playing) return music.stop();
+    setView({ name: 'music' });
+    const r = await music.start();
+    const mediaId = item?.media_id ?? board.items.find((i) => i.id === 'music')?.media_id;
+    if (r === 'playing' && mediaId) api.post(`/api/media/${mediaId}/play`).then(() => void loadTimeline()).catch(() => undefined); // his history: 🎧
+  };
+
   const person = view.name === 'person' ? board.people.find((p) => p.id === view.id) : undefined;
   const playerItem = view.name === 'player' ? board.items.find((i) => i.id === view.itemId) : undefined;
 
@@ -304,7 +328,7 @@ export function ChildApp({ user: _user }: { user: User }) {
     <div className="tablet" data-testid="child-app">
       {fly && <FlyAway key={fly.n} token={fly.token} onDone={() => setFly(null)} />}
       {(view.name === 'orbit' || view.name === 'board') && strip}
-      {timeBar}
+      {view.name !== 'music' && timeBar}
 
       {view.name === 'orbit' && (
         <>
@@ -324,10 +348,13 @@ export function ChildApp({ user: _user }: { user: User }) {
             onAdd={(t) => add(t, view.parent ? `orbit:${view.parent}` : 'orbit')}
             onOpen={(item: Item) => setView({ name: 'orbit', parent: item.id })}
             onPlay={(item: Item) => {
+              if (isMusic(item)) return void toggleMusic(item);
               sayToken(itemToken(item, lang), lang);
               void loadMedia();
               setView({ name: 'player', itemId: item.id });
             }}
+            music={{ playing: music.playing, current: music.current }}
+            onMusicPage={() => setView({ name: 'music' })}
             onBody={() => setView({ name: 'body' })}
             onBack={() => setView(HOME)}
             onPerson={(id) => openPerson(id, 'globe')}
@@ -371,6 +398,7 @@ export function ChildApp({ user: _user }: { user: User }) {
       )}
       {view.name === 'body' && <BodyView me={me} items={board.items} people={board.people} lang={lang} />}
       {view.name === 'day' && <DayView logs={logs} board={board} />}
+      {view.name === 'music' && <MusicView music={music} me={me} onToggle={() => void toggleMusic()} onHome={() => setView(HOME)} />}
       {view.name === 'media' && (
         <MediaView media={media} now={now} onLocked={(unlock_at) => setMedia((m) => ({ ...m, locked: true, unlock_at }))} />
       )}

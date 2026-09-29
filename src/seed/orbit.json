@@ -2,7 +2,7 @@
   "inner": [
     { "id": "eat", "slot": 0, "tap": "open", "short_label": "Eat", "emoji": "🍇" },
     { "id": "toilet", "slot": 1, "tap": "open", "short_label": "Toilet" },
-    { "id": "music", "slot": 6, "short_label": "Music" },
+    { "id": "music", "slot": 6, "tap": "play", "media": "Music", "short_label": "Music" },
     { "id": "water", "slot": 7, "short_label": "Water" }
   ],
   "dock": [

@@ -665,6 +665,15 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 
 - **Barney** (taskbar) works the same way since September 2026: it plays *Barney: Best Manners* full screen (schema v12 gives Barney his own film).
 
+### 5.21b Music (v0.9, built; mockup tab "🎵 Music")
+> **Built (September 2026):** as mocked, with the review's choices: on the main view, tapping 🎧 while music plays **stops** it, and tapping the **song's picture on 🎧** opens the songs page; a **voice note (or any recorded clip) pauses the music**, which then goes on; all songs are kept. Songs live in their own table (`songs`, schema v13); `npm run music:import -- <folder>` adds a folder (songs already there are skipped). The `music/` folder is not kept in git.
+- **🎧 Music in the orbit:** tap = his songs start **in a random order** and the **Music page** opens.
+- **Music page:** songs are **square pictures in play order**: the cover art from the file, or a coloured tile with 🎵 and the song's name. The one playing has a yellow frame and moving bars; songs already played are faded. At the top: 🎧 (tap = stop), the big picture of the song playing, its name and a progress bar, and his face (home; the music keeps playing).
+- **Tap any song:** it plays and the list goes on from there. At the end of the list, a new random order starts.
+- **It keeps playing** on every screen. It stops only when he taps 🎧 again, when a film starts (Pongo, Barney), or at bedtime (the sleep lock, like films). While it plays, 🎧 in the orbit glows and shows the song's picture.
+- **Files:** the songs in `music/` (61 MP3s) are imported once on the server (`npm run music:import -- music/`): name and artist from the file's tags, cover art taken out of the file when it has one. Caretakers can hide a song in 🧩 Items later.
+- The history strip gets one 🎵 square when music starts.
+
 ### 5.22 Decisions (Pongo movie, answered)
 1. **Media time:** the film keeps playing until bedtime; the sleep lock still applies.
 2. **Home button:** bottom-left, where his face is in the taskbar.

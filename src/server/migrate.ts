@@ -13,6 +13,7 @@
 // v9 -> v10: availability.status can be 'on_duty' (a caretaker who is with him).
 // v10 -> v11: Toilet opens its own cloud: wee wee, toilet paper (new words) and Bath (the shower photo).
 // v11 -> v12: Barney (taskbar) plays its film full screen, like Pongo.
+// v12 -> v13: his songs (the songs table, from schema.sql); 🎧 Music plays them (a "Music" media row).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,7 +21,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 12;
+export const SCHEMA_VERSION = 13;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -65,11 +66,23 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 10) db.tx(() => migrateV9toV10(db));
   if (from < 11) db.tx(() => migrateV10toV11(db, cfg));
   if (from < 12) db.tx(() => migrateV11toV12(db, cfg));
+  if (from < 13) db.tx(() => migrateV12toV13(db));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
 }
 
 const columns = (db: Db, table: string) => db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name);
+
+/** v13: 🎧 Music plays his songs: a "Music" media row (for the bedtime lock and his history), linked to the item. */
+function migrateV12toV13(db: Db) {
+  if (!db.get("SELECT 1 FROM items WHERE id = 'music'")) return;
+  let media = db.get<{ id: number }>("SELECT id FROM media WHERE title = 'Music' AND kind = 'music'");
+  if (!media) {
+    const order = db.get<{ n: number }>('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM media')!.n;
+    media = { id: db.run("INSERT INTO media(title, kind, emoji, bedtime_ok, sort_order) VALUES('Music', 'music', '🎧', 0, ?)", order).lastId };
+  }
+  db.run("UPDATE items SET tap = 'play', media_id = ? WHERE id = 'music'", media.id);
+}
 
 /** v12: a "Barney" film (media row, his photo as its cover); the Barney button plays it. */
 function migrateV11toV12(db: Db, cfg: Config) {

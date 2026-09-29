@@ -13,7 +13,8 @@ import { Sky, type Weather } from './Sky.tsx';
 import { PlacesCompass } from './PlacesCompass.tsx';
 import type { Season } from '../../../shared/time.ts';
 import { fmt12 } from '../../../shared/time.ts';
-import type { Item, Lang, Locations, Person } from '../../../shared/types.ts';
+import type { Item, Lang, Locations, Person, Song } from '../../../shared/types.ts';
+import { SongPicture } from './MusicView.tsx';
 
 /** Where on-duty faces hover: clock angles in degrees (125 = a little past 4 o'clock), just off his face. */
 const DUTY_SPOTS = [125, 235];
@@ -46,6 +47,9 @@ interface Props {
   /** dragged away from NOW: the orbit dims; his face brings him back */
   away: boolean;
   onNow: () => void;
+  /** his music: while it plays, 🎧 glows and shows the song's picture (tap the picture: the songs page) */
+  music?: { playing: boolean; current: Song | null };
+  onMusicPage?: () => void;
 }
 
 export function OrbitView(p: Props) {
@@ -107,10 +111,11 @@ export function OrbitView(p: Props) {
 
         {inner.map((item) => {
           const closed = closedUntil(item);
+          const playing = item.id === 'music' && p.music?.playing ? p.music.current : null;
           return (
             <button
               key={item.id}
-              className={`orb act ${kindClass(item.kind)} ${closed ? 'closed' : ''}`}
+              className={`orb act ${kindClass(item.kind)} ${closed ? 'closed' : ''} ${playing ? 'music-on' : ''}`}
               data-testid={`orbit-${item.id}`}
               data-slot={item.orbit_slot}
               data-closed={closed ? closed.toISOString() : ''}
@@ -123,6 +128,11 @@ export function OrbitView(p: Props) {
               <b className="c">{item.photo_url ? <img src={item.photo_url} alt="" draggable={false} /> : item.emoji}</b>
               {item.badge_color && <i className="badge" style={{ background: item.badge_color }} />}
               {closed && <i className="ck"><Clock12 at={closed} from={now} size={30} /></i>}
+              {playing && (
+                <span className="music-now" data-testid="music-now-badge" onClick={(e) => { e.stopPropagation(); p.onMusicPage?.(); }}>
+                  <SongPicture song={playing} />
+                </span>
+              )}
             </button>
           );
         })}

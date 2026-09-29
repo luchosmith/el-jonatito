@@ -152,6 +152,18 @@ CREATE TABLE IF NOT EXISTS schedule_items (
   big           INTEGER NOT NULL DEFAULT 0      -- shown as a full-size picture (the morning chain: wake-up, breakfast)
 );
 
+-- His songs (🎧 Music): imported from a folder; played in a random order.
+CREATE TABLE IF NOT EXISTS songs (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  title         TEXT NOT NULL,
+  artist        TEXT,
+  file          TEXT NOT NULL,                  -- in uploads/songs
+  cover         TEXT,                           -- in uploads/images (from the file's own picture), or NULL
+  source        TEXT UNIQUE,                    -- the original file name: importing again skips it
+  hidden        INTEGER NOT NULL DEFAULT 0,
+  added_at      TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS media (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   title         TEXT NOT NULL,

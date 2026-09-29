@@ -18,6 +18,7 @@ import { voiceRoutes } from './routes/voice.ts';
 import { activityRoutes } from './routes/activity.ts';
 import { closeStaleMoments } from './moments.ts';
 import { flushNotifications } from './notify.ts';
+import { importSongs } from './songs.ts';
 
 export interface Deps {
   router: Router;
@@ -90,6 +91,8 @@ export function createApp(cfg: Config) {
       flushNotifications(db, hub, clock.now());
       return { ok: true };
     });
+    // A few tiny songs for the 🎧 Music tests.
+    router.post('/api/test/songs', () => importSongs(db, cfg, path.join(cfg.seedDir, '..', 'e2e', 'fixtures', 'music')));
     router.post('/api/test/clock', jsonBody, (ctx) => {
       const iso = str(obj(ctx.body), 'iso', { optional: true, max: 40 });
       clock.set(iso ? new Date(iso) : null);

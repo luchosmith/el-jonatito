@@ -42,14 +42,14 @@ test('a new picture, then one-tap revert', async ({ page, browser }) => {
 
 test('a recorded word plays when he taps; "text-to-speech" goes back to the computer voice', async ({ page, browser }) => {
   await login(page, 'jonatito');
-  const joyce = await openItem(browser, 'music');
+  const joyce = await openItem(browser, 'water');
   const row = joyce.page.getByTestId('item-audio-en');
   await expect(row).toHaveAttribute('data-state', 'tts');
   await joyce.page.getByTestId('item-audio-en-upload').setInputFiles({ name: 'go.webm', mimeType: 'audio/webm', buffer: FAKE_WEBM });
   await expect(row).toHaveAttribute('data-state', 'recorded');
 
   const played = page.waitForRequest((r) => r.url().includes('/api/audio/'));
-  await page.getByTestId('orbit-music').click();
+  await page.getByTestId('orbit-water').click();
   await played;
 
   await joyce.page.getByTestId('item-audio-en-tts').click();

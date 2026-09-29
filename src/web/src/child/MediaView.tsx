@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { api, ApiError } from '../api.ts';
 import { Clock12 } from '../common/Clock12.tsx';
 import { fmt12 } from '../../../shared/time.ts';
-import type { MediaItem } from '../../../shared/types.ts';
+import type { MediaItem, MediaPolicy } from '../../../shared/types.ts';
 
 export interface MediaState {
   items: MediaItem[];
   locked: boolean;
   unlock_at: string | null;
+  policy?: MediaPolicy;
 }
 
 export function MediaView({ media, now, onLocked }: { media: MediaState; now: Date; onLocked: (unlockAt: string | null) => void }) {
@@ -29,7 +30,7 @@ export function MediaView({ media, now, onLocked }: { media: MediaState; now: Da
   return (
     <div className="mediav" data-testid="media-view">
       <div className="mgrid">
-        {media.items.map((m) => {
+        {media.items.filter((m) => m.kind !== 'music').map((m) => { /* his music plays from 🎧, not from here */
           const sleeping = media.locked && !m.bedtime_ok;
           return (
             <button key={m.id} className={`tile ${sleeping ? 'sleeping' : ''}`} data-testid={`media-${m.id}`} onClick={() => play(m)}>

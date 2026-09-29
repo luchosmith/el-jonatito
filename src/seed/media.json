@@ -10,7 +10,8 @@
     { "title": "Calm rain",       "kind": "sensory", "emoji": "🌧️", "bedtime_ok": true },
     { "title": "Purple puppet",   "kind": "movie",   "cover": "covers/purple_puppet.svg" },
     { "title": "Pongo",           "kind": "movie",   "cover": "covers/pongo.jpg" },
-    { "title": "Barney",          "kind": "movie",   "cover": "symbols/barney.jpg" }
+    { "title": "Barney",          "kind": "movie",   "cover": "symbols/barney.jpg" },
+    { "title": "Music",           "kind": "music",   "emoji": "🎧" }
   ],
   "routine": [
     { "emoji": "🌅", "label": "wake",      "at": "07:00", "symbol": "bath", "big": true },

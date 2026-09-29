@@ -8,7 +8,7 @@ import { audit, getLog, imageUrl, isWithJonatito, logsBetween } from '../repo.ts
 import { MEDIA_MIME, saveMedia } from '../uploads.ts';
 import { num, obj, oneOf, str } from '../validate.ts';
 import { inWindow, minutesOfDay, seasonOf, startOfDay } from '../../shared/time.ts';
-import type { LogEntry, MediaItem, MediaPolicy, ScheduleItem } from '../../shared/types.ts';
+import type { LogEntry, MediaItem, MediaPolicy, ScheduleItem, SongList } from '../../shared/types.ts';
 
 const LOG_TYPES = ['food', 'drink', 'meds', 'sleep', 'toilet', 'mood', 'activity'] as const;
 const MAX_MEDIA = 300 * 1024 * 1024;
@@ -116,15 +116,32 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
     const lock = lockState();
     if (lock.locked && !m.bedtime_ok) throw new HttpError(423, 'Media is sleeping', { unlock_at: lock.unlock_at });
     const start = now();
-    // A real film (Pongo: 101 Dalmatians) keeps going until bedtime; everything else gets the media session.
+    // A real film (Pongo: 101 Dalmatians) and his music keep going until bedtime; everything else gets the media session.
     let ends = new Date(start.getTime() + policy().session_max_min * 60_000);
-    if (m.file && m.kind === 'movie') {
+    if ((m.file && m.kind === 'movie') || m.kind === 'music') {
       ends = startOfDay(start);
       ends.setMinutes(policy().sleep_start_min);
       if (ends <= start) ends.setDate(ends.getDate() + 1);
     }
     db.run('INSERT INTO media_sessions(media_id, started_at, ends_at) VALUES(?,?,?)', m.id, start.toISOString(), ends.toISOString());
     return { media_id: m.id, started_at: start.toISOString(), ends_at: ends.toISOString() };
+  });
+
+  // ---- His songs (🎧 Music) -------------------------------------------------------------------
+  router.get('/api/songs', requireAuth(), (ctx): SongList => {
+    const all = ctx.user!.role !== 'child';
+    const songs = db.all<{ id: number; title: string; artist: string | null; cover: string | null; hidden: number }>(
+      `SELECT id, title, artist, cover, hidden FROM songs ${all ? '' : 'WHERE hidden = 0'} ORDER BY id`,
+    ).map((s) => ({ id: s.id, title: s.title, artist: s.artist, cover_url: imageUrl(s.cover), audio_url: `/api/songs/${s.id}/file`, hidden: !!s.hidden }));
+    return { songs, ...lockState() };
+  });
+
+  router.get('/api/songs/:id/file', requireAuth(), (ctx) => {
+    const s = db.get<{ file: string }>('SELECT file FROM songs WHERE id = ?', Number(ctx.params.id));
+    if (!s) throw new HttpError(404, 'Unknown song');
+    const lock = lockState();
+    if (lock.locked && ctx.user!.role === 'child') throw new HttpError(423, 'Music is sleeping', { unlock_at: lock.unlock_at });
+    sendFile(ctx, safeJoin(path.join(cfg.uploadsDir, 'songs'), s.file), 'private, max-age=86400');
   });
 
   // The video / song itself. The sleep lock applies here too, so a saved link can't get around it.

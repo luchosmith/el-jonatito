@@ -602,3 +602,38 @@ img { display: block; }
 .tl-span { position: absolute; left: 0; right: 0; top: 44px; height: 3px; border-radius: 2px; background: rgba(90,164,230,.75); }
 .cm-home.photo { overflow: visible; padding: 0; }
 .cm-home.photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
+/* 🎧 his music: songs as square pictures in play order */
+.music { flex: 1; min-height: 0; display: flex; flex-direction: column; background: #1e2434; color: #fff; }
+.music-head { display: flex; align-items: center; gap: 18px; padding: 14px 18px; background: #262d40; flex: none; }
+.music-btn { position: relative; width: 84px; height: 84px; border-radius: 50%; background: #fff1e3; border: 5px solid #f39a45; display: grid; place-items: center; font-size: 44px; padding: 0; flex: none; }
+.music-btn.on { box-shadow: 0 0 0 6px rgba(243,154,69,.35); }
+.music-btn .eq { right: -8px; bottom: -4px; }
+.music-cur { position: relative; width: 120px; height: 120px; border-radius: 14px; overflow: hidden; flex: none; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.music-cur img, .music-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.music-info { flex: 1; min-width: 0; }
+.music-info b { display: block; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-info small { opacity: .7; font-size: 15px; }
+.music-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,.2); margin-top: 10px; overflow: hidden; }
+.music-bar i { display: block; height: 100%; background: #f39a45; transition: width .5s linear; }
+.music-sleep { flex: 1; display: flex; align-items: center; gap: 14px; }
+.music-sleep .time { color: #fff; }
+.music-home { width: 76px; height: 76px; border-radius: 50%; overflow: hidden; border: 4px solid #fff; box-shadow: 0 0 0 5px #ffd166; padding: 0; background: #ffe3c4; flex: none; }
+.music-home img { width: 100%; height: 100%; object-fit: cover; }
+.music-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 12px; padding: 16px 18px; align-content: start; }
+.music-tile { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; padding: 0; border: 4px solid transparent; background: #333b52; }
+.music-tile.done { opacity: .4; }
+.music-tile.cur { border-color: #ffd166; box-shadow: 0 0 0 4px rgba(255,209,102,.35); }
+.song-gen { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; box-sizing: border-box; text-align: center; }
+.song-gen b { font-size: 34px; font-weight: normal; }
+.song-gen span { font-size: 12px; font-weight: 800; color: #1f2a37; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.music-cur .song-gen b { font-size: 46px; } .music-cur .song-gen span { font-size: 14px; }
+.eq { position: absolute; right: 6px; bottom: 6px; display: flex; gap: 3px; align-items: flex-end; height: 22px; padding: 3px 4px; border-radius: 6px; background: rgba(0,0,0,.55); font-style: normal; }
+.eq b { width: 4px; height: 60%; background: #ffd166; border-radius: 2px; animation: eq-bar .8s ease-in-out infinite alternate; }
+.eq b:nth-child(2) { animation-delay: -.3s; } .eq b:nth-child(3) { animation-delay: -.6s; } .eq b:nth-child(4) { animation-delay: -.15s; }
+.eq.big { height: 30px; }
+@keyframes eq-bar { from { height: 20%; } to { height: 100%; } }
+/* 🎧 in the orbit while music plays: it glows and shows the song's picture (tap it: the songs page) */
+.orb.music-on { box-shadow: 0 0 0 8px rgba(243,154,69,.4), 0 6px 14px rgba(0,0,0,.14); }
+.orb .music-now { position: absolute; right: -12px; bottom: -8px; width: 48px; height: 48px; border-radius: 10px; overflow: hidden; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.3); z-index: 2; cursor: pointer; }
+.orb .music-now img, .orb .music-now .song-gen { width: 100%; height: 100%; }
+.orb .music-now .song-gen span { display: none; } .orb .music-now .song-gen b { font-size: 22px; }
