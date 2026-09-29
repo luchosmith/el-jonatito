@@ -620,6 +620,11 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 - **Toilet** opens its own cloud the same way, all three on the right side together (as in the bathroom): **wee wee** (the family's photo of the open toilet; "hacer pipí"), **toilet paper** (the family's photo; "papel higiénico") and **Bath** (the shower photo). Schema v11 adds the two words.
 - A cloud shows only what is in it; empty spots stay reserved but are not drawn (the main orbit still shows its empty spots). When the foods are open, the sky and the globe fade behind a soft veil (main area only).
 
+### 5.19c Unavailable = a door ajar (v0.9, built; mockup tab "🌍 Places on the earth")
+- On the **taskbar** and on the **person screen**, someone who is busy or away is drawn as a **door ajar** (hinged on the left, **knob on the right**) with their face **peeking out from behind it**, instead of a coloured ring.
+- Busy keeps a small clock of when they are free (on the door's corner, and big on their page); away has no clock (the face is a little grey).
+- **Names are hidden on the taskbar** for everyone (faces only); they stay for caretakers (hover / screen readers) and on the person screen.
+
 ### 5.19b On duty (v0.9, built; mockup tabs "🌍 Places on the earth" and "🛡️ On duty")
 > **Built (September 2026):** messages go to **whoever is on duty and to anyone he picked** (a message with no name: to whoever is on duty). **Changed (September 2026): it no longer circles.** The on-duty face hovers gently just off his face at about 4 o'clock (a second one at about 8 o'clock), clear of the clock, the orbit and the home bed.
 - **A new status** next to available / busy / away: **🛡️ On duty**, for **caretakers only**, and only when they are **in the same place as Jonatito**: their "Where I am" is within the walk zone of home (under 2 km, the same test as the places compass). If their location moves elsewhere, on duty ends by itself (back to available).

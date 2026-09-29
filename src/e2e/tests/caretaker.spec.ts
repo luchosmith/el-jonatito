@@ -89,7 +89,7 @@ test('an admin can rename a label and hide a person', async ({ page, browser }) 
   await joyce.page.getByTestId('visible-loki').click();
 
   await login(page, 'jonatito');
-  await expect(page.getByTestId('dock-tintin')).toContainText('Tin Tin');
+  await expect(page.getByTestId('dock-tintin')).toHaveAttribute('aria-label', 'Tin Tin'); // faces only on the taskbar; the name is kept for screen readers
   await build(page, [{ page: 'people' }]);
   await expect(page.getByTestId('sym-loki')).toHaveCount(0);
   await expect(page.getByTestId('sym-lexi')).toBeVisible();

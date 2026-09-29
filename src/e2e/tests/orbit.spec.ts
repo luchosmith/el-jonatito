@@ -142,7 +142,7 @@ test('people who are not available are marked: a clock of when they are free, or
   await login(page, 'jonatito');
   await expect(page.getByTestId('dock-lucho')).toHaveAttribute('data-status', 'busy');
   await expect(page.getByTestId('busy-lucho').locator('svg.clock12')).toHaveAttribute('aria-label', '4:10');
-  await expect(page.getByTestId('away-larry')).toHaveText('🚫');
+  await expect(page.getByTestId('door-larry')).toBeVisible(); // away: behind the door, no clock
   await expect(page.getByTestId('dock-mommy_joyce').locator('.dk-status')).toHaveCount(0);
 });
 

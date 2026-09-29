@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { api } from '../api.ts';
 import { Clock12 } from '../common/Clock12.tsx';
+import { DoorFace } from '../common/DoorFace.tsx';
 import { Face, SoundWave } from '../common/Face.tsx';
 import { speak } from '../common/hooks.ts';
 import { playClip } from '../common/sound.ts';
@@ -139,7 +140,7 @@ export function PersonScreen({ person, me, notes, locations, now, onSocial, onHe
 
       <section className="ps-right">
         <div className="ps-head">
-          <span className={`ps-face ${ring}`}><Face person={person} /></span>
+          {ring ? <DoorFace person={person} size={92} testId="person-door" /> : <span className="ps-face"><Face person={person} /></span>}
           <h2>{person.short_label}</h2>
           {person.status === 'busy' && person.status_until && (
             <span className="ps-status" data-testid="person-status">

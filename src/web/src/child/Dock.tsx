@@ -1,6 +1,7 @@
 // Bottom bar: Jonatito's own face where the Start button would be (back to the orbit), then family
 // (each opens their person screen), then his favourite things (Pongo, Barney), then All words / My day / Media.
 // Pets are not in the dock (they stay on the board's People page).
+import { DoorFace } from '../common/DoorFace.tsx';
 import { Face, SoundWave } from '../common/Face.tsx';
 import { Clock12 } from '../common/Clock12.tsx';
 import { shownLabel } from '../common/board.ts';
@@ -23,7 +24,7 @@ export function Dock({ people, things, unheard, unreadText, meActive, boardActiv
 }) {
   const me = people.find((p) => p.is_self);
   const family = people.filter((p) => !p.is_self && p.kind === 'person' && p.is_visible);
-  const ring = (p: Person) => (p.status === 'busy' ? 'busy' : p.status === 'away' ? 'away' : '');
+  const off = (p: Person) => p.status === 'busy' || p.status === 'away';
 
   return (
     <footer className="dock" data-testid="dock">
@@ -35,15 +36,16 @@ export function Dock({ people, things, unheard, unreadText, meActive, boardActiv
       <div className="sep" />
       <div className="people">
         {family.map((p) => (
-          <button key={p.id} className={`av ${ring(p)}`} data-testid={`dock-${p.id}`} data-status={p.status ?? 'available'} onClick={() => onPerson(p)}>
-            <Face person={p} />
-            {/* not available: a clock of when they are free, or 🚫 */}
+          // Faces only (no names on the taskbar). Not available: they peek out from behind a door that is ajar.
+          <button key={p.id} className={`av ${off(p) ? `door-av ${p.status}` : ''}`} data-testid={`dock-${p.id}`} data-status={p.status ?? 'available'}
+            aria-label={p.short_label} title={p.short_label} onClick={() => onPerson(p)}>
+            {off(p) ? <DoorFace person={p} size={64} testId={`door-${p.id}`} /> : <Face person={p} />}
+            {/* busy: a clock of when they are free (away: the door says it) */}
             {p.status === 'busy' && (
               <i className="dk-status" data-testid={`busy-${p.id}`}>
                 {p.status_until ? <Clock12 at={new Date(p.status_until)} size={22} /> : '🟡'}
               </i>
             )}
-            {p.status === 'away' && <i className="dk-status" data-testid={`away-${p.id}`}>🚫</i>}
             {p.status === 'on_duty' && <i className="dk-status" data-testid={`duty-badge-${p.id}`}>🛡️</i>}
             {/* something new waiting: voice notes he hasn't heard, typed replies he hasn't seen */}
             {(unheard[p.id] ?? 0) > 0 && (
@@ -57,7 +59,6 @@ export function Dock({ people, things, unheard, unreadText, meActive, boardActiv
                 💬{unreadText[p.id] > 1 && <b>{unreadText[p.id]}</b>}
               </i>
             )}
-            <span>{p.short_label}</span>
           </button>
         ))}
         {things.length > 0 && (
