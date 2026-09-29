@@ -14,6 +14,7 @@
 // v10 -> v11: Toilet opens its own cloud: wee wee, toilet paper (new words) and Bath (the shower photo).
 // v11 -> v12: Barney (taskbar) plays its film full screen, like Pongo.
 // v12 -> v13: his songs (the songs table, from schema.sql); 🎧 Music plays them (a "Music" media row).
+// v13 -> v14: songs.normalized (their loudness evened out; `npm run music:normalize` does the old ones).
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,7 +22,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -67,6 +68,7 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 11) db.tx(() => migrateV10toV11(db, cfg));
   if (from < 12) db.tx(() => migrateV11toV12(db, cfg));
   if (from < 13) db.tx(() => migrateV12toV13(db));
+  if (from < 14) db.tx(() => { if (!columns(db, 'songs').includes('normalized')) db.raw.exec('ALTER TABLE songs ADD COLUMN normalized INTEGER NOT NULL DEFAULT 0'); });
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
 }

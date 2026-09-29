@@ -1,7 +1,7 @@
 // 🎧 Music: his songs in a random order, as square pictures in play order; it keeps playing on every
 // screen and stops when he taps 🎧 again, when a film starts, or at bedtime.
 import { expect, test, type Page } from '@playwright/test';
-import { AFTERNOON, login, resetDb, setClock } from './helpers.ts';
+import { AFTERNOON, apiAs, login, resetDb, setClock } from './helpers.ts';
 
 test.beforeEach(async ({ request, page }) => {
   await resetDb(request);
@@ -12,7 +12,7 @@ test.beforeEach(async ({ request, page }) => {
 const nowPlaying = (page: Page) => page.getByTestId('music-now').getAttribute('data-song');
 const order = async (page: Page) => page.getByTestId('music-song').evaluateAll((els) => els.map((e) => e.getAttribute('data-song')));
 
-test('🎧 plays his songs in a random order; the page shows them in play order; a tap plays from there; it goes on by itself', async ({ page }) => {
+test('🎧 plays his songs in a random order; the page shows them in play order; a tap plays from there; it goes on by itself', async ({ page, request }) => {
   await login(page, 'jonatito');
   const firstFile = page.waitForRequest(/\/api\/songs\/\d+\/file/);
   await page.getByTestId('orbit-music').click();
@@ -37,9 +37,15 @@ test('🎧 plays his songs in a random order; the page shows them in play order;
   await page.getByTestId('music-song').first().click();
   await expect.poll(() => nowPlaying(page)).toBe(list[0]);
   await expect(page.getByTestId('music-song').first()).toHaveClass(/cur/);
+  // Every music tap is in his log (what he picked, by name).
+  const joyce = await apiAs(request, 'joyce');
+  await expect.poll(async () => {
+    const moments = await (await joyce.get('/api/moments')).json();
+    return moments.flatMap((e: { moment?: { chips: { action: string; label: string }[] } }) => e.moment?.chips ?? []).filter((c: { action: string }) => c.action === 'music').map((c: { label: string }) => c.label);
+  }, { timeout: 8000 }).toEqual(expect.arrayContaining(['🎧 on', expect.stringMatching(/^🎧 (Tiny Tune|Short Song|Third One)$/)]));
 });
 
-test('it keeps playing at home (🎧 glows, with the song’s picture); the picture opens the songs; 🎧 again stops it', async ({ page }) => {
+test('it keeps playing at home (🎧 glows, with the song’s picture); the picture opens the songs; 🎧 again stops it', async ({ page, request }) => {
   await login(page, 'jonatito');
   await page.getByTestId('orbit-music').click();
   await expect(page.getByTestId('music-view')).toHaveAttribute('data-playing', 'yes');
@@ -50,6 +56,12 @@ test('it keeps playing at home (🎧 glows, with the song’s picture); the pict
   await page.getByTestId('music-home').click();
   await page.getByTestId('orbit-music').click({ position: { x: 20, y: 20 } }); // 🎧 itself (not the song's picture)
   await expect(page.getByTestId('orbit-music')).not.toHaveClass(/music-on/);
+  // A caretaker can hide a song (only caretakers).
+  const songs = (await (await (await apiAs(request, 'joyce')).get('/api/songs')).json()).songs;
+  expect((await (await apiAs(request, 'joyce')).patch(`/api/songs/${songs[0].id}`, { hidden: true })).ok()).toBeTruthy();
+  expect((await (await apiAs(request, 'jonatito')).get('/api/songs')).ok()).toBeTruthy();
+  expect((await (await (await apiAs(request, 'jonatito')).get('/api/songs')).json()).songs).toHaveLength(2);
+  expect((await (await apiAs(request, 'pilar')).patch(`/api/songs/${songs[0].id}`, { hidden: false })).status()).toBe(403);
   await expect(page.getByTestId('music-view')).toHaveCount(0);
   // His history strip has a 🎧.
   await expect(page.locator('[data-testid="tl-hist"][data-kind="media"]')).toHaveCount(1);

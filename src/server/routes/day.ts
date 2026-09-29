@@ -6,7 +6,7 @@ import path from 'node:path';
 import { HttpError, jsonBody, rawBody, safeJoin, sendFile } from '../http.ts';
 import { audit, getLog, imageUrl, isWithJonatito, logsBetween } from '../repo.ts';
 import { MEDIA_MIME, saveMedia } from '../uploads.ts';
-import { num, obj, oneOf, str } from '../validate.ts';
+import { bool, num, obj, oneOf, str } from '../validate.ts';
 import { inWindow, minutesOfDay, seasonOf, startOfDay } from '../../shared/time.ts';
 import type { LogEntry, MediaItem, MediaPolicy, ScheduleItem, SongList } from '../../shared/types.ts';
 
@@ -134,6 +134,17 @@ export function dayRoutes({ router, db, hub, now, cfg, weather }: Deps) {
       `SELECT id, title, artist, cover, hidden FROM songs ${all ? '' : 'WHERE hidden = 0'} ORDER BY id`,
     ).map((s) => ({ id: s.id, title: s.title, artist: s.artist, cover_url: imageUrl(s.cover), audio_url: `/api/songs/${s.id}/file`, hidden: !!s.hidden }));
     return { songs, ...lockState() };
+  });
+
+  /** Caretakers: hide a song (or show it again). */
+  router.patch('/api/songs/:id', requireAuth('caretaker'), jsonBody, (ctx) => {
+    const id = Number(ctx.params.id);
+    if (!db.get('SELECT 1 FROM songs WHERE id = ?', id)) throw new HttpError(404, 'Unknown song');
+    const hidden = bool(obj(ctx.body), 'hidden');
+    if (hidden === undefined) throw new HttpError(400, 'hidden is required');
+    db.run('UPDATE songs SET hidden = ? WHERE id = ?', hidden ? 1 : 0, id);
+    audit(db, ctx.user!.id, hidden ? 'song.hide' : 'song.show', String(id), now().toISOString());
+    return { id, hidden };
   });
 
   router.get('/api/songs/:id/file', requireAuth(), (ctx) => {

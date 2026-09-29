@@ -161,6 +161,7 @@ CREATE TABLE IF NOT EXISTS songs (
   cover         TEXT,                           -- in uploads/images (from the file's own picture), or NULL
   source        TEXT UNIQUE,                    -- the original file name: importing again skips it
   hidden        INTEGER NOT NULL DEFAULT 0,
+  normalized    INTEGER NOT NULL DEFAULT 0,     -- 1 = its loudness was evened out (all songs play at the same volume)
   added_at      TEXT NOT NULL
 );
 

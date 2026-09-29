@@ -16,6 +16,7 @@
     "set-pin": "tsx server/set-pin.ts",
     "media:add": "tsx server/add-media.ts",
     "music:import": "tsx server/music-import.ts",
+    "music:normalize": "tsx server/music-normalize.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:unit": "tsx --test test/*.test.ts",
     "e2e:server": "node scripts/build-web.mjs && tsx server/index.ts",

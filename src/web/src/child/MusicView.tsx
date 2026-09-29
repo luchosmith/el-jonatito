@@ -22,7 +22,9 @@ export function SongPicture({ song }: { song: Song }) {
 
 const Bars = ({ big }: { big?: boolean }) => <i className={`eq ${big ? 'big' : ''}`} aria-hidden><b /><b /><b /><b /></i>;
 
-export function MusicView({ music, me, onToggle, onHome }: { music: Music; me: Person | undefined; onToggle: () => void; onHome: () => void }) {
+export function MusicView({ music, me, onToggle, onHome, onPick }: {
+  music: Music; me: Person | undefined; onToggle: () => void; onHome: () => void; onPick: (k: number) => void;
+}) {
   const now = music.current;
   return (
     <div className="music" data-testid="music-view" data-playing={music.playing ? 'yes' : 'no'}>
@@ -51,7 +53,7 @@ export function MusicView({ music, me, onToggle, onHome }: { music: Music; me: P
       <div className="music-grid">
         {music.list.map((s, k) => (
           <button key={`${k}-${s.id}`} className={`music-tile ${k === music.cur && music.playing ? 'cur' : ''}`}
-            data-testid="music-song" data-song={s.id} onClick={() => music.playAt(k)} aria-label={s.artist ? `${s.title}, ${s.artist}` : s.title}>
+            data-testid="music-song" data-song={s.id} onClick={() => onPick(k)} aria-label={s.artist ? `${s.title}, ${s.artist}` : s.title}>
             <SongPicture song={s} />
             {k === music.cur && music.playing && <Bars />}
           </button>

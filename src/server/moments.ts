@@ -8,7 +8,7 @@ import { imageUrl } from './repo.ts';
 import { renderSentence, type ResolvedToken } from '../shared/grammar.ts';
 import type { LoggedTap, Moment, MomentChip, TapInput, Token, TokenKind } from '../shared/types.ts';
 
-export const TAP_ACTIONS: LoggedTap[] = ['add', 'open', 'closed', 'person', 'hear', 'talk', 'social', 'body', 'pain', 'media', 'send', 'clear', 'say'];
+export const TAP_ACTIONS: LoggedTap[] = ['add', 'open', 'closed', 'person', 'hear', 'talk', 'social', 'body', 'pain', 'media', 'send', 'clear', 'say', 'music'];
 
 interface MomentRow {
   id: number; started_at: string; last_at: string; ended_at: string | null; outcome: Moment['outcome'];
@@ -133,6 +133,12 @@ export function listMoments(db: Db, fromIso: string, toIso: string): Moment[] {
   }));
 }
 
+/** 🎧 taps, readable on 🕒 Today: "🎧 on", "🎧 off", or the song he picked. */
+function musicLabel(d: Record<string, unknown>): string {
+  if (d.what === 'song' && typeof d.title === 'string') return `🎧 ${d.title}`;
+  return d.what === 'stop' ? '🎧 off' : d.what === 'start' ? '🎧 on' : `🎧 ${typeof d.what === 'string' ? d.what : ''}`.trim();
+}
+
 function chip(t: TapRow, cache: Map<string, Pic>): MomentChip {
   const id = t.person_id ?? t.item_id;
   const p = id ? cache.get(id) : undefined;
@@ -140,7 +146,7 @@ function chip(t: TapRow, cache: Map<string, Pic>): MomentChip {
   return {
     at: t.at, action: t.action, id: id ?? null,
     kind: p ? ((p.category === 'body' ? 'body' : p.person_kind ?? p.kind) as MomentChip['kind']) : null,
-    label: p?.label ?? (t.action === 'pain' ? `pain ${detail.level ?? ''}`.trim() : t.action),
+    label: t.action === 'music' ? musicLabel(detail) : p?.label ?? (t.action === 'pain' ? `pain ${detail.level ?? ''}`.trim() : t.action),
     emoji: p?.emoji ?? ({ hear: '〰️', talk: '👂', pain: '🩹', media: '🎬', say: '🔊' } as Record<string, string>)[t.action] ?? null,
     photo_url: imageUrl(p?.photo ?? null),
     closed_until: typeof detail.closed_until === 'string' ? detail.closed_until : null,

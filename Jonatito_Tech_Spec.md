@@ -673,6 +673,8 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 - **It keeps playing** on every screen. It stops only when he taps 🎧 again, when a film starts (Pongo, Barney), or at bedtime (the sleep lock, like films). While it plays, 🎧 in the orbit glows and shows the song's picture.
 - **Files:** the songs in `music/` (61 MP3s) are imported once on the server (`npm run music:import -- music/`): name and artist from the file's tags, cover art taken out of the file when it has one. Caretakers can hide a song in 🧩 Items later.
 - The history strip gets one 🎵 square when music starts.
+- **His log:** every music tap goes into the tap log with what he did (`action 'music'`, detail `what`: start, stop, song with its id / title / artist / place in the list, page, home), for later training; on 🕒 Today they read "🎧 on", "🎧 off" or the song's name.
+- **Even volume:** every song's loudness is evened out on import (EBU R128, −16 LUFS, two-pass, linear, true peak ≤ −1.5 dB) so a quiet piano piece and a loud reggaeton track play at the same volume; `npm run music:normalize` does songs imported earlier (schema v14: `songs.normalized`). Caretakers can hide a song (`PATCH /api/songs/:id`).
 
 ### 5.22 Decisions (Pongo movie, answered)
 1. **Media time:** the film keeps playing until bedtime; the sleep lock still applies.

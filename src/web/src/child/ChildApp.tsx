@@ -276,6 +276,9 @@ export function ChildApp({ user: _user }: { user: User }) {
   const isMusic = (item: Item) => media.items.find((m) => m.id === item.media_id)?.kind === 'music';
   /** 🎧: starts his songs (a new random order) and opens them; while they play, it stops them. */
   const toggleMusic = async (item?: Item) => {
+    const screen = view.name === 'music' ? 'music' : 'orbit';
+    // Every music tap goes into his log (what he chose, for later).
+    logTap('music', screen, { item_id: 'music' }, { what: music.playing ? 'stop' : 'start', song_id: music.current?.id ?? null });
     if (music.playing) return music.stop();
     setView({ name: 'music' });
     const r = await music.start();
@@ -354,7 +357,10 @@ export function ChildApp({ user: _user }: { user: User }) {
               setView({ name: 'player', itemId: item.id });
             }}
             music={{ playing: music.playing, current: music.current }}
-            onMusicPage={() => setView({ name: 'music' })}
+            onMusicPage={() => {
+              logTap('music', 'orbit', { item_id: 'music' }, { what: 'page', song_id: music.current?.id ?? null });
+              setView({ name: 'music' });
+            }}
             onBody={() => setView({ name: 'body' })}
             onBack={() => setView(HOME)}
             onPerson={(id) => openPerson(id, 'globe')}
@@ -398,7 +404,18 @@ export function ChildApp({ user: _user }: { user: User }) {
       )}
       {view.name === 'body' && <BodyView me={me} items={board.items} people={board.people} lang={lang} />}
       {view.name === 'day' && <DayView logs={logs} board={board} />}
-      {view.name === 'music' && <MusicView music={music} me={me} onToggle={() => void toggleMusic()} onHome={() => setView(HOME)} />}
+      {view.name === 'music' && (
+        <MusicView music={music} me={me} onToggle={() => void toggleMusic()}
+          onHome={() => {
+            logTap('music', 'music', { item_id: 'music' }, { what: 'home', song_id: music.current?.id ?? null });
+            setView(HOME);
+          }}
+          onPick={(k) => {
+            const s = music.list[k];
+            if (s) logTap('music', 'music', { item_id: 'music' }, { what: 'song', song_id: s.id, title: s.title, artist: s.artist, place: k });
+            music.playAt(k);
+          }} />
+      )}
       {view.name === 'media' && (
         <MediaView media={media} now={now} onLocked={(unlock_at) => setMedia((m) => ({ ...m, locked: true, unlock_at }))} />
       )}
