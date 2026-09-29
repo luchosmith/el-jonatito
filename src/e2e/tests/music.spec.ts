@@ -26,12 +26,17 @@ test('🎧 plays his songs in a random order; the page shows them in play order;
   await expect(page.locator('[data-testid="music-song"] img')).toHaveCount(1);
   await expect(page.getByTestId('music-song').filter({ hasText: 'Short Song' })).toBeVisible();
 
-  // He taps the second one: it plays, and the first is now "already played".
+  // He taps the second one: it plays (yellow frame); the first is not faded and can be tapped again.
   await page.getByTestId('music-song').nth(1).click();
   await expect.poll(() => nowPlaying(page)).toBe(list[1]);
-  await expect(page.getByTestId('music-song').first()).toHaveClass(/done/);
+  await expect(page.getByTestId('music-song').nth(1)).toHaveClass(/cur/);
+  await expect(page.getByTestId('music-song').first()).toHaveCSS('opacity', '1');
   // Each test song is 2 s long: the list goes on to the third by itself.
   await expect.poll(() => nowPlaying(page), { timeout: 8000 }).toBe(list[2]);
+  // A song already played: tap it, it plays again and the list goes on from there.
+  await page.getByTestId('music-song').first().click();
+  await expect.poll(() => nowPlaying(page)).toBe(list[0]);
+  await expect(page.getByTestId('music-song').first()).toHaveClass(/cur/);
 });
 
 test('it keeps playing at home (🎧 glows, with the song’s picture); the picture opens the songs; 🎧 again stops it', async ({ page }) => {

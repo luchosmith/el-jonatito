@@ -621,7 +621,6 @@ img { display: block; }
 .music-home img { width: 100%; height: 100%; object-fit: cover; }
 .music-grid { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 12px; padding: 16px 18px; align-content: start; }
 .music-tile { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; padding: 0; border: 4px solid transparent; background: #333b52; }
-.music-tile.done { opacity: .4; }
 .music-tile.cur { border-color: #ffd166; box-shadow: 0 0 0 4px rgba(255,209,102,.35); }
 .song-gen { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; box-sizing: border-box; text-align: center; }
 .song-gen b { font-size: 34px; font-weight: normal; }

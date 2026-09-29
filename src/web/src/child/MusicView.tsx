@@ -1,5 +1,5 @@
 // 🎧 Music: his songs as square pictures in play order. The one playing has a yellow frame and moving
-// bars; songs already played are faded. Tap any song: it plays and the list goes on from there.
+// bars. Tap any song (played ones too): it plays and the list goes on from there.
 // 🎧 at the top stops the music; his face goes home (the music keeps playing).
 import { Clock12 } from '../common/Clock12.tsx';
 import { Face } from '../common/Face.tsx';
@@ -50,7 +50,7 @@ export function MusicView({ music, me, onToggle, onHome }: { music: Music; me: P
       </div>
       <div className="music-grid">
         {music.list.map((s, k) => (
-          <button key={`${k}-${s.id}`} className={`music-tile ${k < music.cur ? 'done' : ''} ${k === music.cur && music.playing ? 'cur' : ''}`}
+          <button key={`${k}-${s.id}`} className={`music-tile ${k === music.cur && music.playing ? 'cur' : ''}`}
             data-testid="music-song" data-song={s.id} onClick={() => music.playAt(k)} aria-label={s.artist ? `${s.title}, ${s.artist}` : s.title}>
             <SongPicture song={s} />
             {k === music.cur && music.playing && <Bars />}
