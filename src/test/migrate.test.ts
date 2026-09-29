@@ -198,3 +198,20 @@ test('v11: Toilet opens a cloud with wee wee, toilet paper (new, with drawings) 
   assert.equal(by('toilet').orbit_slot, 1, 'Toilet stays in its spot');
   db.close();
 });
+
+test('v12: Barney plays his film (a media row with his photo), like Pongo', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-migrate12-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  db.run("UPDATE items SET tap = 'add', media_id = NULL WHERE id = 'barney'");
+  db.run("DELETE FROM images WHERE owner_type = 'media' AND owner_id = (SELECT CAST(id AS TEXT) FROM media WHERE title = 'Barney')");
+  db.run("DELETE FROM media WHERE title = 'Barney'");
+  db.raw.exec('PRAGMA user_version = 11');
+  migrate(db, cfg);
+  const barney = listItems(db, new Date()).find((i) => i.id === 'barney')!;
+  const media = db.get<{ id: number; kind: string }>("SELECT id, kind FROM media WHERE title = 'Barney'")!;
+  assert.deepEqual([barney.tap, barney.media_id, media.kind], ['play', media.id, 'movie']);
+  assert.deepEqual(db.setting('dock_items', []), ['pongo', 'barney']);
+  db.close();
+});

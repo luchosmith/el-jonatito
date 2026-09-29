@@ -7,7 +7,7 @@
   ],
   "dock": [
     { "id": "pongo", "tap": "play", "media": "Pongo" },
-    { "id": "barney" }
+    { "id": "barney", "tap": "play", "media": "Barney" }
   ],
   "sub_orbits": {
     "eat": [null, "smoothie", "chicken_soup", "rice_bowl", "grapes", "pancakes", "pasta_red", "pasta_green", "cookie", "ice_cream"],

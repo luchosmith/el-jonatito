@@ -218,14 +218,18 @@ test('at night Pongo shows the sleeping moon instead of playing', async ({ page,
   await expect(page.getByTestId('player-locked')).toContainText('7:00');
 });
 
-test('Barney in the dock adds "Barney" to the sentence', async ({ page, request }) => {
+test('Barney in the dock plays his film full screen, like Pongo', async ({ page, request }) => {
+  const joyce = await apiAs(request, 'joyce');
+  const barney = (await (await joyce.get('/api/media')).json()).items.find((m: { title: string }) => m.title === 'Barney');
+  const film = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'fixtures', 'film.webm'));
+  expect((await joyce.raw('PUT', `/api/media/${barney.id}/file`, film, 'video/webm')).ok()).toBeTruthy();
   await login(page, 'jonatito');
   await page.getByTestId('dock-barney').click();
-  await expect(page.getByTestId('strip-token')).toHaveCount(1);
-  await page.getByTestId('send').click();
-  await expect(page.getByTestId('sentence')).toContainText('I want Barney.');
-  const inbox = await (await (await apiAs(request, 'joyce')).get('/api/messages')).json();
-  expect(inbox[0].sentence_en).toBe('I want Barney.');
+  await expect(page.getByTestId('player-film')).toBeVisible();
+  await expect(page.getByTestId('player-clock')).toContainText('8:30'); // until bedtime
+  await page.getByTestId('player-exit').click();
+  await expect(page.getByTestId('orbit')).toBeVisible();
+  await expect(page.getByTestId('strip-token')).toHaveCount(0); // it plays; it is not a word in the sentence
 });
 
 test('relative distance on the globe: at home by the bed, a short drive just past the 🚗, abroad past the ✈️', async ({ page, request }) => {

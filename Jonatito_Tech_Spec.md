@@ -663,6 +663,8 @@ CREATE TABLE places (item_id TEXT PRIMARY KEY REFERENCES items(id) ON DELETE CAS
 
 **Later: a copy on his tablet.** This removes the lag of streaming over the internet. One way is the Tablet settings "⬇️ Keep on this tablet" option, which saves the film in the browser's storage (the Cache API) and plays it from there. The other is a file copied onto the device, if the kiosk browser can read local files.
 
+- **Barney** (taskbar) works the same way since September 2026: it plays *Barney: Best Manners* full screen (schema v12 gives Barney his own film).
+
 ### 5.22 Decisions (Pongo movie, answered)
 1. **Media time:** the film keeps playing until bedtime; the sleep lock still applies.
 2. **Home button:** bottom-left, where his face is in the taskbar.

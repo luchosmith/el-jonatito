@@ -12,6 +12,7 @@
 //           leaves the routine for now.
 // v9 -> v10: availability.status can be 'on_duty' (a caretaker who is with him).
 // v10 -> v11: Toilet opens its own cloud: wee wee, toilet paper (new words) and Bath (the shower photo).
+// v11 -> v12: Barney (taskbar) plays its film full screen, like Pongo.
 // A full copy of the old database is written next to it first (jonatito.sqlite.v<N>-backup-<time>).
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,7 +20,7 @@ import type { Db } from './db.ts';
 import type { Config } from './config.ts';
 import { applyDock, applyOrbitDefaults, copySeedImage, insertLimitRules, PAGE_CATEGORY } from './orbit.ts';
 
-export const SCHEMA_VERSION = 11;
+export const SCHEMA_VERSION = 12;
 
 const tableExists = (db: Db, name: string) => !!db.get("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", name);
 
@@ -63,11 +64,26 @@ export function migrate(db: Db, cfg: Config): string | null {
   if (from < 9) db.tx(() => migrateV8toV9(db));
   if (from < 10) db.tx(() => migrateV9toV10(db));
   if (from < 11) db.tx(() => migrateV10toV11(db, cfg));
+  if (from < 12) db.tx(() => migrateV11toV12(db, cfg));
   db.raw.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   return backup ?? ':memory:';
 }
 
 const columns = (db: Db, table: string) => db.all<{ name: string }>(`PRAGMA table_info(${table})`).map((c) => c.name);
+
+/** v12: a "Barney" film (media row, his photo as its cover); the Barney button plays it. */
+function migrateV11toV12(db: Db, cfg: Config) {
+  if (!db.get("SELECT 1 FROM items WHERE id = 'barney'")) return;
+  let media = db.get<{ id: number }>("SELECT id FROM media WHERE title = 'Barney'");
+  if (!media) {
+    const now = new Date().toISOString();
+    const order = db.get<{ n: number }>('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM media')!.n;
+    const r = db.run("INSERT INTO media(title, kind, emoji, bedtime_ok, sort_order) VALUES('Barney', 'movie', '🦖', 0, ?)", order);
+    copySeedImage(db, cfg, 'symbols/barney.jpg', 'media', String(r.lastId), now);
+    media = { id: r.lastId };
+  }
+  db.run("UPDATE items SET tap = 'play', media_id = ?, category = 'media' WHERE id = 'barney'", media.id);
+}
 
 /** v11: two new words, and Toilet opens a cloud with them and Bath. Nothing a caretaker placed is moved. */
 function migrateV10toV11(db: Db, cfg: Config) {
