@@ -7,15 +7,15 @@ import { fmt12 } from '../../../shared/time.ts';
 import type { Person, Song } from '../../../shared/types.ts';
 import type { Music } from './useMusic.ts';
 
-/** A song's picture: its cover art, or a coloured tile with 🎵 and its name. */
+/** A song's picture: its cover art, or a coloured tile with its name on top and 🎵 under it. */
 export function SongPicture({ song }: { song: Song }) {
   if (song.cover_url) return <img src={song.cover_url} alt="" draggable={false} />;
   let h = 0;
   for (const c of song.title) h = (h * 31 + c.charCodeAt(0)) % 360;
   return (
     <span className="song-gen" style={{ background: `hsl(${h} 65% 62%)` }}>
-      <b>🎵</b>
       <span>{song.title}</span>
+      <b>🎵</b>
     </span>
   );
 }
