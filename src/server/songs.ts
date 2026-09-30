@@ -80,7 +80,13 @@ export function normalizeSongs(db: Db, cfg: Config, log: (msg: string) => void =
   return { done, failed };
 }
 
-/** Imports every audio file in `dir` that is not in the list yet. Returns how many were added. */
+/** "Tutti Frutti", "tutti-frutti" and "Tuttí Frutti" are the same song: lower case, no accents, letters and digits only. */
+export const songKey = (s: string | null | undefined) => (s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+/**
+ * Imports every audio file in `dir` that is not in the list yet: not the same file (by name), and not the
+ * same song (same title and artist, e.g. a copy from another folder). Returns how many were added.
+ */
 export function importSongs(db: Db, cfg: Config, dir: string): { added: number; skipped: number } {
   const files = fs.readdirSync(dir).filter((f) => AUDIO_EXT.includes(path.extname(f).toLowerCase())).sort();
   const songsDir = path.join(cfg.uploadsDir, 'songs');
@@ -94,6 +100,12 @@ export function importSongs(db: Db, cfg: Config, dir: string): { added: number; 
     }
     const src = path.join(dir, f);
     const { title, artist } = songName(f, tagsOf(src));
+    const same = db.all<{ title: string; artist: string | null }>('SELECT title, artist FROM songs')
+      .some((s) => songKey(s.title) === songKey(title) && (!s.artist || !artist || songKey(s.artist) === songKey(artist)));
+    if (same) {
+      skipped++;
+      continue;
+    }
     // Evened out on the way in; if that fails, the file is copied as it is (and can be evened out later).
     let file = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.mp3`;
     const normalized = normalizeAudio(src, path.join(songsDir, file));

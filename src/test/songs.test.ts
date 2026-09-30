@@ -9,7 +9,7 @@ import { loadConfig } from '../server/config.ts';
 import { migrate } from '../server/migrate.ts';
 import { seed } from '../server/seed.ts';
 import { listItems } from '../server/repo.ts';
-import { importSongs, normalizeSongs, songName } from '../server/songs.ts';
+import { importSongs, normalizeSongs, songKey, songName } from '../server/songs.ts';
 import { spawnSync } from 'node:child_process';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -90,5 +90,21 @@ test('songs imported before evening-out existed are evened out by normalizeSongs
   assert.deepEqual({ done, failed }, { done: 3, failed: 0 });
   assert.equal(db.get<{ n: number }>('SELECT COUNT(*) AS n FROM songs WHERE normalized = 1')!.n, 3);
   assert.equal(fs.readdirSync(path.join(cfg.uploadsDir, 'songs')).length, 3, 'the old files are gone');
+  db.close();
+});
+
+test('the same song from another folder (another file name) is not imported twice', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-dupe-'));
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  const fixtures = path.join(here, '..', 'e2e', 'fixtures', 'music');
+  importSongs(db, cfg, fixtures);
+  const copies = path.join(dir, 'copies');
+  fs.mkdirSync(copies);
+  fs.copyFileSync(path.join(fixtures, '01 - Tiny Tune.mp3'), path.join(copies, 'Tiny Tune (copy) [Explicit].mp3')); // same tags
+  fs.copyFileSync(path.join(fixtures, 'The Beeps - Short Song.mp3'), path.join(copies, 'THE BEEPS - Short Sóng.mp3')); // same name, other case / accent
+  assert.deepEqual(importSongs(db, cfg, copies), { added: 0, skipped: 2 });
+  assert.equal(songKey('Tuttí-Frutti'), songKey('tutti frutti'));
   db.close();
 });
