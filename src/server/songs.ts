@@ -8,7 +8,8 @@ import path from 'node:path';
 import type { Config } from './config.ts';
 import type { Db } from './db.ts';
 
-const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.ogg', '.opus', '.webm'];
+// FLAC and WAV are fine too: every song is turned into an evened-out MP3 on the way in.
+const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.ogg', '.opus', '.webm', '.flac', '.wav'];
 
 interface Tags { title?: string; artist?: string }
 

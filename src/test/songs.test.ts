@@ -108,3 +108,17 @@ test('the same song from another folder (another file name) is not imported twic
   assert.equal(songKey('Tuttí-Frutti'), songKey('tutti frutti'));
   db.close();
 });
+
+test('a FLAC song is imported as an evened-out MP3, with its name', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'jt-flac-'));
+  const src = path.join(dir, 'src');
+  fs.mkdirSync(src);
+  spawnSync('ffmpeg', ['-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=500:duration=5', '-metadata', 'title=Lossless Tune', '-metadata', 'artist=Hi Fi', path.join(src, '07 - Lossless Tune.flac')]);
+  const cfg = loadConfig({ TEST_MODE: '1', DATA_DIR: dir });
+  const db = new Db(cfg.dbFile);
+  seed(db, cfg);
+  assert.deepEqual(importSongs(db, cfg, src), { added: 1, skipped: 0 });
+  const row = db.get<{ title: string; artist: string; file: string; normalized: number }>('SELECT * FROM songs')!;
+  assert.deepEqual([row.title, row.artist, row.normalized, path.extname(row.file)], ['Lossless Tune', 'Hi Fi', 1, '.mp3']);
+  db.close();
+});
