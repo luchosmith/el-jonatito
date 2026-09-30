@@ -410,6 +410,10 @@ export function ChildApp({ user: _user }: { user: User }) {
             logTap('music', 'music', { item_id: 'music' }, { what: 'home', song_id: music.current?.id ?? null });
             setView(HOME);
           }}
+          onPause={() => {
+            logTap('music', 'music', { item_id: 'music' }, { what: music.paused ? 'resume' : 'pause', song_id: music.current?.id ?? null });
+            music.togglePause();
+          }}
           onPick={(k) => {
             const s = music.list[k];
             if (s) logTap('music', 'music', { item_id: 'music' }, { what: 'song', song_id: s.id, title: s.title, artist: s.artist, place: k });

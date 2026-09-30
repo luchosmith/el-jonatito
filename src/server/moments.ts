@@ -136,7 +136,8 @@ export function listMoments(db: Db, fromIso: string, toIso: string): Moment[] {
 /** 🎧 taps, readable on 🕒 Today: "🎧 on", "🎧 off", or the song he picked. */
 function musicLabel(d: Record<string, unknown>): string {
   if (d.what === 'song' && typeof d.title === 'string') return `🎧 ${d.title}`;
-  return d.what === 'stop' ? '🎧 off' : d.what === 'start' ? '🎧 on' : `🎧 ${typeof d.what === 'string' ? d.what : ''}`.trim();
+  const say: Record<string, string> = { stop: '🎧 off', start: '🎧 on', pause: '🎧 ⏸', resume: '🎧 ▶' };
+  return say[String(d.what)] ?? `🎧 ${typeof d.what === 'string' ? d.what : ''}`.trim();
 }
 
 function chip(t: TapRow, cache: Map<string, Pic>): MomentChip {

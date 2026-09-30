@@ -22,15 +22,17 @@ export function SongPicture({ song }: { song: Song }) {
 
 const Bars = ({ big }: { big?: boolean }) => <i className={`eq ${big ? 'big' : ''}`} aria-hidden><b /><b /><b /><b /></i>;
 
-export function MusicView({ music, me, onToggle, onHome, onPick }: {
+export function MusicView({ music, me, onToggle, onHome, onPick, onPause }: {
   music: Music; me: Person | undefined; onToggle: () => void; onHome: () => void; onPick: (k: number) => void;
+  /** the big picture: pause / go on with the same song */
+  onPause: () => void;
 }) {
   const now = music.current;
   return (
     <div className="music" data-testid="music-view" data-playing={music.playing ? 'yes' : 'no'}>
       <div className="music-head">
         <button className={`music-btn ${music.playing ? 'on' : ''}`} data-testid="music-toggle" onClick={onToggle} aria-label={music.playing ? 'Stop the music' : 'Play music'}>
-          🎧{music.playing && <Bars />}
+          🎧{music.playing && !music.paused && <Bars />}
         </button>
         {music.sleepingUntil && !music.playing ? (
           <div className="music-sleep" data-testid="music-sleeping">
@@ -40,7 +42,11 @@ export function MusicView({ music, me, onToggle, onHome, onPick }: {
           </div>
         ) : now ? (
           <>
-            <div className="music-cur" data-testid="music-now" data-song={now.id}><SongPicture song={now} /><Bars big /></div>
+            <button className={`music-cur ${music.paused ? 'paused' : ''}`} data-testid="music-now" data-song={now.id} data-paused={music.paused ? 'yes' : 'no'}
+              onClick={onPause} aria-label={music.paused ? 'Go on' : 'Pause'}>
+              <SongPicture song={now} />
+              {music.paused ? <i className="music-resume" aria-hidden>▶</i> : <Bars big />}
+            </button>
             <div className="music-info">
               <b>{now.title}</b>
               {now.artist && <small>{now.artist}</small>}
@@ -55,7 +61,7 @@ export function MusicView({ music, me, onToggle, onHome, onPick }: {
           <button key={`${k}-${s.id}`} className={`music-tile ${k === music.cur && music.playing ? 'cur' : ''}`}
             data-testid="music-song" data-song={s.id} onClick={() => onPick(k)} aria-label={s.artist ? `${s.title}, ${s.artist}` : s.title}>
             <SongPicture song={s} />
-            {k === music.cur && music.playing && <Bars />}
+            {k === music.cur && music.playing && !music.paused && <Bars />}
           </button>
         ))}
       </div>

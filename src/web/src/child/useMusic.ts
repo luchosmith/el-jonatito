@@ -16,6 +16,8 @@ const shuffle = (n: number) => {
 
 export interface Music {
   playing: boolean;
+  /** he paused the song (tap the big picture): it goes on from the same spot when he taps again */
+  paused: boolean;
   /** the songs in play order */
   list: Song[];
   /** where in `list` we are */
@@ -28,6 +30,8 @@ export interface Music {
   /** starts a new random order; 'locked' after bedtime, 'empty' with no songs */
   start: () => Promise<'playing' | 'locked' | 'empty'>;
   stop: () => void;
+  /** pause / go on with the same song, from the same spot */
+  togglePause: () => void;
   /** plays the song at this place in the list; the list goes on from there */
   playAt: (k: number) => void;
 }
@@ -38,11 +42,12 @@ export function useMusic(): Music {
   const [order, setOrder] = useState<number[]>([]);
   const [cur, setCur] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [sleepingUntil, setSleepingUntil] = useState<string | null>(null);
   // The audio events need the latest list without re-subscribing.
-  const state = useRef({ songs, order, cur, playing, pausedForClip: false });
-  state.current = { ...state.current, songs, order, cur, playing };
+  const state = useRef({ songs, order, cur, playing, paused, pausedForClip: false });
+  state.current = { ...state.current, songs, order, cur, playing, paused };
 
   const playAtIn = useCallback((k: number, ord: number[], list: Song[]) => {
     const song = list[ord[k]];
@@ -52,6 +57,7 @@ export function useMusic(): Music {
     setCur(k);
     setProgress(0);
     setPlaying(true);
+    setPaused(false);
   }, [audio]);
 
   const stop = useCallback(() => {
@@ -60,7 +66,20 @@ export function useMusic(): Music {
     audio.load();
     state.current.pausedForClip = false;
     setPlaying(false);
+    setPaused(false);
     setProgress(0);
+  }, [audio]);
+
+  const togglePause = useCallback(() => {
+    if (!state.current.playing) return;
+    if (state.current.paused) {
+      void audio.play().catch(() => undefined);
+      setPaused(false);
+    } else {
+      audio.pause();
+      state.current.pausedForClip = false;
+      setPaused(true);
+    }
   }, [audio]);
 
   const start = useCallback(async () => {
@@ -99,7 +118,7 @@ export function useMusic(): Music {
     const clipEnd = () => {
       if (!state.current.pausedForClip) return;
       state.current.pausedForClip = false;
-      if (state.current.playing) void audio.play().catch(() => undefined);
+      if (state.current.playing && !state.current.paused) void audio.play().catch(() => undefined); // not if he paused it himself
     };
     audio.addEventListener('ended', next);
     audio.addEventListener('timeupdate', tick);
@@ -118,5 +137,5 @@ export function useMusic(): Music {
   useEffect(() => () => audio.pause(), [audio]);
 
   const list = order.map((i) => songs[i]).filter((s): s is Song => !!s);
-  return { playing, list, cur, current: playing ? list[cur] ?? null : null, progress, sleepingUntil, start, stop, playAt };
+  return { playing, paused, list, cur, current: playing ? list[cur] ?? null : null, progress, sleepingUntil, start, stop, togglePause, playAt };
 }

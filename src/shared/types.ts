@@ -280,7 +280,7 @@ export interface Locations {
 /** What a logged tap did (not to be confused with TapAction: what an item does when tapped). */
 export type LoggedTap =
   | 'add' | 'open' | 'closed' | 'person' | 'hear' | 'talk' | 'social' | 'body' | 'pain' | 'media' | 'send' | 'clear' | 'say'
-  /** 🎧 music: detail.what = start | stop | song (he picked one: song_id, title, artist) | page | home */
+  /** 🎧 music: detail.what = start | stop | pause | resume | song (he picked one: song_id, title, artist) | page | home */
   | 'music';
 
 export interface TapInput {

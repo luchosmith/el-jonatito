@@ -67,6 +67,27 @@ test('it keeps playing at home (🎧 glows, with the song’s picture); the pict
   await expect(page.locator('[data-testid="tl-hist"][data-kind="media"]')).toHaveCount(1);
 });
 
+test('tapping the big picture pauses the same song, and tapping again goes on (no new song, no restart)', async ({ page, request }) => {
+  await login(page, 'jonatito');
+  await page.getByTestId('orbit-music').click();
+  await expect(page.getByTestId('music-view')).toHaveAttribute('data-playing', 'yes');
+  const song = await nowPlaying(page);
+  const files: string[] = [];
+  page.on('request', (r) => { if (/\/api\/songs\/\d+\/file/.test(r.url())) files.push(r.url()); });
+  await page.getByTestId('music-now').click();
+  await expect(page.getByTestId('music-now')).toHaveAttribute('data-paused', 'yes');
+  await page.waitForTimeout(3000); // longer than a whole test song: had it kept playing, the next one would be on
+  expect(await nowPlaying(page)).toBe(song);
+  await page.getByTestId('music-now').click();
+  await expect(page.getByTestId('music-now')).toHaveAttribute('data-paused', 'no');
+  expect(await nowPlaying(page)).toBe(song);
+  expect(files.filter((u) => u.endsWith(`/api/songs/${song}/file`)).length).toBeLessThanOrEqual(1); // not loaded again from the start
+  await expect(page.getByTestId('music-view')).toHaveAttribute('data-playing', 'yes'); // still on
+  // It is in his log.
+  const joyce = await apiAs(request, 'joyce');
+  await expect.poll(async () => JSON.stringify(await (await joyce.get('/api/moments')).json()), { timeout: 8000 }).toContain('🎧 ⏸');
+});
+
 test('a film stops the music', async ({ page }) => {
   await login(page, 'jonatito');
   await page.getByTestId('orbit-music').click();
