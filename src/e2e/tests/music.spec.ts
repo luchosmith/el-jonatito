@@ -19,6 +19,9 @@ test('🎧 plays his songs in a random order; the page shows them in play order;
   await firstFile; // the music really starts
   await expect(page.getByTestId('music-view')).toHaveAttribute('data-playing', 'yes');
   await expect(page.getByTestId('music-song')).toHaveCount(3);
+  // Square tiles that never overlap (the page scrolls when there are many).
+  const tiles = await page.getByTestId('music-song').evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((b) => [b.x, b.y, b.width, b.height]));
+  for (const [, , w, h] of tiles) expect([Math.round(w), Math.round(h)]).toEqual([104, 104]);
   const list = await order(page);
   expect(await nowPlaying(page)).toBe(list[0]);
   await expect(page.getByTestId('music-song').first()).toHaveClass(/cur/);
